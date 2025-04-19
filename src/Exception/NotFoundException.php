@@ -1,0 +1,48 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * This file is part of php-fast-forward/container.
+ *
+ * This source file is subject to the license bundled
+ * with this source code in the file LICENSE.
+ *
+ * @link      https://github.com/php-fast-forward/container
+ * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @license   https://opensource.org/licenses/MIT MIT License
+ */
+
+namespace FastForward\Container\Exception;
+
+use Psr\Container\NotFoundExceptionInterface;
+
+/**
+ * Class NotFoundException.
+ *
+ * Exception thrown when a requested service identifier is not found in the container.
+ *
+ * This class MUST be used in PSR-11 container implementations to represent an error
+ * condition where a service ID does not exist in the container. It implements the
+ * Psr\Container\NotFoundExceptionInterface to guarantee interoperability with PSR-11 consumers.
+ *
+ * @package FastForward\Container\Exception
+ */
+final class NotFoundException extends \Exception implements NotFoundExceptionInterface
+{
+    /**
+     * Creates a new NotFoundException for a missing service identifier.
+     *
+     * This factory method SHOULD be used by the container implementation to report
+     * the absence of a given service ID. The resulting exception message SHALL clearly
+     * indicate which identifier was not resolved.
+     *
+     * @param string $id the service identifier that was not found
+     *
+     * @return self an instance of NotFoundException describing the missing service
+     */
+    public static function forServiceID(string $id): self
+    {
+        return new self(\sprintf('Service "%s" not found.', $id));
+    }
+}
