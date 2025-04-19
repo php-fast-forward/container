@@ -13,7 +13,7 @@ A PSR-11 compliant aggregate container for PHP, designed to unify and resolve se
 ## 🚀 Installation
 
 ```bash
-composer require php-fast-forward/container
+composer require fast-forward/container
 ```
 
 ## 🛠️ Usage
