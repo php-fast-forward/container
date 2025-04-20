@@ -17,7 +17,7 @@ namespace FastForward\Container;
 
 use DI\Container;
 use FastForward\Config\ConfigInterface;
-use FastForward\Config\Container\ConfigContainer;
+use FastForward\Container\Factory\ContainerFactory;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -39,17 +39,5 @@ function container(
     ConfigInterface $config,
     ContainerInterface ...$containers,
 ): ContainerInterface {
-    $dependencies = $config->get('dependencies', []);
-
-    if ($dependencies instanceof ConfigInterface) {
-        $dependencies = $dependencies->toArray();
-    }
-
-    // Add an autowire-based container using provided dependencies.
-    $containers[] = new Container($dependencies);
-
-    return new AggregateContainer(
-        new ConfigContainer($config),
-        ...$containers,
-    );
+    return (new ContainerFactory($config))(...$containers);
 }
