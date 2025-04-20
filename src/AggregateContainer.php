@@ -15,7 +15,7 @@ declare(strict_types=1);
 
 namespace FastForward\Container;
 
-use FastForward\Config\Exception\NotFoundException;
+use FastForward\Container\Exception\NotFoundException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 
