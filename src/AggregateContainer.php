@@ -66,6 +66,30 @@ final class AggregateContainer implements ContainerInterface
     }
 
     /**
+     * Appends a container to the end of the aggregated list.
+     *
+     * This method MAY be used to dynamically expand the resolution pool.
+     *
+     * @param ContainerInterface $container the container to append
+     */
+    public function append(ContainerInterface $container): void
+    {
+        $this->containers[] = $container;
+    }
+
+    /**
+     * Prepends a container to the beginning of the aggregated list.
+     *
+     * This method MAY be used to prioritize a container during resolution.
+     *
+     * @param ContainerInterface $container the container to prepend
+     */
+    public function prepend(ContainerInterface $container): void
+    {
+        array_unshift($this->containers, $container);
+    }
+
+    /**
      * Determines whether a service identifier can be resolved.
      *
      * This method SHALL return true if the identifier is pre-resolved or can be located

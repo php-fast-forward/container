@@ -73,12 +73,14 @@ final class ContainerFactory
             $dependencies = $dependencies->toArray();
         }
 
-        // Add an autowire-based container using provided dependencies.
-        $containers[] = new Container($dependencies);
-
-        return new AggregateContainer(
+        $container = new AggregateContainer(
             new ConfigContainer($this->config),
             ...$containers,
         );
+
+        // Add an autowire-based container using provided dependencies.
+        $container->append(new Container(definitions: $dependencies, wrapperContainer: $container));
+
+        return $container;
     }
 }

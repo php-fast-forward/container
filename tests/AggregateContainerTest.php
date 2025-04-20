@@ -158,4 +158,45 @@ final class AggregateContainerTest extends TestCase
 
         $container->get($key);
     }
+
+    #[Test]
+    public function testAppendAddsContainerAtTheEnd(): void
+    {
+        $key   = uniqid('svc_', true);
+        $value = uniqid('val_', true);
+
+        $first = $this->prophesize(ContainerInterface::class);
+        $first->has($key)->willReturn(false);
+
+        $second = $this->prophesize(ContainerInterface::class);
+        $second->has($key)->willReturn(true);
+        $second->get($key)->willReturn($value);
+
+        $container = new AggregateContainer($first->reveal());
+        $container->append($second->reveal());
+
+        self::assertTrue($container->has($key));
+        self::assertSame($value, $container->get($key));
+    }
+
+    #[Test]
+    public function testPrependAddsContainerAtTheBeginning(): void
+    {
+        $key   = uniqid('service_', true);
+        $value = uniqid('val_', true);
+
+        $first = $this->prophesize(ContainerInterface::class);
+        $first->has($key)->willReturn(true);
+        $first->get($key)->willReturn($value);
+
+        $second = $this->prophesize(ContainerInterface::class);
+        $second->has($key)->willReturn(true);
+        $second->get($key)->willReturn('incorrect');
+
+        $container = new AggregateContainer($second->reveal());
+        $container->prepend($first->reveal());
+
+        self::assertTrue($container->has($key));
+        self::assertSame($value, $container->get($key));
+    }
 }
