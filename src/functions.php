@@ -15,7 +15,6 @@ declare(strict_types=1);
 
 namespace FastForward\Container;
 
-use DI\Container;
 use FastForward\Config\ConfigInterface;
 use FastForward\Container\Factory\ContainerFactory;
 use Psr\Container\ContainerInterface;
