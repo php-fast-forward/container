@@ -17,7 +17,6 @@ namespace FastForward\Container\Tests\Factory;
 
 use FastForward\Container\Factory\InvokableFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Psr\Container\ContainerInterface;
