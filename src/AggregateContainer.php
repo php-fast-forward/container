@@ -18,6 +18,7 @@ namespace FastForward\Container;
 use FastForward\Container\Exception\NotFoundException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class AggregateContainer.
@@ -30,7 +31,7 @@ use Psr\Container\ContainerInterface;
  *
  * @package FastForward\Container
  */
-final class AggregateContainer implements ContainerInterface
+class AggregateContainer implements ContainerInterface
 {
     /**
      * @var string container alias for reference binding
@@ -146,8 +147,6 @@ final class AggregateContainer implements ContainerInterface
                 return $this->resolved[$id];
             } catch (NotFoundExceptionInterface $exception) {
                 // Ignore NotFoundExceptionInterface
-            } catch (NotFoundException) {
-                // Ignore NotFoundException
             } catch (ContainerExceptionInterface $exception) {
                 // Future enhancement: Replace with a domain-specific exception if desired
             }
