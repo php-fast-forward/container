@@ -17,7 +17,7 @@ namespace FastForward\Container;
 
 use FastForward\Container\Exception\NotFoundException;
 use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\ContainerInterface;
+use Psr\Container\ContainerInterface as PsrContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
 /**
@@ -54,9 +54,9 @@ class AggregateContainer implements ContainerInterface
      * The constructor SHALL bind itself to common aliases, including the class name
      * and the PSR-11 interface, to simplify resolution of the container itself.
      *
-     * @param ContainerInterface ...$containers One or more container implementations to aggregate.
+     * @param PsrContainerInterface ...$containers One or more container implementations to aggregate.
      */
-    public function __construct(ContainerInterface ...$containers)
+    public function __construct(PsrContainerInterface ...$containers)
     {
         $this->containers = $containers;
         $this->resolved   = [
@@ -71,9 +71,9 @@ class AggregateContainer implements ContainerInterface
      *
      * This method MAY be used to dynamically expand the resolution pool.
      *
-     * @param ContainerInterface $container the container to append
+     * @param PsrContainerInterface $container the container to append
      */
-    public function append(ContainerInterface $container): void
+    public function append(PsrContainerInterface $container): void
     {
         $this->containers[] = $container;
     }
@@ -83,9 +83,9 @@ class AggregateContainer implements ContainerInterface
      *
      * This method MAY be used to prioritize a container during resolution.
      *
-     * @param ContainerInterface $container the container to prepend
+     * @param PsrContainerInterface $container the container to prepend
      */
-    public function prepend(ContainerInterface $container): void
+    public function prepend(PsrContainerInterface $container): void
     {
         array_unshift($this->containers, $container);
     }

@@ -19,7 +19,7 @@ use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\NotFoundException;
 use Interop\Container\ServiceProviderInterface;
 use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\ContainerInterface;
+use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 final class ServiceProviderContainer implements ContainerInterface
 {
@@ -31,7 +31,7 @@ final class ServiceProviderContainer implements ContainerInterface
     /**
      * @var ContainerInterface the underlying container used for delegation, if available
      */
-    private ContainerInterface $wrapperContainer;
+    private PsrContainerInterface $wrapperContainer;
 
     /**
      * @var array<string, mixed> cached resolved services by their identifiers
@@ -40,7 +40,7 @@ final class ServiceProviderContainer implements ContainerInterface
 
     public function __construct(
         ServiceProviderInterface $serviceProvider,
-        ?ContainerInterface $wrapperContainer = null,
+        ?PsrContainerInterface $wrapperContainer = null,
     ) {
         $this->serviceProvider  = $serviceProvider;
         $this->wrapperContainer = $wrapperContainer ?? $this;
