@@ -16,27 +16,71 @@ declare(strict_types=1);
 namespace FastForward\Container;
 
 use FastForward\Config\ConfigInterface;
-use FastForward\Container\Factory\ContainerFactory;
-use Psr\Container\ContainerInterface;
+use FastForward\Config\Container\ConfigContainer;
+use FastForward\Container\Exception\InvalidArgumentException;
+use Interop\Container\ServiceProviderInterface;
+use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 /**
- * Creates and assembles an aggregate container instance.
+ * Creates and assembles a fully composed container instance.
  *
- * This factory function SHALL accept a configuration object and a variadic list
- * of PSR-11 compliant containers. It SHALL prioritize configuration bindings and
- * autowire definitions based on provided settings.
+ * This factory function is responsible for composing a container from a list of initializers,
+ * which MAY include:
+ * - PSR-11 container instances
+ * - Service providers implementing ServiceProviderInterface
+ * - Configuration instances implementing ConfigInterface
+ * - Class names as strings (which MUST be instantiable)
  *
- * The function MUST return an instance of AggregateContainer that encapsulates
- * both the configuration-based container and any user-supplied containers.
+ * If a ConfigContainer is included, it SHALL attempt to resolve additional nested container
+ * definitions from its configuration using the key `${alias}.${ContainerInterface::class}`.
+ * Any invalid initializers MUST result in an InvalidArgumentException being thrown.
  *
- * @param ConfigInterface    $config        a configuration object containing dependency definitions
- * @param ContainerInterface ...$containers Optional containers to be merged into the aggregate.
+ * The final container returned is an AutowireContainer that wraps an AggregateContainer
+ * composed of all resolved sources.
  *
- * @return ContainerInterface a fully composed container instance
+ * @param ConfigInterface|PsrContainerInterface|ServiceProviderInterface|string ...$initializers
+ *                                                                                               A variadic list of container initializers, optionally including config or provider classes.
+ *
+ * @return ContainerInterface the composed and autowire-enabled container
+ *
+ * @throws \InvalidArgumentException if an unsupported initializer type is encountered
  */
 function container(
-    ConfigInterface $config,
-    ContainerInterface ...$containers,
+    ConfigInterface|PsrContainerInterface|ServiceProviderInterface|string ...$initializers,
 ): ContainerInterface {
-    return (new ContainerFactory($config))(...$containers);
+    $getContainer = static fn ($initializer) => match (true) {
+        $initializer instanceof PsrContainerInterface    => $initializer,
+        $initializer instanceof ServiceProviderInterface => new ServiceProviderContainer($initializer),
+        $initializer instanceof ConfigInterface          => new ConfigContainer($initializer),
+        \is_string($initializer)
+            && class_exists($initializer) => new ($initializer)(),
+        default                           => throw InvalidArgumentException::forUnsupportedInitializer($initializer),
+    };
+
+    $configKey  = \sprintf('%s.%s', ConfigContainer::ALIAS, ContainerInterface::class);
+
+    $containers = array_reduce(
+        $initializers,
+        static function (array $containers, mixed $initializer) use ($getContainer, $configKey) {
+            $container    = $getContainer($initializer);
+            $containers[] = $container;
+
+            if ($container instanceof ConfigContainer) {
+                try {
+                    foreach ($container->get($configKey) as $nested) {
+                        $containers[] = $getContainer($nested);
+                    }
+                } catch (\Throwable) {
+                    // Ignored
+                }
+            }
+
+            return $containers;
+        },
+        []
+    );
+
+    $aggregateContainer = new AggregateContainer(...$containers);
+
+    return new AutowireContainer($aggregateContainer);
 }

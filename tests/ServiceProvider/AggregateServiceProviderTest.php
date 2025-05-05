@@ -98,7 +98,7 @@ final class AggregateServiceProviderTest extends TestCase
         $aggregate = new AggregateServiceProvider($provider->reveal());
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Extension for "invalid" must be callable');
+        $this->expectExceptionMessage('Service "invalid" extension MUST be callable, "string" given.');
 
         $aggregate->getExtensions();
     }

@@ -199,4 +199,20 @@ final class AggregateContainerTest extends TestCase
         self::assertTrue($container->has($key));
         self::assertSame($value, $container->get($key));
     }
+
+    #[Test]
+    public function testGetUsesInternalCacheAfterFirstResolution(): void
+    {
+        $key   = 'shared.service';
+        $value = uniqid('resolved_', true);
+
+        $sub = $this->prophesize(ContainerInterface::class);
+        $sub->has($key)->willReturn(true);
+        $sub->get($key)->willReturn($value)->shouldBeCalledTimes(1);
+
+        $container = new AggregateContainer($sub->reveal());
+
+        self::assertSame($value, $container->get($key));
+        self::assertSame($value, $container->get($key)); // resolved from cache, not re-fetched
+    }
 }

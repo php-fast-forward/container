@@ -42,4 +42,23 @@ final class AliasFactoryTest extends TestCase
 
         self::assertSame($service, $result);
     }
+
+    public function testGetReturnsSameInstanceForSameAlias(): void
+    {
+        $a1 = AliasFactory::get('foo');
+        $a2 = AliasFactory::get('foo');
+
+        self::assertInstanceOf(AliasFactory::class, $a1);
+        self::assertSame($a1, $a2);
+    }
+
+    public function testGetReturnsNewInstanceForDifferentAliases(): void
+    {
+        $a1 = AliasFactory::get('foo');
+        $a2 = AliasFactory::get('bar');
+
+        self::assertInstanceOf(AliasFactory::class, $a1);
+        self::assertInstanceOf(AliasFactory::class, $a2);
+        self::assertNotSame($a1, $a2);
+    }
 }

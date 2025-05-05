@@ -80,7 +80,7 @@ class AggregateServiceProvider implements ServiceProviderInterface
         return array_reduce($this->serviceProviders, static function ($extensions, $serviceProvider) {
             foreach ($serviceProvider->getExtensions() as $id => $extension) {
                 if (!\is_callable($extension)) {
-                    throw RuntimeException::forInvalidExtension($id, get_debug_type($extension));
+                    throw RuntimeException::forNonCallableExtension($id, get_debug_type($extension));
                 }
 
                 $extensions[$id] = !\array_key_exists($id, $extensions)

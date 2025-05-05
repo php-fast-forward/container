@@ -25,11 +25,25 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(RuntimeException::class)]
 final class RuntimeExceptionTest extends TestCase
 {
-    public function testForInvalidExtensionReturnsProperException(): void
+    public function testForNonCallableExtensionReturnsProperException(): void
     {
-        $exception = RuntimeException::forInvalidExtension('db.connection', 'array');
+        $exception = RuntimeException::forNonCallableExtension('db.connection', 'array');
 
         self::assertInstanceOf(RuntimeException::class, $exception);
-        self::assertSame('Extension for "db.connection" must be callable, "array" given.', $exception->getMessage());
+        self::assertSame(
+            'Service "db.connection" extension MUST be callable, "array" given.',
+            $exception->getMessage()
+        );
+    }
+
+    public function testForNonPublicMethodReturnsProperException(): void
+    {
+        $exception = RuntimeException::forNonPublicMethod('My\Service', 'configure');
+
+        self::assertInstanceOf(RuntimeException::class, $exception);
+        self::assertSame(
+            'Method "My\Service::configure" MUST be public to be invoked as a service.',
+            $exception->getMessage()
+        );
     }
 }

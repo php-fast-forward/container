@@ -16,15 +16,18 @@ declare(strict_types=1);
 namespace FastForward\Container\Tests;
 
 use FastForward\Config\ConfigInterface;
+use FastForward\Config\Container\ConfigContainer;
 use FastForward\Container\AggregateContainer;
+use FastForward\Container\AutowireContainer;
+use FastForward\Container\ContainerInterface;
+use FastForward\Container\Exception\InvalidArgumentException;
 use FastForward\Container\Exception\NotFoundException;
-use FastForward\Container\Factory\ContainerFactory;
+use FastForward\Container\ServiceProviderContainer;
+use Interop\Container\ServiceProviderInterface;
 use PHPUnit\Framework\Attributes\CoversFunction;
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
-use Psr\Container\ContainerInterface;
 
 use function FastForward\Container\container;
 
@@ -33,49 +36,114 @@ use function FastForward\Container\container;
  */
 #[CoversFunction('FastForward\Container\container')]
 #[UsesClass(AggregateContainer::class)]
+#[UsesClass(AutowireContainer::class)]
+#[UsesClass(ServiceProviderContainer::class)]
+#[UsesClass(ConfigContainer::class)]
+#[UsesClass(InvalidArgumentException::class)]
 #[UsesClass(NotFoundException::class)]
-#[UsesClass(ContainerFactory::class)]
 final class ContainerFunctionTest extends TestCase
 {
     use ProphecyTrait;
 
-    #[Test]
-    public function testContainerReturnsAggregateContainerWithDependencies(): void
+    private string $configKey;
+
+    protected function setUp(): void
     {
-        $key   = uniqid('svc_', true);
-        $value = uniqid('val_', true);
-
-        $config = $this->prophesize(ConfigInterface::class);
-        $config->get('dependencies', [])->willReturn([
-            $key => static fn () => $value,
-        ]);
-        $config->has($key)->willReturn(false);
-
-        $result = container($config->reveal());
-
-        self::assertInstanceOf(AggregateContainer::class, $result);
-        self::assertTrue($result->has($key));
-        self::assertSame($value, $result->get($key));
+        $this->configKey = sprintf('%s.%s', ConfigContainer::ALIAS, ContainerInterface::class);
     }
 
-    #[Test]
-    public function testContainerCanMergeExternalContainers(): void
+    public function testReturnsAutowireContainerWrappingAggregate(): void
     {
-        $key = uniqid('ext_', true);
-        $val = uniqid('external_', true);
+        $result = container();
+
+        self::assertInstanceOf(AutowireContainer::class, $result);
+    }
+
+    public function testAcceptsPsrContainerAsInitializer(): void
+    {
+        $psr = $this->prophesize(ContainerInterface::class);
+        $psr->has('service')->willReturn(true);
+        $psr->get('service')->willReturn($psr->reveal());
+
+        $container = container($psr->reveal());
+
+        self::assertInstanceOf(AutowireContainer::class, $container);
+        self::assertSame($psr->reveal(), $container->get('service'));
+    }
+
+    public function testAcceptsServiceProviderAsInitializer(): void
+    {
+        $provider = $this->prophesize(ServiceProviderInterface::class);
+        $provider->getFactories()->willReturn([]);
+        $provider->getExtensions()->willReturn([]);
+
+        $container = container($provider->reveal());
+
+        self::assertInstanceOf(AutowireContainer::class, $container);
+        self::assertInstanceOf(ServiceProviderContainer::class, $container->get(ServiceProviderContainer::class));
+    }
+
+    public function testAcceptsConfigInterfaceAsInitializer(): void
+    {
+        $config = $this->prophesize(ConfigInterface::class);
+        $config->has($this->configKey)->willReturn(true);
+        $config->get($this->configKey)->willReturn([]);
+
+        $container = container($config->reveal());
+
+        self::assertInstanceOf(AutowireContainer::class, $container);
+        self::assertInstanceOf(ConfigContainer::class, $container->get(ConfigContainer::class));
+    }
+
+    public function testAcceptsInstantiableString(): void
+    {
+        $container = container(DummyContainer::class);
+
+        self::assertInstanceOf(AutowireContainer::class, $container);
+        self::assertInstanceOf(DummyContainer::class, $container->get(DummyContainer::class));
+    }
+
+    public function testThrowsForUnsupportedInitializer(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        container(uniqid());
+    }
+
+    public function testConfigContainerWithNestedInitializers(): void
+    {
+        $nested = new DummyContainer();
 
         $config = $this->prophesize(ConfigInterface::class);
-        $config->get('dependencies', [])->willReturn([]);
-        $config->has($key)->willReturn(false);
+        $config->has($this->configKey)->willReturn(true);
+        $config->get($this->configKey)->willReturn([$nested]);
 
-        $external = $this->prophesize(ContainerInterface::class);
-        $external->has($key)->willReturn(true);
-        $external->get($key)->willReturn($val);
+        $container = container($config->reveal());
 
-        $result = container($config->reveal(), $external->reveal());
+        self::assertInstanceOf(DummyContainer::class, $container->get(DummyContainer::class));
+    }
 
-        self::assertInstanceOf(AggregateContainer::class, $result);
-        self::assertTrue($result->has($key));
-        self::assertSame($val, $result->get($key));
+    public function testContainerSkipsThrowableThrownByConfigContainer(): void
+    {
+        $config = $this->prophesize(ConfigInterface::class);
+        $config->has($this->configKey)->willReturn(true);
+        $config->get($this->configKey)->willThrow(new \RuntimeException('unexpected'));
+
+        $container = container($config->reveal());
+
+        self::assertInstanceOf(AutowireContainer::class, $container);
+    }
+}
+
+final class DummyContainer implements ContainerInterface
+{
+    public function get(string $id): mixed
+    {
+        return $this;
+    }
+
+    public function has(string $id): bool
+    {
+        return true;
     }
 }

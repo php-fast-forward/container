@@ -46,10 +46,14 @@ final class InvokableFactory implements FactoryInterface
     /**
      * Constructs the InvokableFactory with a target class and optional constructor arguments.
      *
-     * @param string            $class     the class name to instantiate
-     * @param array<int, mixed> $arguments optional list of arguments for the constructor
+     * This constructor MUST receive a valid, instantiable class name. Any variadic arguments
+     * provided SHALL be passed to the class constructor during instantiation. If an argument
+     * is a string and matches a service ID in the container, it SHALL be resolved from the container.
+     *
+     * @param string $class        the fully qualified class name to be instantiated
+     * @param mixed  ...$arguments A variadic list of constructor arguments.
      */
-    public function __construct(string $class, array $arguments = [])
+    public function __construct(string $class, mixed ...$arguments)
     {
         $this->class     = $class;
         $this->arguments = $arguments;
@@ -58,12 +62,22 @@ final class InvokableFactory implements FactoryInterface
     /**
      * Instantiates the configured class with the provided arguments.
      *
-     * @param ContainerInterface $container the container instance (unused in this factory)
+     * Arguments that are strings and match a known service ID in the container
+     * SHALL be replaced with the corresponding container-resolved services.
      *
-     * @return mixed a new instance of the target class
+     * @param ContainerInterface $container the container instance used to resolve dependencies
+     *
+     * @return mixed a new instance of the configured class
      */
     public function __invoke(ContainerInterface $container): mixed
     {
-        return new ($this->class)(...$this->arguments);
+        $arguments = array_map(
+            static fn ($argument) => \is_string($argument) && $container->has($argument)
+                ? $container->get($argument)
+                : $argument,
+            $this->arguments
+        );
+
+        return new ($this->class)(...$arguments);
     }
 }

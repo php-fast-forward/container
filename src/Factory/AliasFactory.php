@@ -37,6 +37,12 @@ final class AliasFactory implements FactoryInterface
     private readonly string $alias;
 
     /**
+     * @var array<string, self> Registry of AliasFactory instances indexed by alias name.
+     *                          This MAY be used to cache and reuse factory instances.
+     */
+    private static array $aliases = [];
+
+    /**
      * Constructs the AliasFactory with the target service identifier.
      *
      * @param string $alias the identifier of the service to which this factory points
@@ -59,5 +65,20 @@ final class AliasFactory implements FactoryInterface
     public function __invoke(ContainerInterface $container): mixed
     {
         return $container->get($this->alias);
+    }
+
+    /**
+     * Retrieves or creates a cached AliasFactory for a given alias.
+     *
+     * This static method SHOULD be used to avoid instantiating multiple factories
+     * for the same alias unnecessarily. The same instance will be reused for each alias.
+     *
+     * @param string $alias the identifier to create or retrieve the factory for
+     *
+     * @return self an AliasFactory instance associated with the provided alias
+     */
+    public static function get(string $alias): self
+    {
+        return self::$aliases[$alias] ??= new self($alias);
     }
 }

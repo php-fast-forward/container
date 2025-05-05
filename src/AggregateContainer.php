@@ -41,7 +41,7 @@ class AggregateContainer implements ContainerInterface
     /**
      * @var ContainerInterface[] the array of containers aggregated by this instance
      */
-    private array $containers;
+    private array $containers = [];
 
     /**
      * @var array<string, mixed> a registry of already resolved service identifiers
@@ -58,12 +58,16 @@ class AggregateContainer implements ContainerInterface
      */
     public function __construct(PsrContainerInterface ...$containers)
     {
-        $this->containers = $containers;
-        $this->resolved   = [
-            self::ALIAS               => $this,
-            self::class               => $this,
-            ContainerInterface::class => $this,
+        $this->resolved = [
+            self::ALIAS                  => $this,
+            self::class                  => $this,
+            ContainerInterface::class    => $this,
+            PsrContainerInterface::class => $this,
         ];
+
+        foreach ($containers as $container) {
+            $this->append($container);
+        }
     }
 
     /**
@@ -76,6 +80,10 @@ class AggregateContainer implements ContainerInterface
     public function append(PsrContainerInterface $container): void
     {
         $this->containers[] = $container;
+
+        if (!isset($this->resolved[\get_class($container)])) {
+            $this->resolved[\get_class($container)] = $container;
+        }
     }
 
     /**
@@ -87,6 +95,7 @@ class AggregateContainer implements ContainerInterface
      */
     public function prepend(PsrContainerInterface $container): void
     {
+        $this->resolved[\get_class($container)] = $container;
         array_unshift($this->containers, $container);
     }
 
@@ -126,7 +135,8 @@ class AggregateContainer implements ContainerInterface
      *
      * @return mixed the resolved entry
      *
-     * @throws NotFoundException if the identifier cannot be found in any aggregated container
+     * @throws NotFoundException           if the identifier cannot be found in any aggregated container
+     * @throws ContainerExceptionInterface if the container cannot resolve the entry
      */
     public function get(string $id): mixed
     {
