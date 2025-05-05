@@ -52,23 +52,27 @@ function container(
         $initializer instanceof PsrContainerInterface    => $initializer,
         $initializer instanceof ServiceProviderInterface => new ServiceProviderContainer($initializer),
         $initializer instanceof ConfigInterface          => new ConfigContainer($initializer),
-        \is_string($initializer)
-            && class_exists($initializer) => new ($initializer)(),
-        default                           => throw InvalidArgumentException::forUnsupportedInitializer($initializer),
+        default                                          => null,
+    };
+
+    $resolve = static fn ($initializer) => match (true) {
+        \is_object($initializer)   => $getContainer($initializer),
+        class_exists($initializer) => $getContainer(new ($initializer)()),
+        default                    => throw InvalidArgumentException::forUnsupportedInitializer($initializer),
     };
 
     $configKey  = \sprintf('%s.%s', ConfigContainer::ALIAS, ContainerInterface::class);
 
     $containers = array_reduce(
         $initializers,
-        static function (array $containers, mixed $initializer) use ($getContainer, $configKey) {
-            $container    = $getContainer($initializer);
+        static function (array $containers, mixed $initializer) use ($resolve, $configKey) {
+            $container    = $resolve($initializer);
             $containers[] = $container;
 
             if ($container instanceof ConfigContainer) {
                 try {
                     foreach ($container->get($configKey) as $nested) {
-                        $containers[] = $getContainer($nested);
+                        $containers[] = $resolve($nested);
                     }
                 } catch (\Throwable) {
                     // Ignored

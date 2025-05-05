@@ -49,7 +49,7 @@ final class ContainerFunctionTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->configKey = sprintf('%s.%s', ConfigContainer::ALIAS, ContainerInterface::class);
+        $this->configKey = \sprintf('%s.%s', ConfigContainer::ALIAS, ContainerInterface::class);
     }
 
     public function testReturnsAutowireContainerWrappingAggregate(): void
