@@ -67,8 +67,6 @@ final class MethodFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container): mixed
     {
-        $class = $container->has($this->class) ? $container->get($this->class) : $this->class;
-
         $arguments = array_map(
             static fn ($argument) => \is_string($argument) && $container->has($argument)
                 ? $container->get($argument)
@@ -76,7 +74,7 @@ final class MethodFactory implements FactoryInterface
             $this->arguments
         );
 
-        $reflectionMethod = new \ReflectionMethod($class, $this->method);
+        $reflectionMethod = new \ReflectionMethod($this->class, $this->method);
 
         if (!$reflectionMethod->isPublic()) {
             throw RuntimeException::forNonPublicMethod($this->class, $this->method);
@@ -86,6 +84,6 @@ final class MethodFactory implements FactoryInterface
             return $reflectionMethod->invokeArgs(null, $arguments);
         }
 
-        return $reflectionMethod->invokeArgs($class, $arguments);
+        return $reflectionMethod->invokeArgs(new ($this->class)(), $arguments);
     }
 }
