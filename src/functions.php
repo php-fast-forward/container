@@ -48,9 +48,11 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
 function container(
     ConfigInterface|PsrContainerInterface|ServiceProviderInterface|string ...$initializers,
 ): ContainerInterface {
+    $aggregateContainer = new AggregateContainer();
+
     $getContainer = static fn ($initializer) => match (true) {
         $initializer instanceof PsrContainerInterface    => $initializer,
-        $initializer instanceof ServiceProviderInterface => new ServiceProviderContainer($initializer),
+        $initializer instanceof ServiceProviderInterface => new ServiceProviderContainer($initializer, $aggregateContainer),
         $initializer instanceof ConfigInterface          => new ConfigContainer($initializer),
         default                                          => null,
     };
@@ -63,28 +65,20 @@ function container(
 
     $configKey  = \sprintf('%s.%s', ConfigContainer::ALIAS, ContainerInterface::class);
 
-    $containers = array_reduce(
-        $initializers,
-        static function (array $containers, mixed $initializer) use ($resolve, $configKey) {
-            $container    = $resolve($initializer);
-            $containers[] = $container;
+    foreach ($initializers as $initializer) {
+        $container = $resolve($initializer);
+        $aggregateContainer->append($container);
 
-            if ($container instanceof ConfigContainer) {
-                try {
-                    foreach ($container->get($configKey) as $nested) {
-                        $containers[] = $resolve($nested);
-                    }
-                } catch (\Throwable) {
-                    // Ignored
+        if ($container instanceof ConfigContainer) {
+            try {
+                foreach ($container->get($configKey) as $nested) {
+                    $aggregateContainer->append($resolve($nested));
                 }
+            } catch (\Throwable) {
+                // Ignored
             }
-
-            return $containers;
-        },
-        []
-    );
-
-    $aggregateContainer = new AggregateContainer(...$containers);
+        }
+    }
 
     return new AutowireContainer($aggregateContainer);
 }
