@@ -65,4 +65,22 @@ final class RuntimeException extends \RuntimeException
             $method
         ));
     }
+
+    /**
+     * Creates an exception for an invalid parameter type.
+     *
+     * This method MUST be used when a parameter expected to represent a class name
+     * or interface name does not satisfy this constraint.
+     *
+     * @param string $parameter the name of the parameter with the invalid type
+     *
+     * @return self a RuntimeException instance with a descriptive message
+     */
+    public static function forInvalidParameterType(string $parameter): self
+    {
+        return new self(\sprintf(
+            'Parameter "%s" is not a valid type. It MUST be a class name or an interface name.',
+            $parameter
+        ));
+    }
 }

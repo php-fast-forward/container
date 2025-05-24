@@ -45,13 +45,6 @@ final class ContainerFunctionTest extends TestCase
 {
     use ProphecyTrait;
 
-    private string $configKey;
-
-    protected function setUp(): void
-    {
-        $this->configKey = \sprintf('%s.%s', ConfigContainer::ALIAS, ContainerInterface::class);
-    }
-
     public function testReturnsAutowireContainerWrappingAggregate(): void
     {
         $result = container();
@@ -86,8 +79,8 @@ final class ContainerFunctionTest extends TestCase
     public function testAcceptsConfigInterfaceAsInitializer(): void
     {
         $config = $this->prophesize(ConfigInterface::class);
-        $config->has($this->configKey)->willReturn(true);
-        $config->get($this->configKey)->willReturn([]);
+        $config->has(ContainerInterface::class)->willReturn(true);
+        $config->get(ContainerInterface::class)->willReturn([]);
 
         $container = container($config->reveal());
 
@@ -115,8 +108,8 @@ final class ContainerFunctionTest extends TestCase
         $nested = new DummyContainer();
 
         $config = $this->prophesize(ConfigInterface::class);
-        $config->has($this->configKey)->willReturn(true);
-        $config->get($this->configKey)->willReturn([$nested]);
+        $config->has(ContainerInterface::class)->willReturn(true);
+        $config->get(ContainerInterface::class)->willReturn([$nested]);
 
         $container = container($config->reveal());
 
@@ -126,8 +119,8 @@ final class ContainerFunctionTest extends TestCase
     public function testContainerSkipsThrowableThrownByConfigContainer(): void
     {
         $config = $this->prophesize(ConfigInterface::class);
-        $config->has($this->configKey)->willReturn(true);
-        $config->get($this->configKey)->willThrow(new \RuntimeException('unexpected'));
+        $config->has(ContainerInterface::class)->willReturn(true);
+        $config->get(ContainerInterface::class)->willThrow(new \RuntimeException('unexpected'));
 
         $container = container($config->reveal());
 

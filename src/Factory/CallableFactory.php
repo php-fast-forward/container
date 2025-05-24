@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace FastForward\Container\Factory;
 
+use FastForward\Container\Exception\RuntimeException;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -55,6 +56,32 @@ final class CallableFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container): mixed
     {
-        return \call_user_func($this->callable, $container);
+        $arguments = $this->getArguments($container, new \ReflectionFunction($this->callable));
+
+        return $this->callable->call($container, ...$arguments);
+    }
+
+    /**
+     * Retrieves the arguments for the callable from the container.
+     *
+     * @param ContainerInterface  $container the PSR-11 container for dependency resolution
+     * @param \ReflectionFunction $function  the reflection function of the callable
+     *
+     * @return array the resolved arguments for the callable
+     */
+    private function getArguments(ContainerInterface $container, \ReflectionFunction $function): array
+    {
+        $arguments = [];
+
+        foreach ($function->getParameters() as $parameter) {
+            if (!$parameter->getType() || $parameter->getType()->isBuiltin()) {
+                throw RuntimeException::forInvalidParameterType($parameter->getName());
+            }
+
+            $className   = $parameter->getType()->getName();
+            $arguments[] = $container->get($className);
+        }
+
+        return $arguments;
     }
 }

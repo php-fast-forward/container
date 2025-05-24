@@ -39,7 +39,7 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
  * composed of all resolved sources.
  *
  * @param ConfigInterface|PsrContainerInterface|ServiceProviderInterface|string ...$initializers
- *      A variadic list of container initializers, optionally including config or provider classes.
+ *        A variadic list of container initializers, optionally including config or provider classes.
  *
  * @return ContainerInterface the composed and autowire-enabled container
  *

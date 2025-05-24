@@ -46,4 +46,15 @@ final class RuntimeExceptionTest extends TestCase
             $exception->getMessage()
         );
     }
+
+    public function testForInvalidParameterTypeReturnsProperException(): void
+    {
+        $exception = RuntimeException::forInvalidParameterType('logger');
+
+        self::assertInstanceOf(RuntimeException::class, $exception);
+        self::assertSame(
+            'Parameter "logger" is not a valid type. It MUST be a class name or an interface name.',
+            $exception->getMessage()
+        );
+    }
 }
