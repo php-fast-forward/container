@@ -138,4 +138,63 @@ final class ServiceProviderContainerTest extends TestCase
 
         self::assertSame($service, $this->container->get('foo'));
     }
+
+    public function testApplyServiceExtensionByClassName(): void
+    {
+        $service = new class() {
+            public bool $extended = false;
+        };
+
+        $extension = static function (ContainerInterface $c, object $service): void {
+            $service->extended = true;
+        };
+
+        $this->provider->getFactories()->willReturn(['service.id' => static fn () => $service]);
+        $this->provider->getExtensions()->willReturn([get_class($service) => $extension]);
+
+        $resolved = $this->container->get('service.id');
+
+        self::assertTrue($resolved->extended);
+    }
+
+    public function testApplyServiceExtensionByIdAndClass(): void
+    {
+        $service = new class() {
+            public array $calls = [];
+        };
+
+        $byIdExtension = static function (ContainerInterface $c, object $service): void {
+            $service->calls[] = 'id';
+        };
+
+        $byClassExtension = static function (ContainerInterface $c, object $service): void {
+            $service->calls[] = 'class';
+        };
+
+        $this->provider->getFactories()->willReturn(['dual' => static fn () => $service]);
+        $this->provider->getExtensions()->willReturn([
+            'dual' => $byIdExtension,
+            get_class($service) => $byClassExtension,
+        ]);
+
+        $resolved = $this->container->get('dual');
+
+        self::assertSame(['id', 'class'], $resolved->calls);
+    }
+
+    public function testApplyServiceIgnoresNonCallableExtensions(): void
+    {
+        $service = new \stdClass();
+
+        $this->provider->getFactories()->willReturn(['not.callable' => static fn () => $service]);
+        $this->provider->getExtensions()->willReturn([
+            'not.callable' => 'not_a_function',
+            get_class($service) => 123,
+        ]);
+
+        $resolved = $this->container->get('not.callable');
+
+        self::assertSame($service, $resolved); // Should still return the service
+        self::assertObjectNotHasProperty('extended', $resolved); // No extension applied
+    }
 }

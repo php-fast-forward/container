@@ -86,16 +86,49 @@ final class ServiceProviderContainer implements ContainerInterface
         }
 
         try {
-            $service    = $factory[$id]($this->wrapperContainer);
-            $extensions = $this->serviceProvider->getExtensions();
-
-            if (\array_key_exists($id, $extensions) && \is_callable($extensions[$id])) {
-                $extensions[$id]($this->wrapperContainer, $service);
-            }
+            $service = call_user_func($factory[$id], $this->wrapperContainer);
+            $this->applyServiceExtensions($id, $service);
         } catch (ContainerExceptionInterface $containerException) {
             throw ContainerException::forInvalidService($id, $containerException);
         }
 
         return $this->cache[$id] = $service;
+    }
+
+    /**
+     * Applies service extensions to the constructed service instance.
+     *
+     * This method SHALL inspect the set of extensions returned by the service provider,
+     * checking both the original service identifier and the concrete class name of the
+     * service instance. If a corresponding extension is found, it MUST be a callable and
+     * SHALL be invoked with the container and service instance as arguments.
+     *
+     * This mechanism allows for post-construction decoration or augmentation of the
+     * resolved service. Extensions MAY be used to modify or enhance the behavior or state
+     * of services after they have been created.
+     *
+     * Implementations MUST ensure that only valid callables are executed and SHOULD avoid
+     * side effects beyond service enhancement. If an extension fails or is not callable,
+     * the method SHALL silently ignore it unless explicitly configured otherwise.
+     *
+     * @param string $id      The identifier of the resolved service.
+     * @param mixed  $service The service instance to be extended.
+     *
+     * @return void
+     *
+     * @throws ContainerException If any extension fails during invocation.
+     */
+    private function applyServiceExtensions(string $id, mixed $service): void
+    {
+        $class = get_class($service);
+        $extensions = $this->serviceProvider->getExtensions();
+
+        if (\array_key_exists($id, $extensions) && \is_callable($extensions[$id])) {
+            $extensions[$id]($this->wrapperContainer, $service);
+        }
+
+        if ($id !== $class && \array_key_exists($class, $extensions) && \is_callable($extensions[$class])) {
+            $extensions[$class]($this->wrapperContainer, $service);
+        }
     }
 }
