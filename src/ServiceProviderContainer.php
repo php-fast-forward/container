@@ -87,12 +87,19 @@ final class ServiceProviderContainer implements ContainerInterface
 
         try {
             $service = call_user_func($factory[$id], $this->wrapperContainer);
-            $this->applyServiceExtensions($id, $service);
+            $class   = get_class($service);
+            $this->applyServiceExtensions($id, $class, $service);
         } catch (ContainerExceptionInterface $containerException) {
             throw ContainerException::forInvalidService($id, $containerException);
         }
 
-        return $this->cache[$id] = $service;
+        $this->cache[$id] = $service;
+
+        if ($id !== $class && !isset($this->cache[$class])) {
+            $this->cache[$class] = $service;
+        }
+
+        return $service;
     }
 
     /**
@@ -118,9 +125,8 @@ final class ServiceProviderContainer implements ContainerInterface
      *
      * @throws ContainerException If any extension fails during invocation.
      */
-    private function applyServiceExtensions(string $id, mixed $service): void
+    private function applyServiceExtensions(string $id, string $class, mixed $service): void
     {
-        $class = get_class($service);
         $extensions = $this->serviceProvider->getExtensions();
 
         if (\array_key_exists($id, $extensions) && \is_callable($extensions[$id])) {
