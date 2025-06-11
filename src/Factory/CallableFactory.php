@@ -58,7 +58,7 @@ final class CallableFactory implements FactoryInterface
     {
         $arguments = $this->getArguments($container, new \ReflectionFunction($this->callable));
 
-        return $this->callable->call($container, ...$arguments);
+        return call_user_func_array($this->callable, $arguments);
     }
 
     /**

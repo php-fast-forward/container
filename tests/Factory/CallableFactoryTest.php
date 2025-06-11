@@ -46,18 +46,6 @@ final class CallableFactoryTest extends TestCase
         self::assertTrue($result->resolved);
     }
 
-    public function testInvokeWillBindToContainer(): void
-    {
-        $container = $this->prophesize(ContainerInterface::class);
-        $expected  = $container->reveal();
-
-        $factory = new CallableFactory(fn () => $this);
-
-        $actual = $factory($expected);
-
-        self::assertSame($expected, $actual);
-    }
-
     public function testClosureReceivesContainerDependenciesAsArgument(): void
     {
         $container        = $this->prophesize(ContainerInterface::class);

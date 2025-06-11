@@ -127,7 +127,11 @@ final class ServiceProviderContainer implements ContainerInterface
             $extensions[$id]($this->wrapperContainer, $service);
         }
 
-        if ($id !== $class && \array_key_exists($class, $extensions) && \is_callable($extensions[$class])) {
+        if ($id !== $class
+            && !isset($this->cache[$class])
+            && \array_key_exists($class, $extensions)
+            && \is_callable($extensions[$class])
+        ) {
             $extensions[$class]($this->wrapperContainer, $service);
         }
     }
