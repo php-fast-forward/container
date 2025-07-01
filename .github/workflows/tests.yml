@@ -16,14 +16,54 @@ concurrency:
     cancel-in-progress: false
 
 jobs:
-    tests:
+    wiki:
+        name: Update Wiki
         runs-on: ubuntu-latest
 
-        permissions:
-            # Give the default GITHUB_TOKEN write permission to commit and push the
-            # added or changed files to the repository.
-            contents: write
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                submodules: recursive
+                ref: ${{ github.head_ref || github.ref_name }}
 
+            - name: Install dependencies
+              uses: php-actions/composer@v6
+              env:
+                  COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ github.token }}"} }'
+              with:
+                  php_version: '8.4'
+
+            - name: Create Docs Markdown
+              uses: phpDocumentor/phpDocumentor@v3.8.0
+              with:
+                target: 'docs/wiki'
+                template: 'vendor/saggre/phpdocumentor-markdown/themes/markdown'
+
+            - name: Commit submodule changes
+              run: |
+                git config --global user.email "github-actions[bot]@users.noreply.github.com"
+                git config --global user.name "github-actions[bot]"
+                cd docs/wiki
+                git add .
+                if git diff --cached --quiet; then
+                    echo "No changes to commit in submodule"
+                    exit 0
+                fi
+                git commit -m "Update wiki content"
+                git push origin HEAD:refs/heads/${{ github.head_ref || github.ref_name }}
+                cd ../..
+                git submodule update --remote --merge
+                git add docs/wiki
+                if git diff --cached --quiet; then
+                    echo "No submodule reference change to commit"
+                    exit 0
+                fi
+                git commit -m "Update wiki submodule reference [skip ci]"
+                git push origin HEAD:refs/heads/${{ github.head_ref || github.ref_name }}
+    tests:
+        name: Run Tests and Deploy API Docs & Coverage
+        runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
               with:
@@ -79,24 +119,6 @@ jobs:
               with:
                 target: 'public/'
                 template: 'default'
-
-            - name: Update Wiki
-              uses: phpDocumentor/phpDocumentor@v3.8.0
-              with:
-                target: 'docs/wiki'
-                template: 'vendor/saggre/phpdocumentor-markdown/themes/markdown'
-
-            - name: Commit submodule changes
-              run: |
-                git config --global user.email "github-actions[bot]@users.noreply.github.com"
-                git config --global user.name "github-actions[bot]"
-                cd docs/wiki
-                git add .
-                git commit -m "Update wiki content [skip ci]" || echo "No changes to commit"
-                git push origin HEAD:refs/heads/${{ github.head_ref || github.ref_name }}
-                cd ../..
-                git submodule update --remote --merge
-                git push
 
             - name: Upload artifact
               if: github.ref == 'refs/heads/main'
