@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Factory;
@@ -18,13 +19,14 @@ namespace FastForward\Container\Factory;
 use Psr\Container\ContainerInterface;
 
 /**
- * Class ServiceFactory.
- *
  * This factory wraps a predefined service instance and returns it directly upon invocation.
+ *
  * It SHALL be used when a fixed service object must be registered in a container using
- * a factory interface. This ensures immutability and predictable resolution.
+ * a factory interface.
  *
  * The returned value MUST be the exact same instance provided at construction.
+ *
+ * This ensures immutability and predictable resolution.
  *
  * @package FastForward\Container\Factory
  */

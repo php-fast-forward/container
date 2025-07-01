@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container;
@@ -21,11 +22,11 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
 /**
- * Class AutowireContainer.
- *
  * A composite container implementation that wraps another PSR-11 container and appends
- * an internal PHP-DI autowiring container. It provides auto-resolution of services
- * while maintaining compatibility with pre-defined service providers.
+ * an internal PHP-DI autowiring container.
+ *
+ * It provides auto-resolution of services while maintaining compatibility with
+ * pre-defined service providers.
  *
  * This container MUST be used in scenarios where automatic dependency resolution
  * via autowiring is required alongside explicitly registered services.
@@ -73,16 +74,6 @@ final class AutowireContainer implements ContainerInterface
         return $this->container->get($id);
     }
 
-    /**
-     * Determines whether the container can return an entry for the given identifier.
-     *
-     * This method attempts to resolve the entry to confirm that it is not only registered,
-     * but also valid and free of runtime errors during instantiation.
-     *
-     * @param string $id identifier of the entry to check
-     *
-     * @return bool true if the container can return the entry, false otherwise
-     */
     public function has(string $id): bool
     {
         if (!$this->container->has($id)) {

@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Factory;
@@ -19,13 +20,14 @@ use FastForward\Container\Exception\RuntimeException;
 use Psr\Container\ContainerInterface;
 
 /**
- * Class MethodFactory.
- *
  * A factory that invokes a specified method on a class using reflection and the PSR-11 container.
  *
  * This factory MUST be used when service creation requires calling a non-constructor method,
- * and supports both static and instance methods. If the method is not public, a RuntimeException
- * SHALL be thrown. Arguments MAY be resolved from the container if passed as service identifiers.
+ * and supports both static and instance methods.
+ *
+ * If the method is not public, a RuntimeException SHALL be thrown.
+ *
+ * Arguments MAY be resolved from the container if passed as service identifiers.
  *
  * @package FastForward\Container\Factory
  */
@@ -58,12 +60,12 @@ final class MethodFactory implements FactoryInterface
      * Static methods are invoked without instantiating the class. If the method is not public,
      * this method MUST throw a RuntimeException.
      *
-     * @param ContainerInterface $container the container used to resolve the class and arguments
+     * @param ContainerInterface $container The container used to resolve the class and arguments
      *
-     * @return mixed the result of invoking the method
+     * @return mixed The result of invoking the method
      *
-     * @throws \ReflectionException if the method does not exist
-     * @throws RuntimeException     if the method is not public
+     * @throws \ReflectionException If the method does not exist
+     * @throws RuntimeException     If the method is not public
      */
     public function __invoke(ContainerInterface $container): mixed
     {

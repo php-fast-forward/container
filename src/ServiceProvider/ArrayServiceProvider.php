@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\ServiceProvider;
@@ -53,21 +54,11 @@ final class ArrayServiceProvider implements ServiceProviderInterface
         $this->extensions = $extensions;
     }
 
-    /**
-     * Returns the service factories defined in this provider.
-     *
-     * @return array<string, callable> an array of service ID to factory mappings
-     */
     public function getFactories(): array
     {
         return $this->factories;
     }
 
-    /**
-     * Returns the service extensions defined in this provider.
-     *
-     * @return array<string, callable> an array of service ID to extension mappings
-     */
     public function getExtensions(): array
     {
         return $this->extensions;

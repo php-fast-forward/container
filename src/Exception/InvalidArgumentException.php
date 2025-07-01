@@ -11,15 +11,16 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Exception;
 
 /**
- * Class InvalidArgumentException.
+ * Exception thrown when an invalid or unsupported argument is passed to a function or method within the container.
  *
- * Exception thrown when an argument passed to a function or method is invalid or unsupported.
- * This exception MUST be used when a container initializer does not match any of the allowed types.
+ * This exception helps identify and handle errors related to invalid or unrecognized arguments,
+ * especially when an unsupported initializer type is provided to the container builder.
  *
  * @package FastForward\Container\Exception
  */

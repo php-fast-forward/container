@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Tests;
@@ -141,7 +142,7 @@ final class ServiceProviderContainerTest extends TestCase
 
     public function testApplyServiceExtensionByClassName(): void
     {
-        $service = new class() {
+        $service = new class {
             public bool $extended = false;
         };
 
@@ -150,7 +151,7 @@ final class ServiceProviderContainerTest extends TestCase
         };
 
         $this->provider->getFactories()->willReturn(['service.id' => static fn () => $service]);
-        $this->provider->getExtensions()->willReturn([get_class($service) => $extension]);
+        $this->provider->getExtensions()->willReturn([\get_class($service) => $extension]);
 
         $resolved = $this->container->get('service.id');
 
@@ -159,7 +160,7 @@ final class ServiceProviderContainerTest extends TestCase
 
     public function testApplyServiceExtensionByIdAndClass(): void
     {
-        $service = new class() {
+        $service = new class {
             public array $calls = [];
         };
 
@@ -173,8 +174,8 @@ final class ServiceProviderContainerTest extends TestCase
 
         $this->provider->getFactories()->willReturn(['dual' => static fn () => $service]);
         $this->provider->getExtensions()->willReturn([
-            'dual' => $byIdExtension,
-            get_class($service) => $byClassExtension,
+            'dual'               => $byIdExtension,
+            \get_class($service) => $byClassExtension,
         ]);
 
         $resolved = $this->container->get('dual');
@@ -188,8 +189,8 @@ final class ServiceProviderContainerTest extends TestCase
 
         $this->provider->getFactories()->willReturn(['not.callable' => static fn () => $service]);
         $this->provider->getExtensions()->willReturn([
-            'not.callable' => 'not_a_function',
-            get_class($service) => 123,
+            'not.callable'       => 'not_a_function',
+            \get_class($service) => 123,
         ]);
 
         $resolved = $this->container->get('not.callable');

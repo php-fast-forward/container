@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Exception;
@@ -18,8 +19,6 @@ namespace FastForward\Container\Exception;
 use Psr\Container\NotFoundExceptionInterface;
 
 /**
- * Class NotFoundException.
- *
  * Exception thrown when a requested service identifier is not found in the container.
  *
  * This class MUST be used in PSR-11 container implementations to represent an error

@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container;
@@ -35,17 +36,15 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
  * definitions from its configuration using the key `${alias}.${ContainerInterface::class}`.
  * Any invalid initializers MUST result in an InvalidArgumentException being thrown.
  *
- * The final container returned is an AutowireContainer that wraps an AggregateContainer
- * composed of all resolved sources.
+ * The final container returned is an AutowireContainer that wraps an
+ * AggregateContainer composed of all resolved sources.
  *
  * @param ConfigInterface|PsrContainerInterface|ServiceProviderInterface|string ...$initializers
- *        A variadic list of container initializers, optionally including config or provider classes.
+ *                                                                                               A variadic list of container initializers, optionally including config or provider classes.
  *
  * @return ContainerInterface the composed and autowire-enabled container
  *
- * @throws \InvalidArgumentException if an unsupported initializer type is encountered
- *
- * @package FastForward\Container
+ * @throws InvalidArgumentException if an unsupported initializer type is encountered
  */
 function container(
     ConfigInterface|PsrContainerInterface|ServiceProviderInterface|string ...$initializers,

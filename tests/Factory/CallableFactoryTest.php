@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Tests\Factory;
@@ -38,7 +39,7 @@ final class CallableFactoryTest extends TestCase
     {
         $container = $this->prophesize(ContainerInterface::class)->reveal();
 
-        $factory = new CallableFactory(fn () => (object) ['resolved' => true]);
+        $factory = new CallableFactory(static fn () => (object) ['resolved' => true]);
 
         $result = $factory($container);
 
@@ -55,7 +56,7 @@ final class CallableFactoryTest extends TestCase
         $container->get(ServiceProviderInterface::class)->willReturn($serviceProvider);
         $container->get(FactoryInterface::class)->willReturn($factoryInterface);
 
-        $factory = new CallableFactory(fn (
+        $factory = new CallableFactory(static fn (
             ServiceProviderInterface $serviceProvider,
             FactoryInterface $factoryInterface
         ) => compact('serviceProvider', 'factoryInterface'));
@@ -69,7 +70,7 @@ final class CallableFactoryTest extends TestCase
     {
         $container = $this->prophesize(ContainerInterface::class)->reveal();
 
-        $factory = new CallableFactory(fn (string $notAClass) => $notAClass);
+        $factory = new CallableFactory(static fn (string $notAClass) => $notAClass);
 
         $this->expectException(RuntimeException::class);
 

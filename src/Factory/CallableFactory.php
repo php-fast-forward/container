@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Factory;
@@ -19,13 +20,12 @@ use FastForward\Container\Exception\RuntimeException;
 use Psr\Container\ContainerInterface;
 
 /**
- * Class CallableFactory.
- *
  * A factory that wraps a user-provided callable and executes it when invoked.
- * The callable MUST accept a PSR-11 ContainerInterface as its first and only argument.
- * This allows dynamic resolution of services using the container context.
  *
+ * The callable MUST accept a PSR-11 ContainerInterface as its first and only argument.
  * This factory SHALL be used when the construction logic must be fully delegated to a closure.
+ *
+ * This class allows dynamic resolution of services using the container context.
  *
  * @package FastForward\Container\Factory
  */
@@ -58,7 +58,7 @@ final class CallableFactory implements FactoryInterface
     {
         $arguments = $this->getArguments($container, new \ReflectionFunction($this->callable));
 
-        return call_user_func_array($this->callable, $arguments);
+        return \call_user_func_array($this->callable, $arguments);
     }
 
     /**

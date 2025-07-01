@@ -11,14 +11,14 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Exception;
 
 /**
- * Class RuntimeException.
- *
  * Exception type used to represent runtime errors specific to the container context.
+ *
  * This class MUST be thrown when an error occurs due to invalid runtime behavior
  * such as misconfigured extensions or illegal method accessibility.
  *

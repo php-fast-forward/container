@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container;
@@ -21,15 +22,12 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
 /**
- * Class AggregateContainer.
- *
  * Aggregates multiple PSR-11 containers and delegates resolution requests among them.
- * This container implementation MUST respect PSR-11 expectations and SHALL throw a
+ *
+ * This container implementation respects PSR-11 expectations and throws a
  * NotFoundException when a requested service cannot be found in any delegated container.
  *
- * It MAY cache resolved entries to prevent redundant calls to delegated containers.
- *
- * @package FastForward\Container
+ * It caches resolved entries to prevent redundant calls to delegated containers.
  */
 class AggregateContainer implements ContainerInterface
 {
@@ -168,7 +166,7 @@ class AggregateContainer implements ContainerInterface
     /**
      * Determines whether the identifier has already been resolved by this container.
      *
-     * This method SHALL be used internally to avoid unnecessary delegation to sub-containers.
+     * This method is used internally to avoid unnecessary delegation to sub-containers.
      *
      * @param string $id the identifier to check
      *

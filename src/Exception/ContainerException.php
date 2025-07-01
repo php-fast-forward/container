@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Exception;
@@ -18,9 +19,8 @@ namespace FastForward\Container\Exception;
 use Psr\Container\ContainerExceptionInterface;
 
 /**
- * Class ContainerException.
+ * Exception type for container-related errors while resolving services.
  *
- * Exception type for container-related errors in the event dispatcher.
  * This class MUST be used to signal problems occurring during service resolution
  * from a container that complies with PSR-11.
  *

@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container;
@@ -18,11 +19,11 @@ namespace FastForward\Container;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 /**
- * Interface ContainerInterface
- *
  * Extends the PSR-11 ContainerInterface to provide a consistent, domain-specific container interface
- * for the FastForward ecosystem. This interface SHALL serve as the preferred type hint within FastForward
- * components, while maintaining full compatibility with PSR-11 standards.
+ * for the FastForward ecosystem.
+ *
+ * This interface SHALL serve as the preferred type hint within FastForward components, while maintaining
+ * full compatibility with PSR-11 standards.
  *
  * Implementations of this interface MUST adhere to the behavior defined by PSR-11, specifically:
  *

@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container;
@@ -22,12 +23,12 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 /**
- * Class ServiceProviderContainer
- *
- * Implements a PSR-11 compliant dependency injection container using a service provider.
+ * Implements a PSR-11 compliant dependency injection container using a container-interop/service-provider.
  *
  * This container SHALL resolve services by delegating to the factories and extensions defined in the
- * provided ServiceProviderInterface instance. Services are lazily instantiated on first request and
+ * provided ServiceProviderInterface instance.
+ *
+ * Services are lazily instantiated on first request and
  * cached for subsequent retrieval, enforcing singleton-like behavior within the container scope.
  *
  * The container supports service extension mechanisms by allowing callable extensions to modify or
@@ -42,10 +43,6 @@ final class ServiceProviderContainer implements ContainerInterface
 {
     /**
      * The service provider supplying factories and extensions for service construction.
-     *
-     * This property MUST reference a valid ServiceProviderInterface implementation.
-     *
-     * @var ServiceProviderInterface
      */
     private ServiceProviderInterface $serviceProvider;
 
@@ -53,8 +50,6 @@ final class ServiceProviderContainer implements ContainerInterface
      * The container instance used for service resolution and extension application.
      *
      * This property MAY reference another container for delegation, or default to this container instance.
-     *
-     * @var PsrContainerInterface
      */
     private PsrContainerInterface $wrapperContainer;
 
@@ -73,8 +68,8 @@ final class ServiceProviderContainer implements ContainerInterface
      * This constructor SHALL initialize the container with a service provider and an optional delegating container.
      * If no wrapper container is provided, the container SHALL delegate to itself.
      *
-     * @param ServiceProviderInterface $serviceProvider The service provider supplying factories and extensions.
-     * @param PsrContainerInterface|null $wrapperContainer An optional container for delegation. Defaults to self.
+     * @param ServiceProviderInterface   $serviceProvider  the service provider supplying factories and extensions
+     * @param null|PsrContainerInterface $wrapperContainer An optional container for delegation. Defaults to self.
      */
     public function __construct(
         ServiceProviderInterface $serviceProvider,
@@ -89,8 +84,9 @@ final class ServiceProviderContainer implements ContainerInterface
      *
      * This method MUST return true if the entry exists in the cache or factories, false otherwise.
      *
-     * @param string $id Identifier of the entry to look for.
-     * @return bool True if the entry exists, false otherwise.
+     * @param string $id identifier of the entry to look for
+     *
+     * @return bool true if the entry exists, false otherwise
      */
     public function has(string $id): bool
     {
@@ -125,8 +121,8 @@ final class ServiceProviderContainer implements ContainerInterface
         }
 
         try {
-            $service = call_user_func($factory[$id], $this->wrapperContainer);
-            $class   = get_class($service);
+            $service = \call_user_func($factory[$id], $this->wrapperContainer);
+            $class   = \get_class($service);
             $this->applyServiceExtensions($id, $class, $service);
         } catch (ContainerExceptionInterface $containerException) {
             throw ContainerException::forInvalidService($id, $containerException);
@@ -152,13 +148,11 @@ final class ServiceProviderContainer implements ContainerInterface
      * Extensions MAY be used to modify or enhance services after creation. Invalid extensions
      * (non-callables) SHALL be ignored silently.
      *
-     * @param string $id The identifier of the resolved service.
-     * @param string $class The fully qualified class name of the service.
-     * @param mixed $service The service instance to apply extensions to.
+     * @param string $id      the identifier of the resolved service
+     * @param string $class   the fully qualified class name of the service
+     * @param mixed  $service the service instance to apply extensions to
      *
-     * @return void
-     *
-     * @throws ContainerException If an extension callable fails during execution.
+     * @throws ContainerException if an extension callable fails during execution
      */
     private function applyServiceExtensions(string $id, string $class, mixed $service): void
     {

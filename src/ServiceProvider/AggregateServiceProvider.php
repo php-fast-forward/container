@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @link      https://github.com/php-fast-forward/container
  * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\ServiceProvider;
@@ -21,9 +22,8 @@ use Interop\Container\ServiceProviderInterface;
 use Psr\Container\ContainerInterface;
 
 /**
- * Class AggregateServiceProvider.
- *
  * Aggregates multiple service providers into a single provider.
+ *
  * This class MUST be used to compose a unified list of factories and extensions
  * from several ServiceProviderInterface implementations.
  *
