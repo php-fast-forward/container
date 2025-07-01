@@ -7,13 +7,14 @@
 >
     <title>phpDocumentor</title>
     <paths>
-        <output>public/phpdoc</output>
+        <output>docs/wiki</output>
     </paths>
-    <version number="3.0.0">
+    <version number="latest">
         <api>
             <source dsn=".">
                 <path>src</path>
             </source>
         </api>
     </version>
+    <template name="vendor/saggre/phpdocumentor-markdown/themes/markdown"  />
 </phpdocumentor>

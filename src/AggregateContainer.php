@@ -28,6 +28,8 @@ use Psr\Container\NotFoundExceptionInterface;
  * NotFoundException when a requested service cannot be found in any delegated container.
  *
  * It caches resolved entries to prevent redundant calls to delegated containers.
+ *
+ * @package FastForward\Container
  */
 class AggregateContainer implements ContainerInterface
 {
