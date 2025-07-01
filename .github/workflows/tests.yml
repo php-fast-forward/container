@@ -26,6 +26,11 @@ jobs:
                 submodules: recursive
                 ref: ${{ github.head_ref || github.ref_name }}
 
+            - name: Get Composer Cache Directory
+              id: composer-cache
+              run: |
+                  echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
             - name: Cache Composer dependencies
               uses: actions/cache@v4
               with:
