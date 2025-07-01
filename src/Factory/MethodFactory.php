@@ -84,6 +84,12 @@ final class MethodFactory implements FactoryInterface
             return $reflectionMethod->invokeArgs(null, $arguments);
         }
 
-        return $reflectionMethod->invokeArgs(new ($this->class)(), $arguments);
+        try {
+            $object = $container->get($this->class);
+        } catch (\Throwable) {
+            $object = new ($this->class)();
+        }
+
+        return $reflectionMethod->invokeArgs($object, $arguments);
     }
 }
