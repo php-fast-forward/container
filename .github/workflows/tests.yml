@@ -150,7 +150,7 @@ jobs:
               uses: php-actions/composer@v6
               with:
                 php_version: '8.4'
-                command: 'docs -- --output=public/ --template="default"'
+                command: 'docs -- --target=public/ --template="default"'
 
             - name: Upload artifact
               if: github.ref == 'refs/heads/main'
