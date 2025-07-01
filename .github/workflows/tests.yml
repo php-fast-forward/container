@@ -82,6 +82,9 @@ jobs:
 
             - name: Update Wiki
               uses: phpDocumentor/phpDocumentor@v3.8.0
+              with:
+                target: 'docs/wiki'
+                template: 'vendor/saggre/phpdocumentor-markdown/themes/markdown'
 
             - name: Commit submodule changes
               run: |
