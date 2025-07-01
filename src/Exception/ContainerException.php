@@ -23,6 +23,8 @@ use Psr\Container\ContainerExceptionInterface;
  * Exception type for container-related errors in the event dispatcher.
  * This class MUST be used to signal problems occurring during service resolution
  * from a container that complies with PSR-11.
+ *
+ * @package FastForward\Container\Exception
  */
 final class ContainerException extends \Exception implements ContainerExceptionInterface
 {

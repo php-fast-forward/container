@@ -21,23 +21,61 @@ use Interop\Container\ServiceProviderInterface;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
+/**
+ * Class ServiceProviderContainer
+ *
+ * Implements a PSR-11 compliant dependency injection container using a service provider.
+ *
+ * This container SHALL resolve services by delegating to the factories and extensions defined in the
+ * provided ServiceProviderInterface instance. Services are lazily instantiated on first request and
+ * cached for subsequent retrieval, enforcing singleton-like behavior within the container scope.
+ *
+ * The container supports service extension mechanisms by allowing callable extensions to modify or
+ * enhance services after construction, based on the service identifier or its concrete class name.
+ *
+ * If an optional wrapper container is provided, it SHALL be passed to service factories and extensions,
+ * allowing for delegation or decoration of service resolution. If omitted, the container defaults to itself.
+ *
+ * @package FastForward\Container
+ */
 final class ServiceProviderContainer implements ContainerInterface
 {
     /**
-     * @var ServiceProviderInterface provides factories and extensions for service construction
+     * The service provider supplying factories and extensions for service construction.
+     *
+     * This property MUST reference a valid ServiceProviderInterface implementation.
+     *
+     * @var ServiceProviderInterface
      */
     private ServiceProviderInterface $serviceProvider;
 
     /**
-     * @var ContainerInterface the underlying container used for delegation, if available
+     * The container instance used for service resolution and extension application.
+     *
+     * This property MAY reference another container for delegation, or default to this container instance.
+     *
+     * @var PsrContainerInterface
      */
     private PsrContainerInterface $wrapperContainer;
 
     /**
-     * @var array<string, mixed> cached resolved services by their identifiers
+     * Cache of resolved services keyed by their identifier or class name.
+     *
+     * This array SHALL store already constructed services to enforce singleton-like behavior within the container scope.
+     *
+     * @var array<string, mixed>
      */
     private array $cache;
 
+    /**
+     * Constructs a new ServiceProviderContainer instance.
+     *
+     * This constructor SHALL initialize the container with a service provider and an optional delegating container.
+     * If no wrapper container is provided, the container SHALL delegate to itself.
+     *
+     * @param ServiceProviderInterface $serviceProvider The service provider supplying factories and extensions.
+     * @param PsrContainerInterface|null $wrapperContainer An optional container for delegation. Defaults to self.
+     */
     public function __construct(
         ServiceProviderInterface $serviceProvider,
         ?PsrContainerInterface $wrapperContainer = null,
@@ -49,9 +87,10 @@ final class ServiceProviderContainer implements ContainerInterface
     /**
      * Determines if the container can return an entry for the given identifier.
      *
-     * @param string $id identifier of the entry to look for
+     * This method MUST return true if the entry exists in the cache or factories, false otherwise.
      *
-     * @return bool true if the entry exists, false otherwise
+     * @param string $id Identifier of the entry to look for.
+     * @return bool True if the entry exists, false otherwise.
      */
     public function has(string $id): bool
     {
@@ -110,20 +149,16 @@ final class ServiceProviderContainer implements ContainerInterface
      * service instance. If a corresponding extension is found, it MUST be a callable and
      * SHALL be invoked with the container and service instance as arguments.
      *
-     * This mechanism allows for post-construction decoration or augmentation of the
-     * resolved service. Extensions MAY be used to modify or enhance the behavior or state
-     * of services after they have been created.
+     * Extensions MAY be used to modify or enhance services after creation. Invalid extensions
+     * (non-callables) SHALL be ignored silently.
      *
-     * Implementations MUST ensure that only valid callables are executed and SHOULD avoid
-     * side effects beyond service enhancement. If an extension fails or is not callable,
-     * the method SHALL silently ignore it unless explicitly configured otherwise.
-     *
-     * @param string $id      The identifier of the resolved service.
-     * @param mixed  $service The service instance to be extended.
+     * @param string $id The identifier of the resolved service.
+     * @param string $class The fully qualified class name of the service.
+     * @param mixed $service The service instance to apply extensions to.
      *
      * @return void
      *
-     * @throws ContainerException If any extension fails during invocation.
+     * @throws ContainerException If an extension callable fails during execution.
      */
     private function applyServiceExtensions(string $id, string $class, mixed $service): void
     {

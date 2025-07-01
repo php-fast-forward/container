@@ -44,6 +44,8 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
  * @return ContainerInterface the composed and autowire-enabled container
  *
  * @throws \InvalidArgumentException if an unsupported initializer type is encountered
+ *
+ * @package FastForward\Container
  */
 function container(
     ConfigInterface|PsrContainerInterface|ServiceProviderInterface|string ...$initializers,

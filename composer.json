@@ -23,6 +23,7 @@
     },
     "require-dev": {
         "coisa/php-cs-fixer": "^2.1",
+        "phpdocumentor/shim": "^3.8",
         "phpspec/prophecy-phpunit": "^2.3",
         "phpunit/phpunit": "^9.6 || ^10.5 || ^11.5"
     },
@@ -41,7 +42,10 @@
         }
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "phpdocumentor/shim": true
+        }
     },
     "extra": {
         "branch-alias": {
@@ -51,6 +55,7 @@
     "scripts": {
         "cs-check": "php-cs-fixer fix --dry-run --diff",
         "cs-fix": "php-cs-fixer fix",
+        "docs": "phpdoc",
         "mutation-testing": "infection --threads=4",
         "pre-commit": [
             "@cs-check",
