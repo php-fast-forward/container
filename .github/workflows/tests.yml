@@ -26,6 +26,21 @@ jobs:
                 submodules: recursive
                 ref: ${{ github.head_ref || github.ref_name }}
 
+            - name: Cache Composer dependencies
+              uses: actions/cache@v4
+              with:
+                path: ${{ steps.composer-cache.outputs.dir }}
+                key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+                restore-keys: |
+                    ${{ runner.os }}-composer-
+
+            - name: Install dependencies
+              uses: php-actions/composer@v6
+              env:
+                COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ github.token }}"} }'
+              with:
+                php_version: '8.4'
+
             - name: Create Docs Markdown
               uses: phpDocumentor/phpDocumentor@v3.8.0
               with:
