@@ -16,7 +16,6 @@ declare(strict_types=1);
 namespace FastForward\Container\Tests;
 
 use DI\Container;
-use DI\Container as PhpDiContainer;
 use FastForward\Container\AggregateContainer;
 use FastForward\Container\AutowireContainer;
 use FastForward\Container\Exception\NotFoundException;
@@ -32,7 +31,6 @@ use Psr\Container\ContainerInterface;
  */
 #[CoversClass(AutowireContainer::class)]
 #[UsesClass(AggregateContainer::class)]
-#[UsesClass(PhpDiContainer::class)]
 #[UsesClass(NotFoundException::class)]
 final class AutowireContainerTest extends TestCase
 {

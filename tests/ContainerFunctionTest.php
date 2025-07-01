@@ -38,7 +38,6 @@ use function FastForward\Container\container;
 #[UsesClass(AggregateContainer::class)]
 #[UsesClass(AutowireContainer::class)]
 #[UsesClass(ServiceProviderContainer::class)]
-#[UsesClass(ConfigContainer::class)]
 #[UsesClass(InvalidArgumentException::class)]
 #[UsesClass(NotFoundException::class)]
 final class ContainerFunctionTest extends TestCase
