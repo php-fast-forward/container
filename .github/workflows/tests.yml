@@ -47,10 +47,10 @@ jobs:
                 php_version: '8.4'
 
             - name: Create Docs Markdown
-              uses: phpDocumentor/phpDocumentor@v3.8.0
+              uses: php-actions/composer@v6
               with:
-                target: 'docs/wiki'
-                template: 'vendor/saggre/phpdocumentor-markdown/themes/markdown'
+                  php_version: '8.4'
+                  command: 'docs'
 
             - name: Commit submodule changes
               run: |
