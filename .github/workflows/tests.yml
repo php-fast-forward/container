@@ -70,7 +70,7 @@ jobs:
               uses: phpDocumentor/phpDocumentor@v3.8.0
               with:
                 target: 'public/'
-                template: 'responsive-twig'
+                template: 'default'
 
             - name: Upload artifact
               if: github.ref == 'refs/heads/main'
