@@ -16,83 +16,6 @@ concurrency:
     cancel-in-progress: false
 
 jobs:
-    wiki:
-        name: Update Wiki
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
-              with:
-                submodules: recursive
-                ref: ${{ github.head_ref || github.ref_name }}
-
-            - name: Get Composer Cache Directory
-              id: composer-cache
-              run: |
-                  echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-
-            - name: Cache Composer dependencies
-              uses: actions/cache@v4
-              with:
-                path: ${{ steps.composer-cache.outputs.dir }}
-                key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-                restore-keys: |
-                    ${{ runner.os }}-composer-
-
-            - name: Install dependencies
-              uses: php-actions/composer@v6
-              env:
-                COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ github.token }}"} }'
-              with:
-                php_version: '8.4'
-
-            - name: Create Docs Markdown
-              uses: php-actions/composer@v6
-              with:
-                  php_version: '8.4'
-                  command: 'docs'
-
-            - name: Commit submodule changes
-              run: |
-                git config --global user.email "github-actions[bot]@users.noreply.github.com"
-                git config --global user.name "github-actions[bot]"
-
-                cd docs/wiki
-                git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.wiki.git
-
-                git fetch origin
-                BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
-
-                if [ "$BRANCH_NAME" = "main" ]; then
-                  if ! git ls-remote --exit-code --heads origin main > /dev/null; then
-                      BRANCH_NAME="master"
-                  fi
-                fi
-
-                git checkout -b temp-branch origin/$BRANCH_NAME
-                git pull origin $BRANCH_NAME --rebase
-
-                git add .
-                if git diff --cached --quiet; then
-                    echo "No changes to commit in submodule"
-                    exit 0
-                fi
-
-                git commit -m "Update wiki content"
-                git push origin HEAD:refs/heads/$BRANCH_NAME
-
-                cd ../..
-
-                git submodule update --remote --merge
-
-                git add docs/wiki
-                if git diff --cached --quiet; then
-                    echo "No submodule reference change to commit"
-                    exit 0
-                fi
-
-                git commit -m "Update wiki submodule reference [skip ci]"
-                git push origin HEAD:refs/heads/${{ github.head_ref || github.ref_name }}
     tests:
         name: Run Tests
         runs-on: ubuntu-latest
@@ -146,11 +69,11 @@ jobs:
                     exit 1
                   fi
 
-            - name: Generate API docs
+            - name: Generate phpDocumentor API Docs
               uses: php-actions/composer@v6
               with:
                 php_version: '8.4'
-                command: 'docs -- --target=public/ --template="default"'
+                command: 'docs -- --target=public/ --template=""'
 
             - name: Upload artifact
               if: github.ref == 'refs/heads/main'
@@ -159,7 +82,7 @@ jobs:
                   path: public/
 
     deploy:
-        name: Deploy API Docs & Coverage to GitHub Pages
+        name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main'
         needs: tests
         environment:

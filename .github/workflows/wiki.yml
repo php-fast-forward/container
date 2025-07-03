@@ -1,0 +1,66 @@
+name: Update Wiki
+on:
+    workflow_dispatch:
+    pull_request:
+    push:
+        branches: [ "main" ]
+
+permissions:
+    contents: write
+    id-token: write
+
+jobs:
+    wiki:
+        name: Update Wiki
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout repository
+                uses: actions/checkout@v4
+                with:
+                    token: '${{ github.token }}'
+                    submodules: recursive
+
+            -   name: Get Composer Cache Directory
+                id: composer-cache
+                run: |
+                    echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+            -   name: Cache Composer dependencies
+                uses: actions/cache@v4
+                with:
+                    path: ${{ steps.composer-cache.outputs.dir }}
+                    key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+                    restore-keys: |
+                        ${{ runner.os }}-composer-
+
+            -   name: Install dependencies
+                uses: php-actions/composer@v6
+                env:
+                    COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ github.token }}"} }'
+                with:
+                    php_version: '8.4'
+
+            -   name: Create Docs Markdown
+                uses: php-actions/composer@v6
+                with:
+                    php_version: '8.4'
+                    command: 'docs'
+
+            -   name: Git Submodule Update
+                run: |
+                    git pull --recurse-submodules
+                    git submodule update --remote --recursive
+
+            -   name: Commit update
+                run: |
+                    git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+                    git config --global user.email "github-actions[bot]@users.noreply.github.com"
+                    git config --global user.name "github-actions[bot]"
+
+                    cd docs/wiki
+                    git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.wiki.git
+
+                    git add --all
+                    git commit -m "Update submodules" || echo "No changes to commit"
+                    git push
