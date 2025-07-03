@@ -51,7 +51,7 @@ jobs:
 
             -   name: Run Git Status
                 id: status
-                run: echo "status=$(git status -s)" >> $GITHUB_OUTPUT
+                run: echo "status='$(git status -s | base64 -w 0)'" >> $GITHUB_OUTPUT
 
             -   name: Add and commit files
                 if: ${{ steps.status.outputs.status }}
