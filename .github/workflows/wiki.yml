@@ -54,7 +54,7 @@ jobs:
                 run: echo "status='$(git status -s)'" >> $GITHUB_OUTPUT
 
             -   name: Add and commit files
-                if: ${{ steps.status.outputs.status }}
+                if: ${{ steps.status.outputs.status != '' }}
                 run: |
                     git add .
                     git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -62,11 +62,11 @@ jobs:
                     git commit -m "Update submodules at $(date "+DATE: %Y-%m-%d TIME: %H:%M:%S")"
 
             -   name: Push changes
-                if: ${{ steps.status.outputs.status && github.event_name == 'push' }}
+                if: ${{ steps.status.outputs.status != '' && github.event_name == 'push' }}
                 uses: ad-m/github-push-action@master
                 with:
                     github_token: ${{ github.token }}
-                    branch: dev
+                    branch: ${{ github.ref_name }}
 
             -   name: Git Submodule Update
                 run: |
