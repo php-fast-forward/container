@@ -46,22 +46,31 @@ jobs:
                     php_version: '8.4'
                     command: 'docs'
 
+            -   name: Update submodules
+                id: update
+                run: git submodule update --remote --recursive
+
+            -   name: Run git status
+                id: status
+                run: echo "::set-output name=status::$(git status -s)"
+
+            -   name: Add and commit files
+                if: ${{ steps.status.outputs.status }}
+                run: |
+                    git add .
+                    git config --global user.email "github-actions[bot]@users.noreply.github.com"
+                    git config --global user.name "github-actions[bot]"
+                    git commit -m "Update submodules at $(date "+DATE: %Y-%m-%d TIME: %H:%M:%S")"
+
+            -   name: Push changes
+                if: ${{ steps.status.outputs.status && github.event_name == 'push' }}
+                uses: ad-m/github-push-action@master
+                with:
+                    github_token: ${{ github.token }}
+                    branch: dev
+
             -   name: Git Submodule Update
                 run: |
                     git pull --recurse-submodules
                     git submodule update --init --recursive
                     git submodule update --recursive --remote
-
-            -   name: Commit update
-                run: |
-                    #git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}
-
-                    git config --global user.email "github-actions[bot]@users.noreply.github.com"
-                    git config --global user.name "github-actions[bot]"
-
-                    cd docs/wiki
-                    #git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.wiki.git
-
-                    git add --all
-                    git commit -m "Update submodules" || echo "No changes to commit"
-                    git push
