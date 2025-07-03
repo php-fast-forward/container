@@ -52,7 +52,7 @@ jobs:
 
             -   name: Run git status
                 id: status
-                run: echo "::set-output name=status::$(git status -s)"
+                run: echo "status=$(git status -s)" >> $GITHUB_OUTPUT
 
             -   name: Add and commit files
                 if: ${{ steps.status.outputs.status }}
