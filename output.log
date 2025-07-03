@@ -1,0 +1,198 @@
+Running php-build composer
+
+WARNING! Your credentials are stored unencrypted in '/home/runner/.docker/config.json'.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/go/credential-store/
+
+Login Succeeded
+Pulling docker.pkg.github.com/php-fast-forward/container/php-actions_composer_container:php-8.4-build2.1.0
+Error response from daemon: manifest unknown
+Dockerfile:
+FROM php:8.4-cli-alpine
+RUN apk add --update --no-cache bash coreutils git make openssh patch unzip zip
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile-php-build
+#1 transferring dockerfile: 151B done
+#1 DONE 0.0s
+
+#2 [auth] library/php:pull token for registry-1.docker.io
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/php:8.4-cli-alpine
+#3 DONE 0.4s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 importing cache manifest from docker.pkg.github.com/php-fast-forward/container/php-actions_composer_container:php-8.4-build2.1.0
+#5 ERROR: failed to configure registry cache importer: unexpected status from HEAD request to https://docker.pkg.github.com/v2/php-fast-forward/container/php-actions_composer_container/manifests/php-8.4-build2.1.0: 401 Unauthorized
+
+#6 [1/2] FROM docker.io/library/php:8.4-cli-alpine@sha256:c9b1ab69749902c0e8ccd4424ca81e4154f0b7cf055e53f5a9b2b0056dc647d4
+#6 resolve docker.io/library/php:8.4-cli-alpine@sha256:c9b1ab69749902c0e8ccd4424ca81e4154f0b7cf055e53f5a9b2b0056dc647d4 done
+#6 extracting sha256:fe07684b16b82247c3539ed86a65ff37a76138ec25d380bd80c869a1a4c73236
+#6 extracting sha256:fe07684b16b82247c3539ed86a65ff37a76138ec25d380bd80c869a1a4c73236 0.1s done
+#6 sha256:c9b1ab69749902c0e8ccd4424ca81e4154f0b7cf055e53f5a9b2b0056dc647d4 10.30kB / 10.30kB done
+#6 sha256:d94b52dc45b57bdb10adcefbaf15b7407514b6e428c6ff3a204aa3de395930dc 3.47MB / 3.47MB 0.1s done
+#6 sha256:e596a23157834bb6995c20124de68b3b4709f6f4e48eab120c27d3169ea683c0 10.49MB / 20.97MB 0.2s
+#6 sha256:48969093c8643ed5167c5f90e74e487a2ce9f1060a8a1a3fbd49fe836e068da9 2.87kB / 2.87kB done
+#6 sha256:002021b69089a0631115fe883cfe2fa075f4d0a93866f590e222f04657bafca6 7.81kB / 7.81kB done
+#6 sha256:fe07684b16b82247c3539ed86a65ff37a76138ec25d380bd80c869a1a4c73236 3.80MB / 3.80MB 0.1s done
+#6 sha256:5b59d780d3e14cb42593d46d17834e9d61fc53a2911c91756df543e237e72df1 934B / 934B 0.0s done
+#6 sha256:2b91823d6518dfc3edda879a6c1b4570f00a9904ba181876588dd382ca14f3d9 217B / 217B 0.1s done
+#6 sha256:0b85bfbf34452714fdd6bd0b6ae067d4aecd379d026d8a63005cb417e6aa2b00 4.19MB / 13.64MB 0.2s
+#6 sha256:f34fa75df5070e2bf129ee9a55601fe4aeea9f6733ba7db7e875e0bdf86d5f6f 488B / 488B 0.1s done
+#6 sha256:0cc997cc1a60339301e41f08fa620e72af007b9ae8e3a6653266631cbcc12b72 2.45kB / 2.45kB 0.2s done
+#6 sha256:548b03e157af72699a2b0c708ed1848139b85c1e825fae6010a7e9cd0d0b0d3e 0B / 20.20kB 0.2s
+#6 sha256:e596a23157834bb6995c20124de68b3b4709f6f4e48eab120c27d3169ea683c0 20.97MB / 20.97MB 0.3s done
+#6 sha256:0b85bfbf34452714fdd6bd0b6ae067d4aecd379d026d8a63005cb417e6aa2b00 11.53MB / 13.64MB 0.3s
+#6 sha256:548b03e157af72699a2b0c708ed1848139b85c1e825fae6010a7e9cd0d0b0d3e 20.20kB / 20.20kB 0.2s done
+#6 extracting sha256:d94b52dc45b57bdb10adcefbaf15b7407514b6e428c6ff3a204aa3de395930dc 0.1s
+#6 sha256:b92305aed9fff99346e89b6cf9fb2eaefa429b2ec81bb58c12b79849b4a9989b 20.20kB / 20.20kB 0.3s done
+#6 sha256:0b85bfbf34452714fdd6bd0b6ae067d4aecd379d026d8a63005cb417e6aa2b00 13.64MB / 13.64MB 0.3s done
+#6 extracting sha256:d94b52dc45b57bdb10adcefbaf15b7407514b6e428c6ff3a204aa3de395930dc 0.1s done
+#6 extracting sha256:5b59d780d3e14cb42593d46d17834e9d61fc53a2911c91756df543e237e72df1
+#6 extracting sha256:5b59d780d3e14cb42593d46d17834e9d61fc53a2911c91756df543e237e72df1 done
+#6 extracting sha256:2b91823d6518dfc3edda879a6c1b4570f00a9904ba181876588dd382ca14f3d9 done
+#6 extracting sha256:0b85bfbf34452714fdd6bd0b6ae067d4aecd379d026d8a63005cb417e6aa2b00 0.1s done
+#6 extracting sha256:f34fa75df5070e2bf129ee9a55601fe4aeea9f6733ba7db7e875e0bdf86d5f6f
+#6 extracting sha256:f34fa75df5070e2bf129ee9a55601fe4aeea9f6733ba7db7e875e0bdf86d5f6f done
+#6 extracting sha256:e596a23157834bb6995c20124de68b3b4709f6f4e48eab120c27d3169ea683c0 0.1s
+#6 extracting sha256:e596a23157834bb6995c20124de68b3b4709f6f4e48eab120c27d3169ea683c0 0.4s done
+#6 extracting sha256:0cc997cc1a60339301e41f08fa620e72af007b9ae8e3a6653266631cbcc12b72 done
+#6 extracting sha256:548b03e157af72699a2b0c708ed1848139b85c1e825fae6010a7e9cd0d0b0d3e done
+#6 extracting sha256:b92305aed9fff99346e89b6cf9fb2eaefa429b2ec81bb58c12b79849b4a9989b done
+#6 DONE 1.3s
+
+#7 [2/2] RUN apk add --update --no-cache bash coreutils git make openssh patch unzip zip
+#7 0.140 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+#7 0.258 fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+#7 0.552 (1/24) Installing bash (5.2.37-r0)
+#7 0.574 Executing bash-5.2.37-r0.post-install
+#7 0.577 (2/24) Installing coreutils-env (9.7-r1)
+#7 0.586 (3/24) Installing coreutils-fmt (9.7-r1)
+#7 0.595 (4/24) Installing coreutils-sha512sum (9.7-r1)
+#7 0.603 (5/24) Installing libattr (2.5.2-r2)
+#7 0.611 (6/24) Installing skalibs-libs (2.14.4.0-r0)
+#7 0.620 (7/24) Installing utmps-libs (0.1.3.1-r0)
+#7 0.628 (8/24) Installing coreutils (9.7-r1)
+#7 0.653 (9/24) Installing libexpat (2.7.1-r0)
+#7 0.662 (10/24) Installing pcre2 (10.43-r1)
+#7 0.675 (11/24) Installing git (2.49.0-r0)
+#7 0.744 (12/24) Installing git-init-template (2.49.0-r0)
+#7 0.753 (13/24) Installing make (4.4.1-r3)
+#7 0.763 (14/24) Installing openssh-keygen (10.0_p1-r7)
+#7 0.774 (15/24) Installing libedit (20250104.3.1-r1)
+#7 0.784 (16/24) Installing openssh-client-common (10.0_p1-r7)
+#7 0.808 (17/24) Installing openssh-client-default (10.0_p1-r7)
+#7 0.822 (18/24) Installing openssh-sftp-server (10.0_p1-r7)
+#7 0.831 (19/24) Installing openssh-server-common (10.0_p1-r7)
+#7 0.839 (20/24) Installing openssh-server (10.0_p1-r7)
+#7 0.861 (21/24) Installing openssh (10.0_p1-r7)
+#7 0.872 (22/24) Installing patch (2.8-r0)
+#7 0.880 (23/24) Installing unzip (6.0-r15)
+#7 0.891 (24/24) Installing zip (3.0-r13)
+#7 0.902 Executing busybox-1.37.0-r18.trigger
+#7 0.910 OK: 37 MiB in 65 packages
+#7 DONE 1.0s
+
+#8 exporting to image
+#8 exporting layers
+#8 exporting layers 0.5s done
+#8 writing image sha256:0b61eff94d4ee1b57d1835a4ad132d7336517e3d980c09a2bcb6c51c4c963466 done
+#8 naming to docker.pkg.github.com/php-fast-forward/container/php-actions_composer_container:php-8.4-build2.1.0 done
+#8 DONE 0.5s
+------
+ > importing cache manifest from docker.pkg.github.com/php-fast-forward/container/php-actions_composer_container:php-8.4-build2.1.0:
+------
+The push refers to repository [docker.pkg.github.com/php-fast-forward/container/php-actions_composer_container]
+859dd6fcf284: Preparing
+8e95078eebbc: Preparing
+62f4580d35a2: Preparing
+1f68f683e83e: Preparing
+bdc4cb6cd239: Preparing
+5f8849853929: Preparing
+60cdbceb9269: Preparing
+7c1629e9bf9f: Preparing
+2cd6c5560abf: Preparing
+4585dd36f429: Preparing
+fd2758d7a50e: Preparing
+60cdbceb9269: Waiting
+7c1629e9bf9f: Waiting
+2cd6c5560abf: Waiting
+5f8849853929: Waiting
+4585dd36f429: Waiting
+fd2758d7a50e: Waiting
+denied: installation not allowed to Create organization package
+WARNING: Failed to push Docker image to "docker.pkg.github.com/php-fast-forward/container/php-actions_composer_container:php-8.4-build2.1.0", this is probably due to missing permissions on GitHub.
+Will continue as this is just an optimization to improve speed of next build.
+Docker tag: docker.pkg.github.com/php-fast-forward/container/php-actions_composer_container:php-8.4-build2.1.0
+No private keys supplied
+Command: composer install --no-progress --no-interaction
+Skipping env variable PWD
+Skipping env variable HOME
+Skipping env variable SHLVL
+Skipping env variable PATH
+Running php-build composer
+Login Succeeded
+Pulling docker.pkg.github.com/php-fast-forward/container/php-actions_composer_container:php-8.4-build2.1.0
+Error response from daemon: manifest unknown
+Dockerfile:
+FROM php:8.4-cli-alpine
+RUN apk add --update --no-cache bash coreutils git make openssh patch unzip zip
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile-php-build
+#1 transferring dockerfile: 151B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/php:8.4-cli-alpine
+#2 DONE 0.1s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/2] FROM docker.io/library/php:8.4-cli-alpine@sha256:c9b1ab69749902c0e8ccd4424ca81e4154f0b7cf055e53f5a9b2b0056dc647d4
+#4 DONE 0.0s
+
+#5 importing cache manifest from docker.pkg.github.com/php-fast-forward/container/php-actions_composer_container:php-8.4-build2.1.0
+#5 DONE 0.0s
+
+#6 [2/2] RUN apk add --update --no-cache bash coreutils git make openssh patch unzip zip
+#6 CACHED
+
+#7 exporting to image
+#7 exporting layers done
+#7 writing image sha256:0b61eff94d4ee1b57d1835a4ad132d7336517e3d980c09a2bcb6c51c4c963466 done
+#7 naming to docker.pkg.github.com/php-fast-forward/container/php-actions_composer_container:php-8.4-build2.1.0 done
+#7 DONE 0.0s
+The push refers to repository [docker.pkg.github.com/php-fast-forward/container/php-actions_composer_container]
+859dd6fcf284: Preparing
+8e95078eebbc: Preparing
+62f4580d35a2: Preparing
+1f68f683e83e: Preparing
+bdc4cb6cd239: Preparing
+5f8849853929: Preparing
+60cdbceb9269: Preparing
+7c1629e9bf9f: Preparing
+2cd6c5560abf: Preparing
+4585dd36f429: Preparing
+fd2758d7a50e: Preparing
+5f8849853929: Waiting
+60cdbceb9269: Waiting
+7c1629e9bf9f: Waiting
+fd2758d7a50e: Waiting
+2cd6c5560abf: Waiting
+4585dd36f429: Waiting
+denied: installation not allowed to Create organization package
+WARNING: Failed to push Docker image to "docker.pkg.github.com/php-fast-forward/container/php-actions_composer_container:php-8.4-build2.1.0", this is probably due to missing permissions on GitHub.
+Will continue as this is just an optimization to improve speed of next build.
+Docker tag: docker.pkg.github.com/php-fast-forward/container/php-actions_composer_container:php-8.4-build2.1.0
+No private keys supplied
+Command: composer docs --no-interaction
+Skipping env variable PWD
+Skipping env variable HOME
+Skipping env variable SHLVL
+Skipping env variable PATH
