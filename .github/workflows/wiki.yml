@@ -51,12 +51,7 @@ jobs:
 
             -   name: Check if there are changes
                 id: changes
-                run: |
-                    if [ -n "$(git status -s)" ]; then
-                      echo "changed=true" >> $GITHUB_OUTPUT
-                    else
-                      echo "changed=false" >> $GITHUB_OUTPUT
-                    fi
+                run: echo "changed=$([ -n \"$(git status -s)\" ] && echo true || echo false)" >> $GITHUB_OUTPUT
 
             -   name: Add and commit files
                 if: ${{ steps.changes.outputs.changed == 'true' }}
@@ -72,9 +67,3 @@ jobs:
                 with:
                     github_token: ${{ github.token }}
                     branch: ${{ github.ref_name }}
-
-            -   name: Git Submodule Update
-                run: |
-                    git pull --recurse-submodules
-                    git submodule update --init --recursive
-                    git submodule update --recursive --remote
