@@ -54,7 +54,7 @@ jobs:
 
             -   name: Commit update
                 run: |
-                    git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+                    git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}
 
                     git config --global user.email "github-actions[bot]@users.noreply.github.com"
                     git config --global user.name "github-actions[bot]"

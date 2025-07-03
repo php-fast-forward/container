@@ -56,7 +56,10 @@
     "scripts": {
         "cs-check": "PHP_CS_FIXER_IGNORE_ENV=1 php-cs-fixer fix --dry-run --diff",
         "cs-fix": "PHP_CS_FIXER_IGNORE_ENV=1 php-cs-fixer fix",
-        "docs": "phpdoc",
+        "docs": [
+            "phpdoc -d ./src/ -t public/ --title 'Fast Forward Container API'",
+            "phpdoc -d ./src/ -t docs/wiki --title 'Fast Forward Container API' --template='vendor/saggre/phpdocumentor-markdown/themes/markdown'"
+        ],
         "mutation-testing": "infection --threads=4",
         "pre-commit": [
             "@cs-check",
