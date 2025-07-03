@@ -49,12 +49,17 @@ jobs:
                 id: update
                 run: git submodule update --remote --recursive
 
-            -   name: Run Git Status
-                id: status
-                run: echo "status='$(git status -s)'" >> $GITHUB_OUTPUT
+            -   name: Check if there are changes
+                id: changes
+                run: |
+                    if [ -n "$(git status -s)" ]; then
+                      echo "changed=true" >> $GITHUB_OUTPUT
+                    else
+                      echo "changed=false" >> $GITHUB_OUTPUT
+                    fi
 
             -   name: Add and commit files
-                if: ${{ steps.status.outputs.status != '' }}
+                if: ${{ steps.changes.outputs.changed != 'true' }}
                 run: |
                     git add .
                     git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -62,7 +67,7 @@ jobs:
                     git commit -m "Update submodules at $(date "+DATE: %Y-%m-%d TIME: %H:%M:%S")"
 
             -   name: Push changes
-                if: ${{ steps.status.outputs.status != '' && github.event_name == 'push' }}
+                if: ${{ steps.changes.outputs.changed != 'true' }}
                 uses: ad-m/github-push-action@master
                 with:
                     github_token: ${{ github.token }}
