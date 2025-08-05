@@ -44,7 +44,8 @@ final class AggregateServiceProviderTest extends TestCase
         $provider1 = $this->prophesize(ServiceProviderInterface::class);
         $provider1->getFactories()->willReturn(['service.a' => $factory1]);
 
-        $provider2 = $this->prophesize(ServiceProviderInterface::class);
+        $provider2 = $this->prophesize(\stdClass::class);
+        $provider2->willImplement(ServiceProviderInterface::class);
         $provider2->getFactories()->willReturn(['service.b' => $factory2]);
 
         $aggregate = new AggregateServiceProvider(
@@ -53,13 +54,23 @@ final class AggregateServiceProviderTest extends TestCase
         );
 
         $factories = $aggregate->getFactories();
+        $container = $this->prophesize(ContainerInterface::class)->reveal();
+
+        $serviceProvider1 = $provider1->reveal();
+        $serviceProvider2 = $provider2->reveal();
 
         self::assertArrayHasKey('service.a', $factories);
         self::assertArrayHasKey('service.b', $factories);
+        self::assertArrayHasKey($serviceProvider1::class, $factories);
+        self::assertArrayHasKey($serviceProvider2::class, $factories);
         self::assertArrayHasKey(AggregateServiceProvider::class, $factories);
         self::assertInstanceOf(ServiceFactory::class, $factories[AggregateServiceProvider::class]);
+        self::assertInstanceOf(ServiceFactory::class, $factories[$serviceProvider1::class]);
+        self::assertInstanceOf(ServiceFactory::class, $factories[$serviceProvider2::class]);
         self::assertSame('foo', $factories['service.a']());
         self::assertSame('bar', $factories['service.b']());
+        self::assertSame($serviceProvider1, $factories[$serviceProvider1::class]($container));
+        self::assertSame($serviceProvider2, $factories[$serviceProvider2::class]($container));
     }
 
     public function testGetExtensionsMergesAllProvidersAndComposesSameKey(): void
