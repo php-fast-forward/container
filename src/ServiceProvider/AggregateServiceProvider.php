@@ -21,6 +21,8 @@ use FastForward\Container\Factory\ServiceFactory;
 use Interop\Container\ServiceProviderInterface;
 use Psr\Container\ContainerInterface;
 
+use function DI\string;
+
 /**
  * Aggregates multiple service providers into a single provider.
  *
@@ -58,10 +60,18 @@ class AggregateServiceProvider implements ServiceProviderInterface
      */
     public function getFactories(): array
     {
+        $serviceProviders = array_reduce(
+            $this->serviceProviders,
+            static fn (array $carry, ServiceProviderInterface $provider) => $carry + [
+                $provider::class => new ServiceFactory($provider),
+            ],
+            [static::class => new ServiceFactory($this)],
+        );
+
         return array_reduce(
             $this->serviceProviders,
             static fn ($factories, $serviceProvider) => array_merge($factories, $serviceProvider->getFactories()),
-            [static::class => new ServiceFactory($this)]
+            $serviceProviders,
         );
     }
 
