@@ -59,7 +59,7 @@ jobs:
                     fi
 
             -   name: Add and commit files
-                if: ${{ steps.changes.outputs.changed == 'true' }}
+                if: steps.changes.outputs.changed == 'true'
                 run: |
                     git add .
                     git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -67,7 +67,7 @@ jobs:
                     git commit -m "Update submodules at $(date "+DATE: %Y-%m-%d TIME: %H:%M:%S")"
 
             -   name: Push changes
-                if: ${{ steps.changes.outputs.changed == 'true' }}
+                if: steps.changes.outputs.changed == 'true'
                 uses: ad-m/github-push-action@master
                 with:
                     github_token: ${{ github.token }}
