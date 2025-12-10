@@ -58,6 +58,12 @@ jobs:
                       echo "wiki_changed=$changed" >> "$GITHUB_OUTPUT"
                       exit 0
                     fi
+
+                    default_branch="$(git remote show origin | sed -n '/HEAD branch/s/.*: //p')"
+
+                    if [ -z "$default_branch" ]; then
+                      default_branch="main"
+                    fi
         
                     git config user.email "github-actions[bot]@users.noreply.github.com"
                     git config user.name "github-actions[bot]"
@@ -70,7 +76,7 @@ jobs:
                     fi
         
                     git commit -m "Update wiki docs at $(date "+%Y-%m-%d %H:%M:%S")"
-                    git push origin HEAD
+                    git push origin "$default_branch"
         
                     changed="true"
                     echo "wiki_changed=$changed" >> "$GITHUB_OUTPUT"
