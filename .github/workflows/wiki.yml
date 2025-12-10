@@ -45,30 +45,65 @@ jobs:
                     php_version: '8.4'
                     command: 'docs'
 
+            -   name: Commit & push changes in wiki submodule
+                id: wiki_commit
+                working-directory: docs/wiki
+                run: |
+                    echo "Status before commit (submodule docs/wiki):"
+                    git status --porcelain || true
+        
+                    changed="false"
+        
+                    if [ -z "$(git status --porcelain)" ]; then
+                      echo "wiki_changed=$changed" >> "$GITHUB_OUTPUT"
+                      exit 0
+                    fi
+        
+                    git config user.email "github-actions[bot]@users.noreply.github.com"
+                    git config user.name "github-actions[bot]"
+        
+                    git add .
+        
+                    if git diff --cached --quiet; then
+                      echo "wiki_changed=$changed" >> "$GITHUB_OUTPUT"
+                      exit 0
+                    fi
+        
+                    git commit -m "Update wiki docs at $(date "+%Y-%m-%d %H:%M:%S")"
+                    git push origin HEAD
+        
+                    changed="true"
+                    echo "wiki_changed=$changed" >> "$GITHUB_OUTPUT"
+
             -   name: Update submodules
                 id: update
                 run: git submodule update --remote --recursive
 
-            -   name: Check if there are changes
+            -   name: Check if parent repo has submodule pointer changes
                 id: changes
+                if: steps.wiki_commit.outputs.wiki_changed == 'true'
                 run: |
-                    git add .
-                    
-                    if git diff --cached --quiet; then
-                      echo "changed=true" >> $GITHUB_OUTPUT
-                    else
-                      echo "changed=false" >> $GITHUB_OUTPUT
+                    git status --porcelain
+                    echo "wiki_changed='${{ steps.wiki_commit.outputs.wiki_changed }}'"
+        
+                    git add docs/wiki
+        
+                    changed="false"
+        
+                    if ! git diff --cached --quiet; then
+                      changed="true"
                     fi
-
-            -   name: Add and commit files
+        
+                    echo "changed=$changed" >> "$GITHUB_OUTPUT"
+    
+            -   name: Add and commit parent repo
                 if: steps.changes.outputs.changed == 'true'
                 run: |
-                    git add .
                     git config --global user.email "github-actions[bot]@users.noreply.github.com"
                     git config --global user.name "github-actions[bot]"
-                    git commit -m "Update submodules at $(date "+DATE: %Y-%m-%d TIME: %H:%M:%S")"
-
-            -   name: Push changes
+                    git commit -m "Update wiki submodule pointer at $(date "+%Y-%m-%d %H:%M:%S")"
+    
+            -   name: Push changes (parent repo)
                 if: steps.changes.outputs.changed == 'true'
                 uses: ad-m/github-push-action@master
                 with:
