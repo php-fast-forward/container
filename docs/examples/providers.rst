@@ -64,5 +64,72 @@ Composing Providers for Feature Modules
 
    $aggregate = new AggregateServiceProvider($userProvider, $authProvider);
    $container = container($aggregate);
+
    $userService = $container->get('user_service');
    $authService = $container->get('auth_service');
+
+
+Using Providers with Config
+==========================
+
+.. code-block:: php
+
+   use FastForward\Config\ArrayConfig;
+   use FastForward\Container\container;
+   use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+
+   $config = new ArrayConfig([
+       FastForward\Container\ContainerInterface::class => [
+           new ArrayServiceProvider([
+               'settings' => fn() => [
+                   'debug' => true,
+                   'timezone' => 'UTC',
+               ],
+           ]),
+       ],
+   ]);
+
+   $container = container($config);
+   $settings = $container->get('settings');
+
+
+Provider Returning a Factory
+===========================
+
+.. code-block:: php
+
+   use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+   use FastForward\Container\Factory\InvokableFactory;
+   use FastForward\Container\container;
+
+   $provider = new ArrayServiceProvider([
+       'service' => new InvokableFactory(MyService::class, 'arg1'),
+   ]);
+
+   $container = container($provider);
+   $service = $container->get('service');
+
+
+Provider with Extension for Caching
+==================================
+
+.. code-block:: php
+
+   use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+   use FastForward\Container\container;
+
+   class Cache {
+       public function enable() { /* ... */ }
+   }
+
+   $provider = new ArrayServiceProvider([
+       'cache' => fn() => new Cache(),
+   ], [
+       'cache' => function ($container, $cache) {
+           $cache->enable();
+           return $cache;
+       },
+   ]);
+
+   $container = container($provider);
+   $cache = $container->get('cache');
