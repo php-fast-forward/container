@@ -13,7 +13,7 @@ A service provider is any object that implements the ``Interop\Container\Service
 .. toctree::
    :maxdepth: 2
 
+   factories
    using-providers
    custom-provider
-   factories
    using-factories
