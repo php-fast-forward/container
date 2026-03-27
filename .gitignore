@@ -1,13 +1,7 @@
-# Project-specific files
 .idea/
-.phpdoc/
+.vscode/
 public/
+tmp/
 vendor/
 composer.lock
 *.cache
-
-# GitHub Actions
-DOCKER_ENV
-Dockerfile-php-build
-docker_tag
-output.log

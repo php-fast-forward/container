@@ -8,9 +8,11 @@ declare(strict_types=1);
  * This source file is subject to the license bundled
  * with this source code in the file LICENSE.
  *
- * @link      https://github.com/php-fast-forward/container
- * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @copyright Copyright (c) 2025-2026 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ *
+ * @see       https://github.com/php-fast-forward/container
+ * @see       https://github.com/php-fast-forward
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
@@ -28,8 +30,6 @@ use Psr\Container\NotFoundExceptionInterface;
  * NotFoundException when a requested service cannot be found in any delegated container.
  *
  * It caches resolved entries to prevent redundant calls to delegated containers.
- *
- * @package FastForward\Container
  */
 class AggregateContainer implements ContainerInterface
 {
@@ -76,13 +76,15 @@ class AggregateContainer implements ContainerInterface
      * This method MAY be used to dynamically expand the resolution pool.
      *
      * @param PsrContainerInterface $container the container to append
+     *
+     * @return void
      */
     public function append(PsrContainerInterface $container): void
     {
         $this->containers[] = $container;
 
-        if (!isset($this->resolved[\get_class($container)])) {
-            $this->resolved[\get_class($container)] = $container;
+        if (! isset($this->resolved[$container::class])) {
+            $this->resolved[$container::class] = $container;
         }
     }
 
@@ -92,10 +94,12 @@ class AggregateContainer implements ContainerInterface
      * This method MAY be used to prioritize a container during resolution.
      *
      * @param PsrContainerInterface $container the container to prepend
+     *
+     * @return void
      */
     public function prepend(PsrContainerInterface $container): void
     {
-        $this->resolved[\get_class($container)] = $container;
+        $this->resolved[$container::class] = $container;
         array_unshift($this->containers, $container);
     }
 
@@ -135,7 +139,7 @@ class AggregateContainer implements ContainerInterface
      *
      * @return mixed the resolved entry
      *
-     * @throws NotFoundException           if the identifier cannot be found in any aggregated container
+     * @throws NotFoundException if the identifier cannot be found in any aggregated container
      * @throws ContainerExceptionInterface if the container cannot resolve the entry
      */
     public function get(string $id): mixed
@@ -147,7 +151,7 @@ class AggregateContainer implements ContainerInterface
         $exception = NotFoundException::forServiceID($id);
 
         foreach ($this->containers as $container) {
-            if (!$container->has($id)) {
+            if (! $container->has($id)) {
                 continue;
             }
 
@@ -155,9 +159,9 @@ class AggregateContainer implements ContainerInterface
                 $this->resolved[$id] = $container->get($id);
 
                 return $this->resolved[$id];
-            } catch (NotFoundExceptionInterface $exception) {
+            } catch (NotFoundExceptionInterface) {
                 // Ignore NotFoundExceptionInterface
-            } catch (ContainerExceptionInterface $exception) {
+            } catch (ContainerExceptionInterface) {
                 // Future enhancement: Replace with a domain-specific exception if desired
             }
         }

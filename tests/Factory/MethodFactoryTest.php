@@ -8,17 +8,22 @@ declare(strict_types=1);
  * This source file is subject to the license bundled
  * with this source code in the file LICENSE.
  *
- * @link      https://github.com/php-fast-forward/container
- * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @copyright Copyright (c) 2025-2026 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ *
+ * @see       https://github.com/php-fast-forward/container
+ * @see       https://github.com/php-fast-forward
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Tests\Factory;
 
+use stdClass;
+use Exception;
 use FastForward\Container\Exception\RuntimeException;
 use FastForward\Container\Factory\MethodFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
@@ -33,12 +38,17 @@ final class MethodFactoryTest extends TestCase
 {
     use ProphecyTrait;
 
-    public function testInvokeInstanceMethod(): void
+    /**
+     * @return void
+     */
+    #[Test]
+    public function invokeInstanceMethod(): void
     {
         $service = new MethodFactoryTestTargetStub();
 
         $container = $this->prophesize(ContainerInterface::class);
-        $container->has('prefix')->willReturn(false);
+        $container->has('prefix')
+            ->willReturn(false);
         $container->has(MethodFactoryTestTargetStub::class)->willReturn(true);
         $container->get(MethodFactoryTestTargetStub::class)->willReturn($service);
 
@@ -49,10 +59,15 @@ final class MethodFactoryTest extends TestCase
         self::assertSame('prefix-instance', $result);
     }
 
-    public function testInvokeStaticMethod(): void
+    /**
+     * @return void
+     */
+    #[Test]
+    public function invokeStaticMethod(): void
     {
         $container = $this->prophesize(ContainerInterface::class);
-        $container->has('value')->willReturn(false);
+        $container->has('value')
+            ->willReturn(false);
 
         $factory = new MethodFactory(MethodFactoryTestTargetStub::class, 'staticMethod', 'value');
 
@@ -61,16 +76,22 @@ final class MethodFactoryTest extends TestCase
         self::assertSame('static-value', $result);
     }
 
-    public function testInvokeResolvesArgumentsFromContainer(): void
+    /**
+     * @return void
+     */
+    #[Test]
+    public function invokeResolvesArgumentsFromContainer(): void
     {
         $service = new MethodFactoryTestTargetStub();
-        $argObj  = new \stdClass();
+        $argObj  = new stdClass();
 
         $container = $this->prophesize(ContainerInterface::class);
         $container->has(MethodFactoryTestTargetStub::class)->willReturn(true);
         $container->get(MethodFactoryTestTargetStub::class)->willReturn($service);
-        $container->has('dependency')->willReturn(true);
-        $container->get('dependency')->willReturn($argObj);
+        $container->has('dependency')
+            ->willReturn(true);
+        $container->get('dependency')
+            ->willReturn($argObj);
 
         $factory = new MethodFactory(MethodFactoryTestTargetStub::class, 'acceptsObject', 'dependency');
 
@@ -79,7 +100,11 @@ final class MethodFactoryTest extends TestCase
         self::assertSame($argObj, $result);
     }
 
-    public function testInvokeThrowsForNonPublicMethod(): void
+    /**
+     * @return void
+     */
+    #[Test]
+    public function invokeThrowsForNonPublicMethod(): void
     {
         $container = $this->prophesize(ContainerInterface::class);
         $container->has(MethodFactoryTestTargetStub::class)->willReturn(false);
@@ -91,11 +116,16 @@ final class MethodFactoryTest extends TestCase
         $factory($container->reveal());
     }
 
-    public function testInvokeWillConstructTargetIfContainerDoesNotProvide(): void
+    /**
+     * @return void
+     */
+    #[Test]
+    public function invokeWillConstructTargetIfContainerDoesNotProvide(): void
     {
         $container = $this->prophesize(ContainerInterface::class);
-        $container->has('prefix')->willReturn(false);
-        $container->get(MethodFactoryTestTargetStub::class)->willThrow(new \Exception());
+        $container->has('prefix')
+            ->willReturn(false);
+        $container->get(MethodFactoryTestTargetStub::class)->willThrow(new Exception());
 
         $factory = new MethodFactory(MethodFactoryTestTargetStub::class, 'instanceMethod', 'prefix');
 
@@ -104,14 +134,21 @@ final class MethodFactoryTest extends TestCase
         self::assertSame('prefix-instance', $result);
     }
 
-    public function testConstructorDependencyIsResolvedFromContainer(): void
+    /**
+     * @return void
+     */
+    #[Test]
+    public function constructorDependencyIsResolvedFromContainer(): void
     {
         $dependency = new MethodFactoryTestDependencyStub();
 
         $container = $this->prophesize(ContainerInterface::class);
         $container->has(MethodFactoryTestTargetStub::class)->willReturn(true);
-        $container->get(MethodFactoryTestTargetStub::class)->willReturn(new MethodFactoryTestTargetStub($dependency))->shouldBeCalledOnce();
-        $container->has('suffix')->willReturn(false);
+        $container->get(MethodFactoryTestTargetStub::class)->willReturn(
+            new MethodFactoryTestTargetStub($dependency)
+        )->shouldBeCalledOnce();
+        $container->has('suffix')
+            ->willReturn(false);
 
         $factory = new MethodFactory(MethodFactoryTestTargetStub::class, 'usesConstructorArgument', 'suffix');
 
@@ -123,28 +160,58 @@ final class MethodFactoryTest extends TestCase
 
 class MethodFactoryTestTargetStub
 {
-    public function __construct(private ?MethodFactoryTestDependencyStub $dependency = null) {}
+    /**
+     * @param MethodFactoryTestDependencyStub|null $dependency
+     */
+    public function __construct(
+        private readonly ?MethodFactoryTestDependencyStub $dependency = null
+    ) {
+        $this->privateMethod();
+    }
 
+    /**
+     * @param string $prefix
+     *
+     * @return string
+     */
     public function instanceMethod(string $prefix): string
     {
         return $prefix . '-instance';
     }
 
+    /**
+     * @param string $value
+     *
+     * @return string
+     */
     public static function staticMethod(string $value): string
     {
         return 'static-' . $value;
     }
 
+    /**
+     * @param object $obj
+     *
+     * @return object
+     */
     public function acceptsObject(object $obj): object
     {
         return $obj;
     }
 
+    /**
+     * @param string $suffix
+     *
+     * @return string
+     */
     public function usesConstructorArgument(string $suffix): string
     {
         return $this->dependency::class . '-' . $suffix;
     }
 
+    /**
+     * @return void
+     */
     private function privateMethod(): void {}
 }
 

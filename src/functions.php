@@ -8,14 +8,17 @@ declare(strict_types=1);
  * This source file is subject to the license bundled
  * with this source code in the file LICENSE.
  *
- * @link      https://github.com/php-fast-forward/container
- * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @copyright Copyright (c) 2025-2026 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ *
+ * @see       https://github.com/php-fast-forward/container
+ * @see       https://github.com/php-fast-forward
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container;
 
+use Throwable;
 use FastForward\Config\ConfigInterface;
 use FastForward\Config\Container\ConfigContainer;
 use FastForward\Container\Exception\InvalidArgumentException;
@@ -45,22 +48,23 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
  * @return ContainerInterface the composed and autowire-enabled container
  *
  * @throws InvalidArgumentException if an unsupported initializer type is encountered
- *
- * @package FastForward\Container
  */
 function container(
     ConfigInterface|PsrContainerInterface|ServiceProviderInterface|string ...$initializers,
 ): ContainerInterface {
     $aggregateContainer = new AggregateContainer();
 
-    $getContainer = static fn ($initializer) => match (true) {
+    $getContainer = static fn($initializer): ?PsrContainerInterface => match (true) {
         $initializer instanceof PsrContainerInterface    => $initializer,
-        $initializer instanceof ServiceProviderInterface => new ServiceProviderContainer($initializer, $aggregateContainer),
+        $initializer instanceof ServiceProviderInterface => new ServiceProviderContainer(
+            $initializer,
+            $aggregateContainer
+        ),
         $initializer instanceof ConfigInterface          => new ConfigContainer($initializer),
         default                                          => null,
     };
 
-    $resolve = static fn ($initializer) => match (true) {
+    $resolve = static fn($initializer): ?PsrContainerInterface => match (true) {
         \is_object($initializer)   => $getContainer($initializer),
         class_exists($initializer) => $getContainer(new ($initializer)()),
         default                    => throw InvalidArgumentException::forUnsupportedInitializer($initializer),
@@ -77,7 +81,7 @@ function container(
                 foreach ($container->get($configKey) as $nested) {
                     $aggregateContainer->append($resolve($nested));
                 }
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Ignored
             }
         }

@@ -8,9 +8,11 @@ declare(strict_types=1);
  * This source file is subject to the license bundled
  * with this source code in the file LICENSE.
  *
- * @link      https://github.com/php-fast-forward/container
- * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @copyright Copyright (c) 2025-2026 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ *
+ * @see       https://github.com/php-fast-forward/container
+ * @see       https://github.com/php-fast-forward
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
@@ -30,8 +32,6 @@ use function DI\string;
  * from several ServiceProviderInterface implementations.
  *
  * Factories and extensions returned by this class are merged in registration order.
- *
- * @package FastForward\Container\ServiceProvider
  */
 class AggregateServiceProvider implements ServiceProviderInterface
 {
@@ -62,15 +62,17 @@ class AggregateServiceProvider implements ServiceProviderInterface
     {
         $serviceProviders = array_reduce(
             $this->serviceProviders,
-            static fn (array $carry, ServiceProviderInterface $provider) => $carry + [
+            static fn(array $carry, ServiceProviderInterface $provider): array => $carry + [
                 $provider::class => new ServiceFactory($provider),
             ],
-            [static::class => new ServiceFactory($this)],
+            [
+                static::class => new ServiceFactory($this),
+            ],
         );
 
         return array_reduce(
             $this->serviceProviders,
-            static fn ($factories, $serviceProvider) => array_merge($factories, $serviceProvider->getFactories()),
+            static fn($factories, $serviceProvider): array => array_merge($factories, $serviceProvider->getFactories()),
             $serviceProviders,
         );
     }
@@ -87,21 +89,25 @@ class AggregateServiceProvider implements ServiceProviderInterface
      */
     public function getExtensions(): array
     {
-        return array_reduce($this->serviceProviders, static function ($extensions, $serviceProvider) {
-            foreach ($serviceProvider->getExtensions() as $id => $extension) {
-                if (!\is_callable($extension)) {
-                    throw RuntimeException::forNonCallableExtension($id, get_debug_type($extension));
+        return array_reduce(
+            $this->serviceProviders,
+            static function (array $extensions, ServiceProviderInterface $serviceProvider): array {
+                foreach ($serviceProvider->getExtensions() as $id => $extension) {
+                    if (! \is_callable($extension)) {
+                        throw RuntimeException::forNonCallableExtension($id, get_debug_type($extension));
+                    }
+
+                    $extensions[$id] = \array_key_exists($id, $extensions)
+                        ? static fn(ContainerInterface $container, $previous) => $extension(
+                            $container,
+                            $extensions[$id]($container, $previous)
+                        )
+                        : $extension;
                 }
 
-                $extensions[$id] = !\array_key_exists($id, $extensions)
-                    ? $extension
-                    : static fn (ContainerInterface $container, $previous) => $extension(
-                        $container,
-                        $extensions[$id]($container, $previous)
-                    );
-            }
-
-            return $extensions;
-        }, []);
+                return $extensions;
+            },
+            []
+        );
     }
 }

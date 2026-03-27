@@ -8,16 +8,20 @@ declare(strict_types=1);
  * This source file is subject to the license bundled
  * with this source code in the file LICENSE.
  *
- * @link      https://github.com/php-fast-forward/container
- * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @copyright Copyright (c) 2025-2026 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ *
+ * @see       https://github.com/php-fast-forward/container
+ * @see       https://github.com/php-fast-forward
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Tests\Factory;
 
+use stdClass;
 use FastForward\Container\Factory\AliasFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Psr\Container\ContainerInterface;
@@ -30,13 +34,19 @@ final class AliasFactoryTest extends TestCase
 {
     use ProphecyTrait;
 
-    public function testInvokeResolvesAliasedServiceFromContainer(): void
+    /**
+     * @return void
+     */
+    #[Test]
+    public function invokeResolvesAliasedServiceFromContainer(): void
     {
-        $service = new \stdClass();
+        $service = new stdClass();
         $alias   = 'my.service';
 
         $container = $this->prophesize(ContainerInterface::class);
-        $container->get($alias)->willReturn($service)->shouldBeCalled();
+        $container->get($alias)
+            ->willReturn($service)
+            ->shouldBeCalled();
 
         $factory = new AliasFactory($alias);
         $result  = $factory($container->reveal());
@@ -44,7 +54,11 @@ final class AliasFactoryTest extends TestCase
         self::assertSame($service, $result);
     }
 
-    public function testGetReturnsSameInstanceForSameAlias(): void
+    /**
+     * @return void
+     */
+    #[Test]
+    public function getReturnsSameInstanceForSameAlias(): void
     {
         $a1 = AliasFactory::get('foo');
         $a2 = AliasFactory::get('foo');
@@ -53,7 +67,11 @@ final class AliasFactoryTest extends TestCase
         self::assertSame($a1, $a2);
     }
 
-    public function testGetReturnsNewInstanceForDifferentAliases(): void
+    /**
+     * @return void
+     */
+    #[Test]
+    public function getReturnsNewInstanceForDifferentAliases(): void
     {
         $a1 = AliasFactory::get('foo');
         $a2 = AliasFactory::get('bar');

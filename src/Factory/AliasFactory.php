@@ -8,9 +8,11 @@ declare(strict_types=1);
  * This source file is subject to the license bundled
  * with this source code in the file LICENSE.
  *
- * @link      https://github.com/php-fast-forward/container
- * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @copyright Copyright (c) 2025-2026 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ *
+ * @see       https://github.com/php-fast-forward/container
+ * @see       https://github.com/php-fast-forward
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
@@ -25,17 +27,9 @@ use Psr\Container\ContainerInterface;
  * service already registered in the container.
  *
  * When invoked, it SHALL delegate resolution to the aliased service identifier.
- *
- * @package FastForward\Container\Factory
  */
 final class AliasFactory implements FactoryInterface
 {
-    /**
-     * @var string The identifier of the aliased service.
-     *             This MUST correspond to a valid entry in the container.
-     */
-    private readonly string $alias;
-
     /**
      * @var array<string, self> Registry of AliasFactory instances indexed by alias name.
      *                          This MAY be used to cache and reuse factory instances.
@@ -47,10 +41,9 @@ final class AliasFactory implements FactoryInterface
      *
      * @param string $alias the identifier of the service to which this factory points
      */
-    public function __construct(string $alias)
-    {
-        $this->alias = $alias;
-    }
+    public function __construct(
+        private readonly string $alias
+    ) {}
 
     /**
      * Resolves the aliased service from the container.

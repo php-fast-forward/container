@@ -8,9 +8,11 @@ declare(strict_types=1);
  * This source file is subject to the license bundled
  * with this source code in the file LICENSE.
  *
- * @link      https://github.com/php-fast-forward/container
- * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @copyright Copyright (c) 2025-2026 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ *
+ * @see       https://github.com/php-fast-forward/container
+ * @see       https://github.com/php-fast-forward
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
@@ -21,8 +23,6 @@ namespace FastForward\Container\Exception;
  *
  * This exception helps identify and handle errors related to invalid or unrecognized arguments,
  * especially when an unsupported initializer type is provided to the container builder.
- *
- * @package FastForward\Container\Exception
  */
 final class InvalidArgumentException extends \InvalidArgumentException
 {
@@ -38,9 +38,6 @@ final class InvalidArgumentException extends \InvalidArgumentException
      */
     public static function forUnsupportedInitializer(mixed $value): self
     {
-        return new self(\sprintf(
-            'Unsupported initializer type: %s',
-            get_debug_type($value)
-        ));
+        return new self(\sprintf('Unsupported initializer type: %s', get_debug_type($value)));
     }
 }
