@@ -43,12 +43,40 @@ Wraps a ServiceProviderInterface and exposes its factories and extensions as a P
 
 ConfigContainer
 ---------------
-Wraps a ConfigInterface and exposes its configuration as services in a PSR-11 container. Useful for integrating configuration-driven service definitions.
+
+**Note:** ConfigContainer is part of the `fast-forward/config` library, not this package. It is fully compatible and can be used together with FastForward Container.
+
+ConfigContainer wraps any object implementing ``ConfigInterface`` and exposes its configuration as services in a PSR-11 container. The config object must implement the methods ``has($key)`` and ``get($key)``, where keys use dot notation for nested access (e.g., ``'database.host'``).
+
+Example:
 
 .. code-block:: php
 
+   use FastForward\Config\ArrayConfig;
    use FastForward\Config\Container\ConfigContainer;
+
+   $config = new ArrayConfig([
+      'app' => [
+         'env' => 'dev',
+         'db' => [
+            'host' => 'localhost',
+            'port' => 3306,
+         ],
+      ],
+   ]);
+
    $container = new ConfigContainer($config);
+
+   // Access config values as services:
+   $env = $container->get('config.app.env'); // 'dev'
+   $host = $container->get('config.app.db.host'); // 'localhost'
+
+The config object must support:
+
+- ``$config->has('app.db.host')`` // returns true
+- ``$config->get('app.db.host')`` // returns 'localhost'
+
+This allows you to use configuration-driven service definitions and inject config values as services in your container setup.
 
 Composing Containers
 --------------------

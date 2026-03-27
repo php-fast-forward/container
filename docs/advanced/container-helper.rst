@@ -85,10 +85,35 @@ Error Handling
 
 If you pass an unsupported type, or a string that does not correspond to a valid class, the function will throw an InvalidArgumentException.
 
-Advanced: Nested Config Initializers
-------------------------------------
 
-If you use a ConfigContainer, it may provide a special config key (``ConfigContainer::ALIAS.ContainerInterface::class``) containing additional initializers. These will be resolved and appended automatically. This allows for advanced, modular configuration setups.
+Advanced: Using Config to Register Providers
+--------------------------------------------
+
+If you use a ConfigContainer (from the `fast-forward/config` library), it can provide a special config key (``ConfigContainer::ALIAS.ContainerInterface::class``) containing an array of service providers or containers. The container() helper will automatically resolve and append each of these to the AggregateContainer.
+
+This allows you to register providers or containers via configuration, making your setup more modular and dynamic.
+
+Example:
+
+.. code-block:: php
+
+   use FastForward\Config\ArrayConfig;
+   use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+   use FastForward\Container\container;
+   use FastForward\Container\ContainerInterface;
+
+   $config = new ArrayConfig([
+      ContainerInterface::class => [
+         new ArrayServiceProvider([
+            'foo' => fn() => 'bar',
+         ]),
+      ],
+   ]);
+
+   $container = container($config);
+   $foo = $container->get('foo'); // 'bar'
+
+In this example, the config provides the special key for providers (using the fully qualified class name as the key). The container() helper will extract and register all providers listed there, just as if you had passed them directly.
 
 Return Value
 ------------
