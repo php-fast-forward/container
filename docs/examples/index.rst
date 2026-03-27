@@ -9,8 +9,7 @@ This section contains practical usage examples for FastForward Container, coveri
    basic
    providers
    providers-testing
+   factories
    providers-feature-toggle
-   middleware
    frameworks-laravel
    frameworks-slim
-   factories
