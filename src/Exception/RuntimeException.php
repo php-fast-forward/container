@@ -8,9 +8,11 @@ declare(strict_types=1);
  * This source file is subject to the license bundled
  * with this source code in the file LICENSE.
  *
- * @link      https://github.com/php-fast-forward/container
- * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @copyright Copyright (c) 2025-2026 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ *
+ * @see       https://github.com/php-fast-forward/container
+ * @see       https://github.com/php-fast-forward
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
@@ -21,8 +23,6 @@ namespace FastForward\Container\Exception;
  *
  * This class MUST be thrown when an error occurs due to invalid runtime behavior
  * such as misconfigured extensions or illegal method accessibility.
- *
- * @package FastForward\Container\Exception
  */
 final class RuntimeException extends \RuntimeException
 {
@@ -33,17 +33,13 @@ final class RuntimeException extends \RuntimeException
      * is not callable, violating the expected contract of container extensions.
      *
      * @param string $service the identifier of the service with the invalid extension
-     * @param string $given   the type or class name of the invalid value
+     * @param string $given the type or class name of the invalid value
      *
      * @return self a RuntimeException instance with a descriptive message
      */
     public static function forNonCallableExtension(string $service, string $given): self
     {
-        return new self(\sprintf(
-            'Service "%s" extension MUST be callable, "%s" given.',
-            $service,
-            $given
-        ));
+        return new self(\sprintf('Service "%s" extension MUST be callable, "%s" given.', $service, $given));
     }
 
     /**
@@ -52,18 +48,14 @@ final class RuntimeException extends \RuntimeException
      * This method SHOULD be used when trying to invoke a method that is not declared public,
      * thereby violating service visibility requirements.
      *
-     * @param string $class  the fully qualified class name
+     * @param string $class the fully qualified class name
      * @param string $method the name of the method that is not publicly accessible
      *
      * @return self a RuntimeException indicating the method MUST be public
      */
     public static function forNonPublicMethod(string $class, string $method): self
     {
-        return new self(\sprintf(
-            'Method "%s::%s" MUST be public to be invoked as a service.',
-            $class,
-            $method
-        ));
+        return new self(\sprintf('Method "%s::%s" MUST be public to be invoked as a service.', $class, $method));
     }
 
     /**

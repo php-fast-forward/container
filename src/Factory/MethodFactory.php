@@ -8,14 +8,19 @@ declare(strict_types=1);
  * This source file is subject to the license bundled
  * with this source code in the file LICENSE.
  *
- * @link      https://github.com/php-fast-forward/container
- * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @copyright Copyright (c) 2025-2026 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ *
+ * @see       https://github.com/php-fast-forward/container
+ * @see       https://github.com/php-fast-forward
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Factory;
 
+use ReflectionMethod;
+use Throwable;
+use ReflectionException;
 use FastForward\Container\Exception\RuntimeException;
 use Psr\Container\ContainerInterface;
 
@@ -28,10 +33,8 @@ use Psr\Container\ContainerInterface;
  * If the method is not public, a RuntimeException SHALL be thrown.
  *
  * Arguments MAY be resolved from the container if passed as service identifiers.
- *
- * @package FastForward\Container\Factory
  */
-final class MethodFactory implements FactoryInterface
+final readonly class MethodFactory implements FactoryInterface
 {
     /**
      * @var array<int, mixed> arguments to be passed to the method during invocation
@@ -41,9 +44,9 @@ final class MethodFactory implements FactoryInterface
     /**
      * Constructs the MethodFactory.
      *
-     * @param string $class        the class name or container service ID on which the method is called
-     * @param string $method       the name of the method to invoke
-     * @param mixed  ...$arguments Optional arguments to pass to the method.
+     * @param string $class the class name or container service ID on which the method is called
+     * @param string $method the name of the method to invoke
+     * @param mixed ...$arguments Optional arguments to pass to the method.
      */
     public function __construct(
         private string $class,
@@ -64,21 +67,21 @@ final class MethodFactory implements FactoryInterface
      *
      * @return mixed The result of invoking the method
      *
-     * @throws \ReflectionException If the method does not exist
-     * @throws RuntimeException     If the method is not public
+     * @throws ReflectionException If the method does not exist
+     * @throws RuntimeException If the method is not public
      */
     public function __invoke(ContainerInterface $container): mixed
     {
         $arguments = array_map(
-            static fn ($argument) => \is_string($argument) && $container->has($argument)
+            static fn($argument) => \is_string($argument) && $container->has($argument)
                 ? $container->get($argument)
                 : $argument,
             $this->arguments
         );
 
-        $reflectionMethod = new \ReflectionMethod($this->class, $this->method);
+        $reflectionMethod = new ReflectionMethod($this->class, $this->method);
 
-        if (!$reflectionMethod->isPublic()) {
+        if (! $reflectionMethod->isPublic()) {
             throw RuntimeException::forNonPublicMethod($this->class, $this->method);
         }
 
@@ -88,7 +91,7 @@ final class MethodFactory implements FactoryInterface
 
         try {
             $object = $container->get($this->class);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             $object = new ($this->class)();
         }
 

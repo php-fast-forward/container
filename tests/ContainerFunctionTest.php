@@ -8,14 +8,17 @@ declare(strict_types=1);
  * This source file is subject to the license bundled
  * with this source code in the file LICENSE.
  *
- * @link      https://github.com/php-fast-forward/container
- * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @copyright Copyright (c) 2025-2026 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ *
+ * @see       https://github.com/php-fast-forward/container
+ * @see       https://github.com/php-fast-forward
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Tests;
 
+use RuntimeException;
 use FastForward\Config\ConfigInterface;
 use FastForward\Config\Container\ConfigContainer;
 use FastForward\Container\AggregateContainer;
@@ -45,6 +48,9 @@ final class ContainerFunctionTest extends TestCase
 {
     use ProphecyTrait;
 
+    /**
+     * @return void
+     */
     public function testReturnsAutowireContainerWrappingAggregate(): void
     {
         $result = container();
@@ -52,11 +58,16 @@ final class ContainerFunctionTest extends TestCase
         self::assertInstanceOf(AutowireContainer::class, $result);
     }
 
+    /**
+     * @return void
+     */
     public function testAcceptsPsrContainerAsInitializer(): void
     {
         $psr = $this->prophesize(ContainerInterface::class);
-        $psr->has('service')->willReturn(true);
-        $psr->get('service')->willReturn($psr->reveal());
+        $psr->has('service')
+            ->willReturn(true);
+        $psr->get('service')
+            ->willReturn($psr->reveal());
 
         $container = container($psr->reveal());
 
@@ -64,11 +75,16 @@ final class ContainerFunctionTest extends TestCase
         self::assertSame($psr->reveal(), $container->get('service'));
     }
 
+    /**
+     * @return void
+     */
     public function testAcceptsServiceProviderAsInitializer(): void
     {
         $provider = $this->prophesize(ServiceProviderInterface::class);
-        $provider->getFactories()->willReturn([]);
-        $provider->getExtensions()->willReturn([]);
+        $provider->getFactories()
+            ->willReturn([]);
+        $provider->getExtensions()
+            ->willReturn([]);
 
         $container = container($provider->reveal());
 
@@ -76,6 +92,9 @@ final class ContainerFunctionTest extends TestCase
         self::assertInstanceOf(ServiceProviderContainer::class, $container->get(ServiceProviderContainer::class));
     }
 
+    /**
+     * @return void
+     */
     public function testAcceptsConfigInterfaceAsInitializer(): void
     {
         $config = $this->prophesize(ConfigInterface::class);
@@ -88,6 +107,9 @@ final class ContainerFunctionTest extends TestCase
         self::assertInstanceOf(ConfigContainer::class, $container->get(ConfigContainer::class));
     }
 
+    /**
+     * @return void
+     */
     public function testAcceptsInstantiableString(): void
     {
         $container = container(DummyContainer::class);
@@ -96,6 +118,9 @@ final class ContainerFunctionTest extends TestCase
         self::assertInstanceOf(DummyContainer::class, $container->get(DummyContainer::class));
     }
 
+    /**
+     * @return void
+     */
     public function testThrowsForUnsupportedInitializer(): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -103,6 +128,9 @@ final class ContainerFunctionTest extends TestCase
         container(uniqid());
     }
 
+    /**
+     * @return void
+     */
     public function testConfigContainerWithNestedInitializers(): void
     {
         $nested = new DummyContainer();
@@ -116,11 +144,14 @@ final class ContainerFunctionTest extends TestCase
         self::assertInstanceOf(DummyContainer::class, $container->get(DummyContainer::class));
     }
 
+    /**
+     * @return void
+     */
     public function testContainerSkipsThrowableThrownByConfigContainer(): void
     {
         $config = $this->prophesize(ConfigInterface::class);
         $config->has(ContainerInterface::class)->willReturn(true);
-        $config->get(ContainerInterface::class)->willThrow(new \RuntimeException('unexpected'));
+        $config->get(ContainerInterface::class)->willThrow(new RuntimeException('unexpected'));
 
         $container = container($config->reveal());
 
@@ -130,11 +161,21 @@ final class ContainerFunctionTest extends TestCase
 
 final class DummyContainer implements ContainerInterface
 {
+    /**
+     * @param string $id
+     *
+     * @return mixed
+     */
     public function get(string $id): mixed
     {
         return $this;
     }
 
+    /**
+     * @param string $id
+     *
+     * @return bool
+     */
     public function has(string $id): bool
     {
         return true;

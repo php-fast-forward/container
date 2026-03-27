@@ -8,14 +8,17 @@ declare(strict_types=1);
  * This source file is subject to the license bundled
  * with this source code in the file LICENSE.
  *
- * @link      https://github.com/php-fast-forward/container
- * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @copyright Copyright (c) 2025-2026 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ *
+ * @see       https://github.com/php-fast-forward/container
+ * @see       https://github.com/php-fast-forward
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container\Exception;
 
+use Exception;
 use Psr\Container\NotFoundExceptionInterface;
 
 /**
@@ -24,10 +27,8 @@ use Psr\Container\NotFoundExceptionInterface;
  * This class MUST be used in PSR-11 container implementations to represent an error
  * condition where a service ID does not exist in the container. It implements the
  * Psr\Container\NotFoundExceptionInterface to guarantee interoperability with PSR-11 consumers.
- *
- * @package FastForward\Container\Exception
  */
-final class NotFoundException extends \Exception implements NotFoundExceptionInterface
+final class NotFoundException extends Exception implements NotFoundExceptionInterface
 {
     /**
      * Creates a new NotFoundException for a missing service identifier.

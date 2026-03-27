@@ -8,14 +8,17 @@ declare(strict_types=1);
  * This source file is subject to the license bundled
  * with this source code in the file LICENSE.
  *
- * @link      https://github.com/php-fast-forward/container
- * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @copyright Copyright (c) 2025-2026 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ *
+ * @see       https://github.com/php-fast-forward/container
+ * @see       https://github.com/php-fast-forward
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
 namespace FastForward\Container;
 
+use Throwable;
 use DI\Container;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
@@ -30,10 +33,8 @@ use Psr\Container\NotFoundExceptionInterface;
  *
  * This container MUST be used in scenarios where automatic dependency resolution
  * via autowiring is required alongside explicitly registered services.
- *
- * @package FastForward\Container
  */
-final class AutowireContainer implements ContainerInterface
+final readonly class AutowireContainer implements ContainerInterface
 {
     /**
      * @var PsrContainerInterface the internal composite container with autowiring support
@@ -66,7 +67,7 @@ final class AutowireContainer implements ContainerInterface
      *
      * @return mixed the resolved entry
      *
-     * @throws NotFoundExceptionInterface  if the identifier is not found
+     * @throws NotFoundExceptionInterface if the identifier is not found
      * @throws ContainerExceptionInterface if the entry cannot be resolved
      */
     public function get(string $id): mixed
@@ -74,16 +75,21 @@ final class AutowireContainer implements ContainerInterface
         return $this->container->get($id);
     }
 
+    /**
+     * @param string $id
+     *
+     * @return bool
+     */
     public function has(string $id): bool
     {
-        if (!$this->container->has($id)) {
+        if (! $this->container->has($id)) {
             return false;
         }
 
         try {
             // Attempt to resolve the service to check if it is valid
             $this->get($id);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return false;
         }
 

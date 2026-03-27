@@ -8,9 +8,11 @@ declare(strict_types=1);
  * This source file is subject to the license bundled
  * with this source code in the file LICENSE.
  *
- * @link      https://github.com/php-fast-forward/container
- * @copyright Copyright (c) 2025 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
+ * @copyright Copyright (c) 2025-2026 Felipe Sayão Lobato Abreu <github@mentordosnerds.com>
  * @license   https://opensource.org/licenses/MIT MIT License
+ *
+ * @see       https://github.com/php-fast-forward/container
+ * @see       https://github.com/php-fast-forward
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
@@ -36,22 +38,15 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
  *
  * If an optional wrapper container is provided, it SHALL be passed to service factories and extensions,
  * allowing for delegation or decoration of service resolution. If omitted, the container defaults to itself.
- *
- * @package FastForward\Container
  */
 final class ServiceProviderContainer implements ContainerInterface
 {
-    /**
-     * The service provider supplying factories and extensions for service construction.
-     */
-    private ServiceProviderInterface $serviceProvider;
-
     /**
      * The container instance used for service resolution and extension application.
      *
      * This property MAY reference another container for delegation, or default to this container instance.
      */
-    private PsrContainerInterface $wrapperContainer;
+    private readonly PsrContainerInterface $wrapperContainer;
 
     /**
      * Cache of resolved services keyed by their identifier or class name.
@@ -68,14 +63,13 @@ final class ServiceProviderContainer implements ContainerInterface
      * This constructor SHALL initialize the container with a service provider and an optional delegating container.
      * If no wrapper container is provided, the container SHALL delegate to itself.
      *
-     * @param ServiceProviderInterface   $serviceProvider  the service provider supplying factories and extensions
-     * @param null|PsrContainerInterface $wrapperContainer An optional container for delegation. Defaults to self.
+     * @param ServiceProviderInterface $serviceProvider the service provider supplying factories and extensions
+     * @param PsrContainerInterface|null $wrapperContainer An optional container for delegation. Defaults to self.
      */
     public function __construct(
-        ServiceProviderInterface $serviceProvider,
+        private readonly ServiceProviderInterface $serviceProvider,
         ?PsrContainerInterface $wrapperContainer = null,
     ) {
-        $this->serviceProvider  = $serviceProvider;
         $this->wrapperContainer = $wrapperContainer ?? $this;
     }
 
@@ -105,7 +99,7 @@ final class ServiceProviderContainer implements ContainerInterface
      *
      * @return mixed the service instance associated with the identifier
      *
-     * @throws NotFoundException  if no factory exists for the given identifier
+     * @throws NotFoundException if no factory exists for the given identifier
      * @throws ContainerException if service construction fails due to container errors
      */
     public function get(string $id): mixed
@@ -116,13 +110,13 @@ final class ServiceProviderContainer implements ContainerInterface
 
         $factory = $this->serviceProvider->getFactories();
 
-        if (!\array_key_exists($id, $factory) || !\is_callable($factory[$id])) {
+        if (! \array_key_exists($id, $factory) || ! \is_callable($factory[$id])) {
             throw NotFoundException::forServiceID($id);
         }
 
         try {
             $service = \call_user_func($factory[$id], $this->wrapperContainer);
-            $class   = \get_class($service);
+            $class   = $service::class;
             $this->applyServiceExtensions($id, $class, $service);
         } catch (ContainerExceptionInterface $containerException) {
             throw ContainerException::forInvalidService($id, $containerException);
@@ -130,7 +124,7 @@ final class ServiceProviderContainer implements ContainerInterface
 
         $this->cache[$id] = $service;
 
-        if ($id !== $class && !isset($this->cache[$class])) {
+        if ($id !== $class && ! isset($this->cache[$class])) {
             $this->cache[$class] = $service;
         }
 
@@ -148,9 +142,11 @@ final class ServiceProviderContainer implements ContainerInterface
      * Extensions MAY be used to modify or enhance services after creation. Invalid extensions
      * (non-callables) SHALL be ignored silently.
      *
-     * @param string $id      the identifier of the resolved service
-     * @param string $class   the fully qualified class name of the service
-     * @param mixed  $service the service instance to apply extensions to
+     * @param string $id the identifier of the resolved service
+     * @param string $class the fully qualified class name of the service
+     * @param mixed $service the service instance to apply extensions to
+     *
+     * @return void
      *
      * @throws ContainerException if an extension callable fails during execution
      */
@@ -163,7 +159,7 @@ final class ServiceProviderContainer implements ContainerInterface
         }
 
         if ($id !== $class
-            && !isset($this->cache[$class])
+            && ! isset($this->cache[$class])
             && \array_key_exists($class, $extensions)
             && \is_callable($extensions[$class])
         ) {
