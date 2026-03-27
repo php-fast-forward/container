@@ -6,4 +6,6 @@ Examples
 
    basic
    providers
+   providers-testing
+   providers-feature-toggle
    factories

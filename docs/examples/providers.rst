@@ -2,7 +2,7 @@ Registering Providers
 =====================
 
 Registering Multiple Providers
-=============================
+------------------------------
 
 .. code-block:: php
 
@@ -22,7 +22,7 @@ Registering Multiple Providers
    $notifier = $container->get('notifier');
 
 Extending Services with Providers
-=================================
+---------------------------------
 
 .. code-block:: php
 
@@ -47,7 +47,7 @@ Extending Services with Providers
    $repo = $container->get('user_repo');
 
 Composing Providers for Feature Modules
-======================================
+---------------------------------------
 
 .. code-block:: php
 
@@ -70,7 +70,7 @@ Composing Providers for Feature Modules
 
 
 Using Providers with Config
-==========================
+---------------------------
 
 .. code-block:: php
 
@@ -94,7 +94,7 @@ Using Providers with Config
 
 
 Provider Returning a Factory
-===========================
+----------------------------
 
 .. code-block:: php
 
@@ -111,7 +111,7 @@ Provider Returning a Factory
 
 
 Provider with Extension for Caching
-==================================
+-----------------------------------
 
 .. code-block:: php
 

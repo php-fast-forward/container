@@ -3,7 +3,7 @@ Using Factories
 ===============
 
 Using CallableFactory for Dependency Injection
-==============================================
+----------------------------------------------
 
 .. code-block:: php
 
@@ -13,7 +13,7 @@ Using CallableFactory for Dependency Injection
    $mailer = $factory($container);
 
 Aliasing Services with AliasFactory
-==================================
+-----------------------------------
 
 .. code-block:: php
 
@@ -23,7 +23,7 @@ Aliasing Services with AliasFactory
    $sameMailer = $factory($container); // Returns the same as $container->get('mailer')
 
 Invoking Classes with InvokableFactory
-=====================================
+--------------------------------------
 
 .. code-block:: php
 
@@ -33,7 +33,7 @@ Invoking Classes with InvokableFactory
    $service = $factory($container);
 
 Calling Static Methods with MethodFactory
-========================================
+-----------------------------------------
 
 .. code-block:: php
 
@@ -43,7 +43,7 @@ Calling Static Methods with MethodFactory
    $service = $factory($container);
 
 Wrapping Existing Instances with ServiceFactory
-==============================================
+-----------------------------------------------
 
 .. code-block:: php
 

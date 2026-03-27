@@ -3,7 +3,7 @@ Basic Usage
 ===========
 
 Registering and Fetching Services
-=================================
+---------------------------------
 
 This example shows how to register and retrieve services using the container helper.
 
@@ -22,7 +22,7 @@ This example shows how to register and retrieve services using the container hel
    $pdo = $container->get('pdo');
 
 Using Configuration to Register Providers
-========================================
+-----------------------------------------
 
 You can use a configuration object to register providers dynamically:
 
@@ -44,7 +44,7 @@ You can use a configuration object to register providers dynamically:
    $cache = $container->get('cache');
 
 Autowiring a Service (using PHP-DI)
-===================================
+-----------------------------------
 
 The container supports autowiring for classes with type-hinted dependencies:
 
