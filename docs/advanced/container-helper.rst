@@ -118,7 +118,10 @@ In this example, the config provides the special key for providers (using the fu
 Return Value
 ------------
 
+
 The function always returns an ``AutowireContainer`` that wraps an ``AggregateContainer`` composed of all resolved sources. This means you get autowiring and aggregation out of the box, regardless of how you initialize the container.
+
+**Autowiring is powered internally by `PHP-DI <https://php-di.org/>`_.**
 
 See Also
 --------

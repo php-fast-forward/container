@@ -1,7 +1,7 @@
 Autowire
 ========
 
-FastForward Container supports autowiring via integration with PHP-DI. The ``AutowireContainer`` wraps an aggregate container and appends a PHP-DI container for automatic dependency resolution.
+FastForward Container supports autowiring via integration with `PHP-DI <https://php-di.org/>`. The ``AutowireContainer`` wraps an aggregate container and appends a PHP-DI container for automatic dependency resolution.
 
 How It Works
 ------------

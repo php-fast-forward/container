@@ -25,7 +25,10 @@ Aggregates multiple containers. When you call ``get($id)``, it queries each cont
 
 AutowireContainer
 -----------------
+
 Adds autowiring support to any PSR-11 container. It will resolve and instantiate classes automatically if they are not found in the underlying container, using constructor injection.
+
+**Autowiring is powered internally by `PHP-DI <https://php-di.org/>`_.**
 
 .. code-block:: php
 
