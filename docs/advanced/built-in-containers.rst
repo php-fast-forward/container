@@ -47,7 +47,7 @@ Wraps a ConfigInterface and exposes its configuration as services in a PSR-11 co
 
 .. code-block:: php
 
-   use FastForward\Container\ConfigContainer;
+   use FastForward\Config\Container\ConfigContainer;
    $container = new ConfigContainer($config);
 
 Composing Containers
