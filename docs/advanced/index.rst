@@ -8,3 +8,4 @@ Advanced Topics
    error-reporting
    container-helper
    built-in-containers
+   special-patterns
