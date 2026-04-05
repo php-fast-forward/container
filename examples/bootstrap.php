@@ -44,11 +44,11 @@ function exampleTitle(string $title, string $description): void
  */
 function exampleValue(string $label, mixed $value): void
 {
-    if (\is_array($value)) {
-        $value = json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-    } elseif (\is_bool($value)) {
+    if (is_array($value)) {
+        $value = json_encode($value, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES);
+    } elseif (is_bool($value)) {
         $value = $value ? 'true' : 'false';
-    } elseif (! \is_scalar($value) && null !== $value) {
+    } elseif (! is_scalar($value) && null !== $value) {
         $value = var_export($value, true);
     }
 

@@ -147,20 +147,10 @@ exampleTitle(
 );
 
 $provider = new ArrayServiceProvider([
-    FixedClock::class => new ServiceFactory(
-        new FixedClock('2026-04-04T12:00:00-03:00'),
-    ),
-    ChannelName::class => new ServiceFactory(
-        new ChannelName('daily-ops'),
-    ),
-    DeploymentStage::class => new ServiceFactory(
-        new DeploymentStage('production'),
-    ),
-    ReportGenerator::class => new InvokableFactory(
-        ReportGenerator::class,
-        FixedClock::class,
-        ChannelName::class,
-    ),
+    FixedClock::class => new ServiceFactory(new FixedClock('2026-04-04T12:00:00-03:00')),
+    ChannelName::class => new ServiceFactory(new ChannelName('daily-ops')),
+    DeploymentStage::class => new ServiceFactory(new DeploymentStage('production')),
+    ReportGenerator::class => new InvokableFactory(ReportGenerator::class, FixedClock::class, ChannelName::class),
     'primary.report' => new AliasFactory(ReportGenerator::class),
     DashboardWidget::class => new CallableFactory(
         static fn(FixedClock $clock, ReportGenerator $report): DashboardWidget => new DashboardWidget(
@@ -168,11 +158,7 @@ $provider = new ArrayServiceProvider([
             $clock->now(),
         ),
     ),
-    DeploymentMetadata::class => new MethodFactory(
-        DeploymentMetadata::class,
-        'fromStage',
-        DeploymentStage::class,
-    ),
+    DeploymentMetadata::class => new MethodFactory(DeploymentMetadata::class, 'fromStage', DeploymentStage::class),
 ]);
 
 $container = container($provider);
