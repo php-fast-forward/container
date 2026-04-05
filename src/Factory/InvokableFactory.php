@@ -61,7 +61,7 @@ final readonly class InvokableFactory implements FactoryInterface
      *
      * Arguments that are strings and match a known service ID in the container
      * SHALL be replaced with the corresponding container-resolved services.
-     *
+     * 
      * It MUST return a new instance of the class with the resolved arguments.
      * This method SHALL be invoked by the container when the service is requested.
      *
