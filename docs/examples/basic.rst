@@ -10,7 +10,7 @@ This example shows how to register and retrieve services using the container hel
 .. code-block:: php
 
    use FastForward\Container\ServiceProvider\ArrayServiceProvider;
-   use FastForward\Container\container;
+   use function FastForward\Container\container;
 
    $provider = new ArrayServiceProvider([
        'logger' => fn() => new Monolog\Logger('app'),
@@ -29,7 +29,7 @@ You can use a configuration object to register providers dynamically:
 .. code-block:: php
 
    use FastForward\Config\ArrayConfig;
-   use FastForward\Container\container;
+   use function FastForward\Container\container;
    use FastForward\Container\ServiceProvider\ArrayServiceProvider;
 
    $config = new ArrayConfig([
@@ -50,7 +50,7 @@ The container supports autowiring for classes with type-hinted dependencies:
 
 .. code-block:: php
 
-   use FastForward\Container\container;
+   use function FastForward\Container\container;
 
    class MyService {
        public function __construct(MyDependency $dep) { /* ... */ }

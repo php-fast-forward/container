@@ -1,75 +1,133 @@
 Basic Usage
 ===========
 
-This section shows how to initialize and use the FastForward Container step by step, explaining what each part does so you can adapt to your own project with confidence.
+This section explains the most common ways to build a FastForward container once you
+understand the basic quickstart flow.
 
-Step 1: Import the Required Classes
------------------------------------
-You need to import the main container helper and any configuration or service provider classes you want to use:
+The mental model
+----------------
+
+The ``container()`` helper accepts one or more initializers and always returns an
+autowire-enabled container. Each initializer can be one of the following:
+
+====================================  ==========================================================
+Initializer type                      What the helper does
+====================================  ==========================================================
+``ServiceProviderInterface``          Wraps it in ``ServiceProviderContainer``
+``Psr\Container\ContainerInterface``  Adds it directly to the aggregate container
+``ConfigInterface``                   Wraps it in ``ConfigContainer``
+``string``                            Instantiates the class with ``new`` and then applies the same rules
+====================================  ==========================================================
+
+If you pass class names as strings, they must be instantiable without constructor arguments.
+If they need runtime values, instantiate them yourself before passing them to ``container()``.
+
+Step 1: Start with one provider
+-------------------------------
+
+For most projects, the easiest entry point is a single ``ArrayServiceProvider``:
 
 .. code-block:: php
 
-   use FastForward\Container\container; // The main helper function
-   use FastForward\Config\ArrayConfig;  // Example config provider
+   use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+   use function FastForward\Container\container;
 
-Step 2: Define Your Service Providers or Containers
----------------------------------------------------
-You can use configuration objects, service provider classes, or even other PSR-11 containers. Here, we use an ArrayConfig to define a list of providers and containers:
+   $provider = new ArrayServiceProvider([
+       'logger' => static fn(): Logger => new Logger('app'),
+   ]);
+
+   $container = container($provider);
+   $logger = $container->get('logger');
+
+At this point you already have:
+
+- explicit service registration through the provider
+- PSR-11 compatible ``get()`` and ``has()``
+- autowiring for classes that can be constructed from known dependencies
+
+Step 2: Compose more than one source
+------------------------------------
+
+You can pass multiple providers and containers when your application is split by feature
+or when you need to reuse an existing PSR-11 container:
 
 .. code-block:: php
+
+   use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+   use function FastForward\Container\container;
+
+   $catalogProvider = new ArrayServiceProvider([
+       ProductCatalog::class => static fn(): ProductCatalog => new ProductCatalog(),
+   ]);
+
+   $legacyContainer = new LegacyContainer();
+
+   $container = container($catalogProvider, $legacyContainer);
+
+When multiple initializers can resolve the same service ID, the first matching container
+inside the aggregate wins. This makes ``container($override, $defaults)`` a useful pattern
+for tests and environment-specific overrides.
+
+Step 3: Register providers through configuration
+------------------------------------------------
+
+If you already use ``fast-forward/config``, you can declare providers inside your config object:
+
+.. code-block:: php
+
+   use FastForward\Config\ArrayConfig;
+   use FastForward\Container\ContainerInterface;
+   use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+   use function FastForward\Container\container;
 
    $config = new ArrayConfig([
-       FastForward\Container\ContainerInterface::class => [
-           SomeServiceProvider::class,         // A class name (will be instantiated)
-           SomePsr11Container::class,          // Another container (class name)
-           new OtherServiceProvider('arg'),     // An already constructed provider
-           new ServiceManager($dependencies),   // An existing PSR-11 container
+       'app' => [
+           'name' => 'FastForward Storefront',
+       ],
+       ContainerInterface::class => [
+           new ArrayServiceProvider([
+               ApplicationName::class => static fn($container): ApplicationName => new ApplicationName(
+                   $container->get('config.app.name'),
+               ),
+           ]),
        ],
    ]);
 
-Step 3: Initialize the Container
---------------------------------
-Use the ``container()`` helper to build your container from the config or directly from a list of providers/containers:
-
-.. code-block:: php
-
    $container = container($config);
+   $name = $container->get('config.app.name');
+   $app = $container->get(ApplicationName::class);
 
-What happens here?
-------------------
-- The ``container()`` function inspects each argument:
-  - If it is an object implementing PSR-11, it is added directly.
-  - If it is a service provider, it is converted into a container.
-  - If it is a string (class name), it is instantiated.
-  - If it is a configuration, it may add more containers.
-- The result is a container that aggregates all the given providers and containers, with autowire support.
+Important detail
+----------------
 
-Step 4: Retrieve Services
--------------------------
-Now you can fetch any registered or autowired service:
+There are two different identifiers involved in the configuration flow:
 
-.. code-block:: php
+- Inside your raw config object, you register nested providers under ``FastForward\Container\ContainerInterface::class``.
+- After the config is wrapped by ``ConfigContainer``, individual config values are exposed through service IDs such as ``config.app.name``.
 
-   $service = $container->get(SomeService::class);
+This distinction matters because new users often try to store raw config values under
+``config.*`` keys. The ``config.`` prefix belongs to the container view, not to the raw
+configuration array.
 
-Alternative: Direct Initialization
-----------------------------------
-You can pass providers/containers directly to the helper, without using a configuration object:
+Step 4: Use class names as shortcuts when appropriate
+-----------------------------------------------------
+
+Class-string initializers are convenient when the class has a parameterless constructor:
 
 .. code-block:: php
 
    $container = container(
-       SomeServiceProvider::class,           // Provider class
-       SomePsr11Container::class,            // Another container
-       new ApplicationConfig(),              // Configuration object
-       new OtherServiceProvider('argument'), // Already instantiated provider
-       new ServiceManager($dependencies),    // Already instantiated container
+       AppProvider::class,
+       LegacyContainer::class,
    );
 
-This approach is flexible and allows you to compose your container as you prefer.
+If either class needs constructor arguments, instantiate it yourself instead of relying
+on the shortcut.
 
 Summary
 -------
-- Always use the ``container()`` helper to initialize your container.
-- You can mix providers, containers, configs, and class names.
-- Once initialized, use ``$container->get(Service::class)`` to fetch any service.
+
+- ``container()`` is the main entry point and always returns an autowire-enabled container.
+- You can mix providers, PSR-11 containers, config objects, and instantiable class names.
+- The first matching container wins during aggregate resolution.
+- Raw config keys and ``config.*`` service IDs are related, but they are not the same thing.

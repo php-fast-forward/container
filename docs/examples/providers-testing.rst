@@ -6,7 +6,7 @@ This example shows how to use providers to swap implementations for testing.
 .. code-block:: php
 
    use FastForward\Container\ServiceProvider\ArrayServiceProvider;
-   use FastForward\Container\container;
+   use function FastForward\Container\container;
 
    class DummyMailer {
        public function send($to, $msg) { /* test logic */ }

@@ -3,10 +3,14 @@ Built-in Factories
 
 What is a Factory?
 ------------------
-A factory is a special object or function that knows how to create a service (object, value, etc.) when the container is asked for it. In FastForward Container, factories are always callables that receive the container as their first argument, so they can fetch dependencies as needed.
+
+A factory is the callable responsible for building a service when the container is asked
+for it. In this package, all built-in factories implement ``FactoryInterface`` so they can
+be used directly inside providers.
 
 Why Use Factories?
 ------------------
+
 Factories allow you to:
 
 - Control exactly how a service is built (constructor, static method, closure, etc.)
@@ -14,101 +18,122 @@ Factories allow you to:
 - Reuse logic for creating similar services
 - Alias or decorate existing services
 
-Types of Factories in FastForward Container
--------------------------------------------
+Quick selection guide
+---------------------
+
+====================  ===============================================  ==========================================
+Factory               Best when                                        Important behavior
+====================  ===============================================  ==========================================
+``AliasFactory``      Two IDs should return the same service           Supports cached static helper ``AliasFactory::get()``
+``CallableFactory``   Construction depends on typed services           Resolves class/interface-typed parameters from the container
+``InvokableFactory``  You want ``new ClassName(...)``                  Resolves string arguments only when they match existing service IDs
+``MethodFactory``     You need a static or instance factory method     Falls back to ``new ClassName()`` for instance methods when needed
+``ServiceFactory``    You already have the final object                Always returns the same instance
+====================  ===============================================  ==========================================
 
 1. AliasFactory
 ^^^^^^^^^^^^^^^
-**Purpose:** Make one service ID behave as an alias for another. When you ask for the alias, you get the original service.
 
-**How it works:**
+``AliasFactory`` makes one service ID behave as an alias for another. When you ask for the
+alias, you receive the same object that would be returned for the original ID.
 
 .. code-block:: php
 
-  use FastForward\Container\Factory\AliasFactory;
-  $factory = new AliasFactory('real_service_id');
-  $service = $factory($container); // Same as $container->get('real_service_id')
+   use FastForward\Container\Factory\AliasFactory;
 
-**When to use:** When you want two or more names to refer to the same service instance.
+   $factory = new AliasFactory('real_service_id');
+   $service = $factory($container); // Same as $container->get('real_service_id')
+
+If you reuse the same alias in many places, ``AliasFactory::get('real_service_id')`` returns
+the same factory instance every time.
 
 2. CallableFactory
 ^^^^^^^^^^^^^^^^^^
-**Purpose:** Wrap any PHP callable (closure, function, invokable object) as a factory. The callable receives the container and can resolve dependencies dynamically.
 
-**How it works:**
+``CallableFactory`` wraps your own callable, but it does not pass raw scalar arguments into
+that callable. Instead, it reflects the callable signature and resolves each class- or
+interface-typed parameter from the container.
 
 .. code-block:: php
 
-  use FastForward\Container\Factory\CallableFactory;
-  $factory = new CallableFactory(function ($container) {
-     return new MyService($container->get(Dependency::class));
-  });
-  $service = $factory($container);
+   use FastForward\Container\Factory\CallableFactory;
+   use Psr\Container\ContainerInterface;
+   use Psr\Log\LoggerInterface;
 
-**When to use:** When you need full control over how a service is built, or want to use closures for dynamic logic.
+   $factory = new CallableFactory(
+       static fn(ContainerInterface $container, LoggerInterface $logger): Mailer => new Mailer($logger),
+   );
+
+If you declare a builtin parameter such as ``string`` or ``int``, the factory throws
+``RuntimeException`` because builtin types cannot be resolved automatically.
 
 3. InvokableFactory
 ^^^^^^^^^^^^^^^^^^^
-**Purpose:** Instantiate a class using its constructor, optionally passing arguments. If an argument is a string and matches a service ID, it is resolved from the container.
 
-**How it works:**
+``InvokableFactory`` instantiates a class through its constructor.
 
 .. code-block:: php
 
-  use FastForward\Container\Factory\InvokableFactory;
-  $factory = new InvokableFactory(MyService::class, 'my.dependency', 'literal');
-  $service = $factory($container); // 'my.dependency' is resolved from the container if available
+   use FastForward\Container\Factory\InvokableFactory;
 
-**When to use:** For simple services where dependencies are known and can be passed as constructor arguments.
+   $factory = new InvokableFactory(MyService::class, 'my.dependency', 'literal');
+   $service = $factory($container);
+
+String arguments are treated conservatively:
+
+- if the string matches a registered service ID, it is resolved from the container
+- otherwise, it stays a plain literal value
 
 4. MethodFactory
 ^^^^^^^^^^^^^^^^
-**Purpose:** Call a specific method (static or instance) on a class, optionally passing arguments. Arguments that are strings and match service IDs are resolved from the container.
 
-**How it works:**
+``MethodFactory`` calls a public static or instance method on a class.
 
 .. code-block:: php
 
-  use FastForward\Container\Factory\MethodFactory;
-  $factory = new MethodFactory(MyService::class, 'staticMethod', 'my.dependency');
-  $result = $factory($container);
+   use FastForward\Container\Factory\MethodFactory;
 
-**When to use:** When you want to use a factory method or static initializer, or need to call a method after construction.
+   $factory = new MethodFactory(MyService::class, 'build', 'my.dependency');
+   $service = $factory($container);
+
+Important behavior:
+
+- Static methods are invoked without instantiating the class.
+- Instance methods first try ``$container->get(MyService::class)``.
+- If that lookup fails, the factory falls back to ``new MyService()``, so the class must be instantiable without constructor arguments in that branch.
+- Non-public methods trigger ``RuntimeException``.
 
 5. ServiceFactory
 ^^^^^^^^^^^^^^^^^
-**Purpose:** Always returns the same fixed instance, regardless of the container.
 
-**How it works:**
+``ServiceFactory`` wraps a value or object you already created.
 
 .. code-block:: php
 
-  use FastForward\Container\Factory\ServiceFactory;
-  $instance = new MyService();
-  $factory = new ServiceFactory($instance);
-  $service = $factory($container); // Always returns $instance
+   use FastForward\Container\Factory\ServiceFactory;
 
-**When to use:** For registering pre-built or singleton objects.
+   $instance = new MyService();
+   $factory = new ServiceFactory($instance);
+   $service = $factory($container); // Always returns $instance
 
 Summary Table
 -------------
 
-=================  ===============================  ================================
-Factory            What it does                     When to use
-=================  ===============================  ================================
-AliasFactory       Alias to another service         Multiple names for one service
-CallableFactory    User-defined callable            Full control, dynamic logic
-InvokableFactory   Class constructor                Simple instantiation, DI by name
-MethodFactory      Class/static method              Factory/static methods, post-init
-ServiceFactory     Fixed instance                   Pre-built or singleton objects
-=================  ===============================  ================================
+=================  ================================================  =========================================
+Factory            Good default for                                 Avoid when
+=================  ================================================  =========================================
+AliasFactory       Secondary names and backwards-compatible IDs      You need a different object, not an alias
+CallableFactory    Typed, custom assembly logic                      Your callable needs builtin scalar parameters
+InvokableFactory   Simple constructor-based services                 Construction requires branching logic
+MethodFactory      Named factory methods or post-construction hooks  The target method is not public
+ServiceFactory     Existing instances and immutable values           You need a fresh object per resolution
+=================  ================================================  =========================================
 
 Tips for Beginners
 ------------------
-- If you just want to register a class, use InvokableFactory.
-- If you want to alias a service, use AliasFactory.
-- If you need to run custom logic, use CallableFactory.
-- If you want to call a static or instance method, use MethodFactory.
-- If you already have an object, use ServiceFactory.
 
-All factories are fully tested (see the tests/Factory directory) and can be combined with providers for advanced scenarios.
+- If you already have the final object, prefer ``ServiceFactory`` because it is the most explicit option.
+- If you only need constructor calls, start with ``InvokableFactory``.
+- If your closure needs services by type, use ``CallableFactory`` and add proper type hints.
+- If you need two names for one service, use ``AliasFactory`` rather than duplicating factory logic.
+- If a factory method already exists in your domain code, ``MethodFactory`` usually keeps the documentation easiest to read.

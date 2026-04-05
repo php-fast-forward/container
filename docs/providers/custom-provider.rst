@@ -20,7 +20,7 @@ Example: Custom Provider Using Factories
        {
            return [
                'foo' => new InvokableFactory(FooService::class),
-               'bar' => new AliasFactory('foo'),
+               'bar' => AliasFactory::get('foo'),
            ];
        }
 

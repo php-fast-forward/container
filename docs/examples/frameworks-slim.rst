@@ -5,7 +5,7 @@ You can use FastForward Container as the dependency injection container for Slim
 
 .. code-block:: php
 
-   use FastForward\Container\container;
+   use function FastForward\Container\container;
    use FastForward\Container\ServiceProvider\ArrayServiceProvider;
    use Slim\App;
 

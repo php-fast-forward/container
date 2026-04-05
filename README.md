@@ -20,7 +20,7 @@ composer require fast-forward/container
 
 ```php
 use FastForward\Container\ContainerInterface;
-use FastForward\Container\container;
+use function FastForward\Container\container;
 use FastForward\Config\ArrayConfig;
 
 $config = new ArrayConfig([
@@ -54,6 +54,6 @@ This package is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## 🔗 Links
 
 - [Repository](https://github.com/php-fast-forward/container)
-- [Packagist](https://packagist.org/packages/php-fast-forward/container)
+- [Packagist](https://packagist.org/packages/fast-forward/container)
 - [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119)
 - [PSR-11 Container Interface](https://www.php-fig.org/psr/psr-11/)

@@ -8,7 +8,7 @@ Registering Multiple Providers
 
    use FastForward\Container\ServiceProvider\ArrayServiceProvider;
    use FastForward\Container\ServiceProvider\AggregateServiceProvider;
-   use FastForward\Container\container;
+   use function FastForward\Container\container;
 
    $providerA = new ArrayServiceProvider([
        'mailer' => fn() => new Mailer(),
@@ -27,7 +27,7 @@ Extending Services with Providers
 .. code-block:: php
 
    use FastForward\Container\ServiceProvider\ArrayServiceProvider;
-   use FastForward\Container\container;
+   use function FastForward\Container\container;
 
    class UserRepository {
        public function setLogger($logger) { /* ... */ }
@@ -53,7 +53,7 @@ Composing Providers for Feature Modules
 
    use FastForward\Container\ServiceProvider\ArrayServiceProvider;
    use FastForward\Container\ServiceProvider\AggregateServiceProvider;
-   use FastForward\Container\container;
+   use function FastForward\Container\container;
 
    $userProvider = new ArrayServiceProvider([
        'user_service' => fn() => new UserService(),
@@ -75,7 +75,7 @@ Using Providers with Config
 .. code-block:: php
 
    use FastForward\Config\ArrayConfig;
-   use FastForward\Container\container;
+   use function FastForward\Container\container;
    use FastForward\Container\ServiceProvider\ArrayServiceProvider;
 
    $config = new ArrayConfig([
@@ -100,7 +100,7 @@ Provider Returning a Factory
 
    use FastForward\Container\ServiceProvider\ArrayServiceProvider;
    use FastForward\Container\Factory\InvokableFactory;
-   use FastForward\Container\container;
+   use function FastForward\Container\container;
 
    $provider = new ArrayServiceProvider([
        'service' => new InvokableFactory(MyService::class, 'arg1'),
@@ -116,7 +116,7 @@ Provider with Extension for Caching
 .. code-block:: php
 
    use FastForward\Container\ServiceProvider\ArrayServiceProvider;
-   use FastForward\Container\container;
+   use function FastForward\Container\container;
 
    class Cache {
        public function enable() { /* ... */ }

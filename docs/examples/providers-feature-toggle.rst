@@ -6,7 +6,7 @@ This example demonstrates how to use providers to enable or disable features at 
 .. code-block:: php
 
    use FastForward\Container\ServiceProvider\ArrayServiceProvider;
-   use FastForward\Container\container;
+   use function FastForward\Container\container;
 
    $featureEnabled = true;
 
