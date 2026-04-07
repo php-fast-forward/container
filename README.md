@@ -3,6 +3,7 @@
 A PSR-11 compliant aggregate container for PHP, designed to unify and resolve services across multiple container implementations. Built to work seamlessly with `php-di`, configuration objects, and custom container stacks.
 
 [![PHP Version](https://img.shields.io/badge/php-^8.3-777BB4?logo=php&logoColor=white)](https://www.php.net/releases/)
+[![Composer Package](https://img.shields.io/badge/composer-fast--forward%2Fcontainer-F28D1A.svg?logo=composer&logoColor=white)](https://packagist.org/packages/fast-forward/container)
 [![PSR-11](https://img.shields.io/badge/PSR--11-container-777BB4?logo=php&logoColor=white)](https://www.php-fig.org/psr/psr-11/)
 [![Tests](https://img.shields.io/github/actions/workflow/status/php-fast-forward/container/tests.yml?logo=githubactions&logoColor=white&label=tests&color=22C55E)](https://github.com/php-fast-forward/container/actions/workflows/tests.yml)
 [![Coverage](https://img.shields.io/badge/coverage-phpunit-4ADE80?logo=php&logoColor=white)](https://php-fast-forward.github.io/container/coverage/index.html)
