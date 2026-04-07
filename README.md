@@ -1,5 +1,7 @@
 # FastForward\Container
 
+A PSR-11 compliant aggregate container for PHP, designed to unify and resolve services across multiple container implementations. Built to work seamlessly with `php-di`, configuration objects, and custom container stacks.
+
 [![PHP Version](https://img.shields.io/badge/php-^8.3-777BB4?logo=php&logoColor=white)](https://www.php.net/releases/)
 [![PSR-11](https://img.shields.io/badge/PSR--11-container-777BB4?logo=php&logoColor=white)](https://www.php-fig.org/psr/psr-11/)
 [![Tests](https://img.shields.io/github/actions/workflow/status/php-fast-forward/container/tests.yml?logo=githubactions&logoColor=white&label=tests&color=22C55E)](https://github.com/php-fast-forward/container/actions/workflows/tests.yml)
@@ -7,8 +9,6 @@
 [![Docs](https://img.shields.io/github/deployments/php-fast-forward/container/github-pages?logo=readthedocs&logoColor=white&label=docs&labelColor=1E293B&color=38BDF8&style=flat)](https://php-fast-forward.github.io/container/index.html)
 [![License](https://img.shields.io/github/license/php-fast-forward/container?color=64748B)](LICENSE)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/php-fast-forward?logo=githubsponsors&logoColor=white&color=EC4899)](https://github.com/sponsors/php-fast-forward)
-
-A PSR-11 compliant aggregate container for PHP, designed to unify and resolve services across multiple container implementations. Built to work seamlessly with `php-di`, configuration objects, and custom container stacks.
 
 ## ✨ Features
 
