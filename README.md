@@ -1,5 +1,9 @@
 # FastForward\Container
 
+<p align="center">
+  <img src="assets/brand/dash.png" alt="Dash, the PHP Fast Forward fox, wearing a purple hoodie" width="320">
+</p>
+
 A PSR-11 compliant aggregate container for PHP, designed to unify and resolve services across multiple container implementations. Built to work seamlessly with `php-di`, configuration objects, and custom container stacks.
 
 [![PHP Version](https://img.shields.io/badge/php-^8.3-777BB4?logo=php&logoColor=white)](https://www.php.net/releases/)
