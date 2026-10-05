@@ -1,7 +1,7 @@
 # FastForward\Container
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/php-fast-forward/container/91d45066f656a136b0e8aff5652712755999e44a/docs/_static/mascot-banner.png" alt="Dash assembling registered services from a modular cabinet" width="840">
+  <img src="docs/_static/mascot-banner.png" alt="Dash assembling registered services from a modular cabinet" width="840">
 </p>
 
 A PSR-11 compliant aggregate container for PHP, designed to unify and resolve services across multiple container implementations. Built to work seamlessly with `php-di`, configuration objects, and custom container stacks.
