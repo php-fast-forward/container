@@ -80,6 +80,38 @@ final class ServiceProviderResolutionTest extends TestCase
      * @return void
      */
     #[Test]
+    public function nonCallableFactoryDoesNotMakeAnEntryDiscoverable(): void
+    {
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'invalid' => 'missing-factory',
+        ]));
+
+        self::assertFalse($container->has('invalid'));
+
+        $this->expectException(NotFoundException::class);
+        $container->get('invalid');
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function callableExtensionCanProvideEntryWithNonCallableFactory(): void
+    {
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'optional' => 'missing-factory',
+        ], [
+            'optional' => static fn(ContainerInterface $container, ?string $previous): string => $previous ?? 'default',
+        ]));
+
+        self::assertTrue($container->has('optional'));
+        self::assertSame('default', $container->get('optional'));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
     public function extensionCreatesSharedEntryFromNull(): void
     {
         $calls = 0;
@@ -473,12 +505,13 @@ final class ServiceProviderResolutionTest extends TestCase
 
     /**
      * @param string $source
+     * @param string $operation
      *
      * @return void
      */
     #[Test]
-    #[DataProvider('failureSources')]
-    public function metadataFailurePreservesCause(string $source): void
+    #[DataProvider('metadataFailureOperations')]
+    public function metadataFailurePreservesCause(string $source, string $operation): void
     {
         $failure = new RuntimeException('Provider metadata failed.', 501);
         $provider = new readonly class ($source, $failure) implements ServiceProviderInterface {
@@ -500,9 +533,7 @@ final class ServiceProviderResolutionTest extends TestCase
                     throw $this->failure;
                 }
 
-                return [
-                    'service' => static fn(): stdClass => new stdClass(),
-                ];
+                return [];
             }
 
             /**
@@ -516,8 +547,8 @@ final class ServiceProviderResolutionTest extends TestCase
         $container = new ServiceProviderContainer($provider);
 
         try {
-            $container->get('service');
-            self::fail('Resolution must preserve the provider metadata failure.');
+            $container->{$operation}('service');
+            self::fail('Entry discovery and resolution must preserve provider metadata failures.');
         } catch (ContainerException $containerException) {
             self::assertSame(501, $containerException->getCode());
             self::assertSame($failure, $containerException->getPrevious());
@@ -532,6 +563,19 @@ final class ServiceProviderResolutionTest extends TestCase
         return [
             'factory' => ['factory'],
             'extension' => ['extension'],
+        ];
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function metadataFailureOperations(): array
+    {
+        return [
+            'get factory metadata' => ['factory', 'get'],
+            'get extension metadata' => ['extension', 'get'],
+            'has factory metadata' => ['factory', 'has'],
+            'has extension metadata' => ['extension', 'has'],
         ];
     }
 }

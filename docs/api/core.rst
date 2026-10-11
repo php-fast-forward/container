@@ -106,7 +106,8 @@ Important behavior:
 - Extensions can target the original ID, the concrete class name, or both.
 - Without a factory, a callable ID-based extension receives ``null`` and can supply the entry.
 - Extension return values replace the previous value. Explicit ``void`` extensions retain it for compatibility.
-- ``has()`` discovers extension-only entries without executing them.
+- ``has()`` discovers callable factories and extension-only entries without executing them. Invalid factory values alone do not make an entry available.
+- Provider metadata failures in ``has()`` and ``get()`` preserve their cause in ``ContainerException``.
 - Factory and extension failures are wrapped in ``ContainerException`` with their original cause and are not cached.
 - Factories and extensions receive the wrapper container, which defaults to the provider container itself.
 

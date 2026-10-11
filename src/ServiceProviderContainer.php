@@ -77,18 +77,27 @@ final class ServiceProviderContainer implements ContainerInterface
     /**
      * Determines if the container can return an entry for the given identifier.
      *
-     * This method MUST return true for cached entries, factories, or callable ID-based extensions.
+     * This method MUST return true for cached entries, callable factories, or callable ID-based extensions.
      * It SHALL NOT execute factories or extensions to discover an entry.
      *
      * @param string $id identifier of the entry to look for
      *
      * @return bool true if the entry exists, false otherwise
+     *
+     * @throws ContainerException if provider metadata cannot be read
      */
     public function has(string $id): bool
     {
-        return \array_key_exists($id, $this->cache)
-            || \array_key_exists($id, $this->serviceProvider->getFactories())
-            || \is_callable($this->serviceProvider->getExtensions()[$id] ?? null);
+        if (\array_key_exists($id, $this->cache)) {
+            return true;
+        }
+
+        try {
+            return \is_callable($this->serviceProvider->getFactories()[$id] ?? null)
+                || \is_callable($this->serviceProvider->getExtensions()[$id] ?? null);
+        } catch (Throwable $throwable) {
+            throw ContainerException::forInvalidService($id, $throwable);
+        }
     }
 
     /**
