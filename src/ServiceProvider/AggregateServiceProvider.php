@@ -97,8 +97,10 @@ class AggregateServiceProvider implements ServiceProviderInterface
                         throw RuntimeException::forNonCallableExtension($id, get_debug_type($extension));
                     }
 
+                    $extension = new ServiceExtension($extension);
+
                     $extensions[$id] = \array_key_exists($id, $extensions)
-                        ? static fn(ContainerInterface $container, $previous) => $extension(
+                        ? static fn(ContainerInterface $container, $previous): mixed => $extension(
                             $container,
                             $extensions[$id]($container, $previous)
                         )

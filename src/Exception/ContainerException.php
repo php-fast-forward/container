@@ -43,6 +43,8 @@ final class ContainerException extends Exception implements ContainerExceptionIn
      */
     public static function forInvalidService(string $id, Throwable $previous): self
     {
-        return new self(\sprintf('Invalid service "%s".', $id), $previous->getCode(), $previous);
+        $code = $previous->getCode();
+
+        return new self(\sprintf('Invalid service "%s".', $id), \is_int($code) ? $code : 0, $previous);
     }
 }

@@ -48,4 +48,25 @@ final class ContainerExceptionTest extends TestCase
         self::assertSame($previous, $exception->getPrevious());
         self::assertSame(500, $exception->getCode());
     }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function forInvalidServicePreservesCauseWithStringCode(): void
+    {
+        $previous = new class extends RuntimeException {
+            public function __construct()
+            {
+                parent::__construct('SQLSTATE HY000');
+                $this->code = 'HY000';
+            }
+        };
+
+        $exception = ContainerException::forInvalidService('database', $previous);
+
+        self::assertSame(0, $exception->getCode());
+        self::assertSame($previous, $exception->getPrevious());
+        self::assertSame('HY000', $exception->getPrevious()->getCode());
+    }
 }

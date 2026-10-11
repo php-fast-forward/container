@@ -101,9 +101,13 @@ that are declared but not actually constructible.
 
 Important behavior:
 
-- Services are lazy and cached after the first ``get()``.
-- If a resolved service ID differs from the service concrete class, the service is also cached under its class name.
+- Entries are lazy and cached after the first successful ``get()``, including ``null``.
+- If a final resolved object ID differs from its concrete class, the object is also cached under its class name.
 - Extensions can target the original ID, the concrete class name, or both.
+- Without a factory, a callable ID-based extension receives ``null`` and can supply the entry.
+- Extension return values replace the previous value. Explicit ``void`` extensions retain it for compatibility.
+- ``has()`` discovers extension-only entries without executing them.
+- Factory and extension failures are wrapped in ``ContainerException`` with their original cause and are not cached.
 - Factories and extensions receive the wrapper container, which defaults to the provider container itself.
 
 This wrapper behavior is especially useful when the provider should resolve dependencies

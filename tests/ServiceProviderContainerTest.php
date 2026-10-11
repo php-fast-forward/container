@@ -22,6 +22,7 @@ use stdClass;
 use RuntimeException;
 use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\NotFoundException;
+use FastForward\Container\ServiceProvider\ServiceExtension;
 use FastForward\Container\ServiceProviderContainer;
 use Interop\Container\ServiceProviderInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -39,6 +40,7 @@ use Psr\Container\ContainerInterface;
 #[CoversClass(ServiceProviderContainer::class)]
 #[UsesClass(NotFoundException::class)]
 #[UsesClass(ContainerException::class)]
+#[UsesClass(ServiceExtension::class)]
 final class ServiceProviderContainerTest extends TestCase
 {
     use ProphecyTrait;
