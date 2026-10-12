@@ -8,6 +8,7 @@ Overview
 API                              Responsibility                                     Most common use
 ===============================  ================================================  ===========================================
 ``container()``                  Build the final composed container                Application entry point
+``ContainerFactory``             Compose a fresh container stack                   Invocable application bootstrap
 ``ContainerInterface``           FastForward-specific PSR-11 interface             Type hint inside FastForward packages
 ``AggregateContainer``           Resolve services across several child containers  Layering, overrides, fallback
 ``AutowireContainer``            Add autowiring on top of another container        Mixed explicit registration and autowiring
@@ -38,6 +39,29 @@ Important behavior:
 - The helper wraps providers in ``ServiceProviderContainer`` automatically.
 - The helper wraps config objects in ``ConfigContainer`` automatically.
 - Earlier initializers take precedence over later ones in aggregate resolution.
+
+The function delegates composition to ``ContainerFactory``.
+
+``ContainerFactory``
+--------------------
+
+``FastForward\Container\ContainerFactory`` exposes the same composition as an
+invocable object. It accepts the same variadic initializers as ``container()``:
+
+.. code-block:: php
+
+   use FastForward\Container\ContainerFactory;
+
+   $factory = new ContainerFactory();
+   $container = $factory($provider, $config);
+   $another = $factory($provider, $config);
+
+Each invocation creates a fresh aggregate, provider adapters, and autowiring
+container. The factory keeps no assembled container state. Existing PSR-11
+containers supplied as initializers remain the same supplied objects.
+
+Initializer order, provider wrapper injection, nested configuration entries,
+and the helper's existing optional-configuration error handling are preserved.
 
 ``ContainerInterface``
 ----------------------
@@ -102,7 +126,7 @@ that are declared but not actually constructible.
 Important behavior:
 
 - Entries are lazy and cached after the first successful ``get()``, including ``null``.
-- If a final resolved object ID differs from its concrete class, the object is also cached under its class name.
+- If a final resolved object ID differs from its concrete class, the object is also cached under its class name when that ID has no existing entry or callable definition in the provider container.
 - Extensions can target the original ID, the concrete class name, or both.
 - Without a factory, a callable ID-based extension receives ``null`` and can supply the entry.
 - Extension return values replace the previous value. Explicit ``void`` extensions retain it for compatibility.

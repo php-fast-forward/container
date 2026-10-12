@@ -88,13 +88,13 @@ final class ServiceProviderContainer implements ContainerInterface
      */
     public function has(string $id): bool
     {
-        if (\array_key_exists($id, $this->cache)) {
+        if ($this->hasEntry($id)) {
             return true;
         }
 
         try {
-            return \is_callable($this->serviceProvider->getFactories()[$id] ?? null)
-                || \is_callable($this->serviceProvider->getExtensions()[$id] ?? null);
+            return $this->hasEntry($id, $this->serviceProvider->getFactories())
+                || $this->hasEntry($id, extensions: $this->serviceProvider->getExtensions());
         } catch (Throwable $throwable) {
             throw ContainerException::forInvalidService($id, $throwable);
         }
@@ -138,17 +138,38 @@ final class ServiceProviderContainer implements ContainerInterface
         try {
             $service = \is_callable($factory) ? $factory($this->wrapperContainer) : null;
             $service = $this->applyServiceExtensions($id, $service, $extensions);
+            $alias = \is_object($service) ? $service::class : null;
+
+            if (null !== $alias && ($id === $alias || $this->hasEntry($alias, $factories, $extensions))) {
+                $alias = null;
+            }
         } catch (Throwable $throwable) {
             throw ContainerException::forInvalidService($id, $throwable);
         }
 
         $this->cache[$id] = $service;
 
-        if (\is_object($service) && $id !== $service::class && ! \array_key_exists($service::class, $this->cache)) {
-            $this->cache[$service::class] = $service;
+        if (null !== $alias) {
+            $this->cache[$alias] = $service;
         }
 
         return $service;
+    }
+
+    /**
+     * Checks existing entries using metadata already loaded by the caller.
+     *
+     * @param string $id the entry identifier
+     * @param array<string, mixed> $factories the available factory definitions
+     * @param array<string, mixed> $extensions the available extension definitions
+     *
+     * @return bool whether a resolved entry or callable definition exists
+     */
+    private function hasEntry(string $id, array $factories = [], array $extensions = []): bool
+    {
+        return \array_key_exists($id, $this->cache)
+            || \is_callable($factories[$id] ?? null)
+            || \is_callable($extensions[$id] ?? null);
     }
 
     /**

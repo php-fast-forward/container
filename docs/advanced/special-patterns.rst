@@ -62,7 +62,9 @@ Extensions allow you to decorate or modify services after creation. In
 The ID-based extension runs first. Its return value replaces the previous value.
 If that result is an object, a matching extension for its concrete class can run next.
 The final result is cached under the original ID. Only a final object can also be
-bound under its concrete class name.
+bound under its concrete class name. This inferred alias never replaces an
+existing entry or a callable factory/extension registered for that class ID in
+the provider container.
 
 Extensions should return the resulting entry, including when they modify an object
 in place. Existing extensions explicitly declared ``void`` retain the previous value

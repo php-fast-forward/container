@@ -24,6 +24,7 @@ use stdClass;
 use TypeError;
 use FastForward\Container\AggregateContainer;
 use FastForward\Container\AutowireContainer;
+use FastForward\Container\ContainerFactory;
 use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\Factory\ServiceFactory;
@@ -51,6 +52,7 @@ use function FastForward\Container\container;
 #[UsesClass(AggregateServiceProvider::class)]
 #[UsesClass(AggregateContainer::class)]
 #[UsesClass(AutowireContainer::class)]
+#[UsesClass(ContainerFactory::class)]
 #[UsesClass(ServiceFactory::class)]
 #[UsesClass(ContainerException::class)]
 #[UsesClass(NotFoundException::class)]
@@ -225,6 +227,53 @@ final class ServiceProviderResolutionTest extends TestCase
         self::assertSame($replacement, $container->get('service'));
         self::assertSame($replacement, $container->get(ArrayObject::class));
         self::assertFalse($container->has(stdClass::class));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function inferredClassAliasDoesNotOverrideDefinedFactory(): void
+    {
+        $aliased = new stdClass();
+        $defined = new stdClass();
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'service' => static fn(): stdClass => $aliased,
+            stdClass::class => static fn(): stdClass => $defined,
+        ]));
+
+        self::assertSame($aliased, $container->get('service'));
+        self::assertSame($defined, $container->get(stdClass::class));
+        self::assertSame($aliased, $container->get('service'));
+        self::assertSame($defined, $container->get(stdClass::class));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function inferredClassAliasDoesNotOverrideDefinedExtension(): void
+    {
+        $aliased = new stdClass();
+        $defined = new stdClass();
+        $calls = 0;
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'service' => static fn(): stdClass => $aliased,
+        ], [
+            stdClass::class => static function (ContainerInterface $container, ?stdClass $previous) use (
+                &$calls,
+                $defined
+            ): stdClass {
+                ++$calls;
+
+                return $previous ?? $defined;
+            },
+        ]));
+
+        self::assertSame($aliased, $container->get('service'));
+        self::assertSame($defined, $container->get(stdClass::class));
+        self::assertSame($defined, $container->get(stdClass::class));
+        self::assertSame(2, $calls);
     }
 
     /**

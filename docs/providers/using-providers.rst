@@ -96,7 +96,7 @@ container consumers:
 Important behavior:
 
 - Resolved entries are cached, including scalar values, arrays, and ``null``.
-- A resolved object is also cached under its final concrete class name when the original ID is different.
+- A resolved object is also cached under its final concrete class name when the original ID is different and that class ID has no existing entry or callable definition in the provider container.
 - Extensions may be keyed by the original service ID or by the concrete class name of the resolved service.
 - An ID-based extension can provide an entry without a factory; it receives ``null`` as the previous value.
 - Each extension's return value becomes the next value in the resolution chain. Extensions declared ``void`` retain the previous value for compatibility.
