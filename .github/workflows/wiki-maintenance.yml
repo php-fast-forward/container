@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: fast-forward-wiki-maintenance-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: fast-forward-wiki-maintenance
+  cancel-in-progress: false
 
 jobs:
   maintenance:
