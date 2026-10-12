@@ -32,7 +32,11 @@ jobs:
           <?php
           $file = 'composer.json';
           $data = json_decode(file_get_contents($file), true, 512, JSON_THROW_ON_ERROR);
-          $data['require-dev']['fast-forward/dev-tools'] = 'dev-main#d5a3b7eec9896f9ea50974ff09b23c32887acbc0';
+          $data['repositories']['pinned-dev-tools'] = [
+              'type' => 'path',
+              'url' => '.dev-tools-actions',
+              'options' => ['symlink' => false, 'versions' => ['fast-forward/dev-tools' => 'dev-main']],
+          ];
           $data['config']['allow-plugins']['fast-forward/dev-tools'] = false;
           file_put_contents($file, json_encode($data, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
           PHP
