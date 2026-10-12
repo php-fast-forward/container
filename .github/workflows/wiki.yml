@@ -60,7 +60,7 @@ jobs:
       - name: Generate API pages
         run: |
           mkdir -p "$RUNNER_TEMP/wiki-pages"
-          php vendor/bin/dev-tools github:wiki --target="$RUNNER_TEMP/wiki-pages" --no-cache --no-logo
+          php vendor/bin/dev-tools github:wiki --target="$RUNNER_TEMP/wiki-pages" --no-logo
           test -s "$RUNNER_TEMP/wiki-pages/Home.md"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
