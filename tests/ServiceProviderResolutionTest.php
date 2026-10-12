@@ -29,7 +29,7 @@ use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\Factory\ServiceFactory;
 use FastForward\Container\ServiceProvider\AggregateServiceProvider;
 use FastForward\Container\ServiceProvider\ArrayServiceProvider;
-use FastForward\Container\ServiceProvider\ServiceExtension;
+use FastForward\Container\Extension\ServiceExtension;
 use FastForward\Container\ServiceProviderContainer;
 use Interop\Container\ServiceProviderInterface;
 use PHPUnit\Framework\Attributes\CoversClass;

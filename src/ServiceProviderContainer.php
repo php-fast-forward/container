@@ -21,7 +21,7 @@ namespace FastForward\Container;
 use Throwable;
 use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\NotFoundException;
-use FastForward\Container\ServiceProvider\ServiceExtension;
+use FastForward\Container\Extension\ServiceExtension;
 use Interop\Container\ServiceProviderInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 

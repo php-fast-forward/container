@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace FastForward\Container\ServiceProvider;
 
 use FastForward\Container\Exception\RuntimeException;
+use FastForward\Container\Extension\ServiceExtension;
 use FastForward\Container\Factory\ServiceFactory;
 use Interop\Container\ServiceProviderInterface;
 use Psr\Container\ContainerInterface;

@@ -22,7 +22,7 @@ use stdClass;
 use FastForward\Container\Exception\RuntimeException;
 use FastForward\Container\Factory\ServiceFactory;
 use FastForward\Container\ServiceProvider\AggregateServiceProvider;
-use FastForward\Container\ServiceProvider\ServiceExtension;
+use FastForward\Container\Extension\ServiceExtension;
 use Interop\Container\ServiceProviderInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
