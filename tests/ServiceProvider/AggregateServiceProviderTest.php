@@ -22,6 +22,7 @@ use stdClass;
 use FastForward\Container\Exception\RuntimeException;
 use FastForward\Container\Factory\ServiceFactory;
 use FastForward\Container\ServiceProvider\AggregateServiceProvider;
+use FastForward\Container\Extension\ServiceExtension;
 use Interop\Container\ServiceProviderInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -36,6 +37,7 @@ use Psr\Container\ContainerInterface;
 #[CoversClass(AggregateServiceProvider::class)]
 #[UsesClass(ServiceFactory::class)]
 #[UsesClass(RuntimeException::class)]
+#[UsesClass(ServiceExtension::class)]
 final class AggregateServiceProviderTest extends TestCase
 {
     use ProphecyTrait;

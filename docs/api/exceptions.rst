@@ -9,7 +9,7 @@ Exception class                  Relationship to PSR-11 exceptions              
 ===============================  ================================================  ===========================================
 ``NotFoundException``            Implements ``NotFoundExceptionInterface``          A service ID cannot be resolved
 ``ContainerException``           Implements ``ContainerExceptionInterface``         A provider factory throws a PSR container exception
-``InvalidArgumentException``     Extends PHP ``InvalidArgumentException``          ``container()`` receives an unsupported initializer
+``InvalidArgumentException``     Extends PHP ``InvalidArgumentException``          Container composition receives an invalid class
 ``RuntimeException``             Extends PHP ``RuntimeException``                  Invalid extensions, invalid callable parameters, or non-public methods
 ===============================  ================================================  ===========================================
 
@@ -30,13 +30,16 @@ underlying failure when needed.
 ``InvalidArgumentException``
 ----------------------------
 
-Used when ``container()`` receives a value it does not know how to turn into a container
-source.
+Used by ``container()`` and ``ContainerFactory::create()`` when a class-string
+initializer cannot be resolved to a supported container source.
 
 Common causes:
 
-- passing arrays directly to ``container()``
-- passing scalar values other than supported class strings
+- passing an unknown class name
+- passing an existing class, such as ``stdClass``, that implements none of the supported initializer contracts
+
+Arrays and direct objects outside the public parameter types are rejected by PHP
+with ``TypeError`` before composition starts.
 
 ``RuntimeException``
 --------------------

@@ -60,6 +60,18 @@ $container = container($config);
 $service = $container->get(SomeService::class);
 ```
 
+The same composition is available through a static method:
+
+```php
+use FastForward\Container\ContainerFactory;
+
+$container = ContainerFactory::create($config);
+```
+
+Both forms accept the same variadic initializers. Each call creates a fresh
+aggregate, provider adapters, and autowiring container; supplied PSR-11 container
+objects are reused. Unsupported initializer classes raise `InvalidArgumentException`.
+
 ## 📄 License
 
 This package is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.

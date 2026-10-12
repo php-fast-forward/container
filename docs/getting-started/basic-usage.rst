@@ -45,6 +45,18 @@ At this point you already have:
 - PSR-11 compatible ``get()`` and ``has()``
 - autowiring for classes that can be constructed from known dependencies
 
+You can also compose the same stack through the static factory:
+
+.. code-block:: php
+
+   use FastForward\Container\ContainerFactory;
+
+   $container = ContainerFactory::create($provider);
+   $logger = $container->get('logger');
+
+``ContainerFactory::create()`` accepts the same variadic initializers as
+``container()``. Each call creates a fresh stack without requiring a factory instance.
+
 Step 2: Compose more than one source
 ------------------------------------
 
@@ -127,7 +139,7 @@ on the shortcut.
 Summary
 -------
 
-- ``container()`` is the main entry point and always returns an autowire-enabled container.
+- ``container()`` and ``ContainerFactory::create()`` both return an autowire-enabled container.
 - You can mix providers, PSR-11 containers, config objects, and instantiable class names.
 - The first matching container wins during aggregate resolution.
 - Raw config keys and ``config.*`` service IDs are related, but they are not the same thing.

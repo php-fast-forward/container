@@ -59,7 +59,55 @@ Extensions allow you to decorate or modify services after creation. In
    $container = container($provider);
    $logger = $container->get('logger');
 
-If both an ID-based extension and a class-based extension exist, both are applied.
+The ID-based extension runs first. Its return value replaces the previous value.
+If that result is an object, a matching extension for its concrete class can run next.
+The final result is cached under the original ID. Only a final object can also be
+bound under its concrete class name. This inferred alias never replaces an
+existing entry or a callable factory/extension registered for that class ID in
+the provider container.
+
+Extensions should return the resulting entry, including when they modify an object
+in place. Existing extensions explicitly declared ``void`` retain the previous value
+for compatibility. An explicit ``null`` return from a value-returning extension
+replaces the entry with ``null``; it does not mean the entry is missing.
+
+Entries with extensions but no factory
+-------------------------------------
+
+An extension can supply a default entry when no factory exists for its ID. Its
+second parameter must accept ``null``:
+
+.. code-block:: php
+
+   use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+   use FastForward\Container\ServiceProviderContainer;
+   use Psr\Container\ContainerInterface;
+
+   $provider = new ArrayServiceProvider(extensions: [
+       'optional.client' => static function (ContainerInterface $container, ?ApiClient $previous): ApiClient {
+           return $previous ?? new ApiClient();
+       },
+       'optional.value' => static fn(ContainerInterface $container, mixed $previous): mixed => null,
+   ]);
+
+   $container = new ServiceProviderContainer($provider);
+   $container->has('optional.client'); // true, without executing the extension
+   $client = $container->get('optional.client');
+   $container->get('optional.client') === $client; // true
+   $container->has('optional.value'); // true
+   $container->get('optional.value'); // null, shared and cached
+
+If the extension requires a non-null previous value, resolution fails with a
+container exception preserving the original cause. Failed resolutions are not
+cached and can be retried. An ID with neither a callable factory nor a callable
+ID-based extension remains unknown.
+
+When combining providers, use ``AggregateServiceProvider`` to select factories
+across all providers before applying their extensions in registration order.
+An extension-only provider may precede the provider supplying its factory.
+Passing providers separately to ``container()`` keeps first-match-wins semantics.
+The ``ServiceProviderContainer::has()`` discovery behavior differs from the final
+``AutowireContainer::has()``, which still attempts resolution.
 
 Provider merge semantics
 ------------------------

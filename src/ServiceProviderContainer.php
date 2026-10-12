@@ -18,10 +18,11 @@ declare(strict_types=1);
 
 namespace FastForward\Container;
 
+use Throwable;
 use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\NotFoundException;
+use FastForward\Container\Extension\ServiceExtension;
 use Interop\Container\ServiceProviderInterface;
-use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 /**
@@ -55,7 +56,7 @@ final class ServiceProviderContainer implements ContainerInterface
      *
      * @var array<string, mixed>
      */
-    private array $cache;
+    private array $cache = [];
 
     /**
      * Constructs a new ServiceProviderContainer instance.
@@ -76,15 +77,27 @@ final class ServiceProviderContainer implements ContainerInterface
     /**
      * Determines if the container can return an entry for the given identifier.
      *
-     * This method MUST return true if the entry exists in the cache or factories, false otherwise.
+     * This method MUST return true for cached entries, callable factories, or callable ID-based extensions.
+     * It SHALL NOT execute factories or extensions to discover an entry.
      *
      * @param string $id identifier of the entry to look for
      *
      * @return bool true if the entry exists, false otherwise
+     *
+     * @throws ContainerException if provider metadata cannot be read
      */
     public function has(string $id): bool
     {
-        return isset($this->cache[$id]) || \array_key_exists($id, $this->serviceProvider->getFactories());
+        if ($this->hasEntry($id)) {
+            return true;
+        }
+
+        try {
+            return $this->hasEntry($id, $this->serviceProvider->getFactories())
+                || $this->hasEntry($id, extensions: $this->serviceProvider->getExtensions());
+        } catch (Throwable $throwable) {
+            throw ContainerException::forInvalidService($id, $throwable);
+        }
     }
 
     /**
@@ -93,77 +106,102 @@ final class ServiceProviderContainer implements ContainerInterface
      * This method SHALL return a cached instance if available, otherwise it resolves
      * the service using the factory provided by the service provider.
      *
-     * If the service has a corresponding extension, it SHALL be applied post-construction.
+     * Extensions SHALL receive the previous value and may replace it. Without a factory,
+     * an ID-based extension receives null. The final value SHALL be cached, including null.
      *
      * @param string $id the identifier of the service to retrieve
      *
      * @return mixed the service instance associated with the identifier
      *
-     * @throws NotFoundException if no factory exists for the given identifier
-     * @throws ContainerException if service construction fails due to container errors
+     * @throws NotFoundException if neither a callable factory nor an ID-based extension exists
+     * @throws ContainerException if factory or extension resolution fails
      */
     public function get(string $id): mixed
     {
-        if (isset($this->cache[$id])) {
+        if (\array_key_exists($id, $this->cache)) {
             return $this->cache[$id];
         }
 
-        $factory = $this->serviceProvider->getFactories();
+        try {
+            $factories = $this->serviceProvider->getFactories();
+            $extensions = $this->serviceProvider->getExtensions();
+        } catch (Throwable $throwable) {
+            throw ContainerException::forInvalidService($id, $throwable);
+        }
 
-        if (! \array_key_exists($id, $factory) || ! \is_callable($factory[$id])) {
+        $factory = $factories[$id] ?? null;
+
+        if (! \is_callable($factory) && ! \is_callable($extensions[$id] ?? null)) {
             throw NotFoundException::forServiceID($id);
         }
 
         try {
-            $service = \call_user_func($factory[$id], $this->wrapperContainer);
-            $class   = $service::class;
-            $this->applyServiceExtensions($id, $class, $service);
-        } catch (ContainerExceptionInterface $containerException) {
-            throw ContainerException::forInvalidService($id, $containerException);
+            $service = \is_callable($factory) ? $factory($this->wrapperContainer) : null;
+            $service = $this->applyServiceExtensions($id, $service, $extensions);
+            $alias = \is_object($service) ? $service::class : null;
+
+            if (null !== $alias && ($id === $alias || $this->hasEntry($alias, $factories, $extensions))) {
+                $alias = null;
+            }
+        } catch (Throwable $throwable) {
+            throw ContainerException::forInvalidService($id, $throwable);
         }
 
         $this->cache[$id] = $service;
 
-        if ($id !== $class && ! isset($this->cache[$class])) {
-            $this->cache[$class] = $service;
+        if (null !== $alias) {
+            $this->cache[$alias] = $service;
         }
 
         return $service;
     }
 
     /**
-     * Applies service extensions to the constructed service instance.
+     * Checks existing entries using metadata already loaded by the caller.
      *
-     * This method SHALL inspect the set of extensions returned by the service provider,
-     * checking both the original service identifier and the concrete class name of the
-     * service instance. If a corresponding extension is found, it MUST be a callable and
-     * SHALL be invoked with the container and service instance as arguments.
+     * @param string $id the entry identifier
+     * @param array<string, mixed> $factories the available factory definitions
+     * @param array<string, mixed> $extensions the available extension definitions
      *
-     * Extensions MAY be used to modify or enhance services after creation. Invalid extensions
-     * (non-callables) SHALL be ignored silently.
+     * @return bool whether a resolved entry or callable definition exists
+     */
+    private function hasEntry(string $id, array $factories = [], array $extensions = []): bool
+    {
+        return \array_key_exists($id, $this->cache)
+            || \is_callable($factories[$id] ?? null)
+            || \is_callable($extensions[$id] ?? null);
+    }
+
+    /**
+     * Applies ID-based and concrete-class extensions, retaining each returned value.
+     *
+     * The ID-based extension SHALL run first. If its result is an object, an extension
+     * for that object's concrete class MAY run next. Invalid extensions SHALL be ignored.
+     *
+     * Extensions declared void SHALL retain the previous value for compatibility.
      *
      * @param string $id the identifier of the resolved service
-     * @param string $class the fully qualified class name of the service
-     * @param mixed $service the service instance to apply extensions to
+     * @param mixed $service the previous entry value, or null when no factory exists
+     * @param array<string, mixed> $extensions the provider's extension definitions
      *
-     * @return void
+     * @return mixed the final entry value
      *
      * @throws ContainerException if an extension callable fails during execution
      */
-    private function applyServiceExtensions(string $id, string $class, mixed $service): void
+    private function applyServiceExtensions(string $id, mixed $service, array $extensions): mixed
     {
-        $extensions = $this->serviceProvider->getExtensions();
-
-        if (\array_key_exists($id, $extensions) && \is_callable($extensions[$id])) {
-            $extensions[$id]($this->wrapperContainer, $service);
+        if (\is_callable($extensions[$id] ?? null)) {
+            $service = (new ServiceExtension($extensions[$id]))($this->wrapperContainer, $service);
         }
 
-        if ($id !== $class
-            && ! isset($this->cache[$class])
-            && \array_key_exists($class, $extensions)
-            && \is_callable($extensions[$class])
+        if (\is_object($service)
+            && $id !== $service::class
+            && ! \array_key_exists($service::class, $this->cache)
+            && \is_callable($extensions[$service::class] ?? null)
         ) {
-            $extensions[$class]($this->wrapperContainer, $service);
+            return (new ServiceExtension($extensions[$service::class]))($this->wrapperContainer, $service);
         }
+
+        return $service;
     }
 }

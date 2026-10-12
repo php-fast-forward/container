@@ -2,7 +2,7 @@
 
 The examples are ordered from the most common onboarding flow to the more specialized container features.
 
-- `php examples/01-basic-services.php`: register a simple provider, resolve small value objects, and fetch a concrete service.
+- `php examples/01-basic-services.php`: register a simple provider, resolve small value objects, and fetch a concrete service using both `container(...)` and `ContainerFactory::create(...)`.
 
 - `php examples/02-autowiring.php`: register only the dependency that needs configuration and let autowiring resolve the rest of the object graph.
 

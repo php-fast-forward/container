@@ -19,16 +19,19 @@ declare(strict_types=1);
 namespace FastForward\Container\Tests;
 
 use RuntimeException;
+use stdClass;
 use FastForward\Config\ConfigInterface;
 use FastForward\Config\Container\ConfigContainer;
 use FastForward\Container\AggregateContainer;
 use FastForward\Container\AutowireContainer;
+use FastForward\Container\ContainerFactory;
 use FastForward\Container\ContainerInterface;
 use FastForward\Container\Exception\InvalidArgumentException;
 use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\ServiceProviderContainer;
 use Interop\Container\ServiceProviderInterface;
 use PHPUnit\Framework\Attributes\CoversFunction;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
@@ -39,6 +42,7 @@ use function FastForward\Container\container;
  * @internal
  */
 #[CoversFunction('FastForward\Container\container')]
+#[CoversClass(ContainerFactory::class)]
 #[UsesClass(AggregateContainer::class)]
 #[UsesClass(AutowireContainer::class)]
 #[UsesClass(ServiceProviderContainer::class)]
@@ -126,6 +130,16 @@ final class ContainerFunctionTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         container(uniqid());
+    }
+
+    /**
+     * @return void
+     */
+    public function testThrowsForExistingUnsupportedInitializer(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        container(stdClass::class);
     }
 
     /**
