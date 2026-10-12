@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace FastForward\Container;
 
-use TypeError;
 use Throwable;
 use FastForward\Config\ConfigInterface;
 use FastForward\Config\Container\ConfigContainer;
@@ -32,14 +31,14 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
  * This factory SHALL compose PSR-11 containers, service providers, configuration
  * objects, and initializer class names in their supplied order.
  *
- * Each invocation MUST create a fresh aggregate, provider adapters, and autowiring
- * container. The factory SHALL NOT retain the assembled container between calls.
+ * Each call to create() MUST create a fresh aggregate, provider adapters, and
+ * autowiring container. The factory SHALL NOT retain assembled container state.
  * Supplied PSR-11 containers SHALL be used directly without cloning their state.
  *
  * Provider adapters SHALL receive the aggregate as their wrapper so dependencies
  * can be resolved across all sources in the composed stack.
  */
-final readonly class ContainerFactory
+final class ContainerFactory
 {
     /**
      * Creates and assembles a fresh container stack.
@@ -52,20 +51,19 @@ final readonly class ContainerFactory
      *
      * @return ContainerInterface the composed and autowire-enabled container
      *
-     * @throws InvalidArgumentException if an initializer class cannot be found
-     * @throws TypeError if a constructed initializer cannot be adapted to a PSR-11 container
+     * @throws InvalidArgumentException if an initializer class cannot be found or adapted
      */
-    public function __invoke(
+    public static function create(
         ConfigInterface|PsrContainerInterface|ServiceProviderInterface|string ...$initializers,
     ): ContainerInterface {
         $aggregateContainer = new AggregateContainer();
 
         foreach ($initializers as $initializer) {
-            $container = $this->resolveInitializer($initializer, $aggregateContainer);
+            $container = self::resolveInitializer($initializer, $aggregateContainer);
             $aggregateContainer->append($container);
 
             if ($container instanceof ConfigContainer) {
-                $this->appendConfiguredContainers($container, $aggregateContainer);
+                self::appendConfiguredContainers($container, $aggregateContainer);
             }
         }
 
@@ -81,17 +79,17 @@ final readonly class ContainerFactory
      * @param mixed $initializer an initializer object or instantiable class name
      * @param AggregateContainer $aggregateContainer the shared resolution wrapper
      *
-     * @return PsrContainerInterface|null the adapted initializer
+     * @return PsrContainerInterface the adapted initializer
      *
-     * @throws InvalidArgumentException if an initializer class cannot be found
+     * @throws InvalidArgumentException if an initializer class cannot be found or adapted
      */
-    private function resolveInitializer(
+    private static function resolveInitializer(
         mixed $initializer,
         AggregateContainer $aggregateContainer
-    ): ?PsrContainerInterface {
+    ): PsrContainerInterface {
         return match (true) {
-            \is_object($initializer) => $this->adaptInitializer($initializer, $aggregateContainer),
-            class_exists($initializer) => $this->adaptInitializer(new ($initializer)(), $aggregateContainer),
+            \is_object($initializer) => self::adaptInitializer($initializer, $aggregateContainer),
+            class_exists($initializer) => self::adaptInitializer(new ($initializer)(), $aggregateContainer),
             default => throw InvalidArgumentException::forUnsupportedInitializer($initializer),
         };
     }
@@ -100,17 +98,20 @@ final readonly class ContainerFactory
      * Selects a container implementation for a constructed initializer.
      *
      * PSR-11 containers SHALL take precedence over service-provider and configuration
-     * adapters. Unsupported objects SHALL return null, preserving the helper's behavior.
+     * adapters. Unsupported objects MUST cause an InvalidArgumentException before
+     * an invalid container can reach the aggregate.
      *
      * @param object $initializer the constructed initializer
      * @param AggregateContainer $aggregateContainer the shared resolution wrapper
      *
-     * @return PsrContainerInterface|null the container or provider/config adapter
+     * @return PsrContainerInterface the container or provider/config adapter
+     *
+     * @throws InvalidArgumentException if the initializer object cannot be adapted
      */
-    private function adaptInitializer(
+    private static function adaptInitializer(
         object $initializer,
         AggregateContainer $aggregateContainer
-    ): ?PsrContainerInterface {
+    ): PsrContainerInterface {
         return match (true) {
             $initializer instanceof PsrContainerInterface => $initializer,
             $initializer instanceof ServiceProviderInterface => new ServiceProviderContainer(
@@ -118,7 +119,7 @@ final readonly class ContainerFactory
                 $aggregateContainer,
             ),
             $initializer instanceof ConfigInterface => new ConfigContainer($initializer),
-            default => null,
+            default => throw InvalidArgumentException::forUnsupportedInitializer($initializer),
         };
     }
 
@@ -134,7 +135,7 @@ final readonly class ContainerFactory
      *
      * @return void
      */
-    private function appendConfiguredContainers(
+    private static function appendConfiguredContainers(
         ConfigContainer $configContainer,
         AggregateContainer $aggregateContainer
     ): void {
@@ -142,7 +143,7 @@ final readonly class ContainerFactory
 
         try {
             foreach ($configContainer->get($configKey) as $nested) {
-                $aggregateContainer->append($this->resolveInitializer($nested, $aggregateContainer));
+                $aggregateContainer->append(self::resolveInitializer($nested, $aggregateContainer));
             }
         } catch (Throwable) {
             // Preserve the existing helper's optional configuration behavior.

@@ -16,6 +16,7 @@ declare(strict_types=1);
  * @see       https://datatracker.ietf.org/doc/html/rfc2119
  */
 
+use FastForward\Container\ContainerFactory;
 use FastForward\Container\ServiceProvider\ArrayServiceProvider;
 use Psr\Container\ContainerInterface;
 
@@ -70,3 +71,6 @@ $greeter = $container->get(Greeter::class);
 
 exampleValue('Resolved application name', $container->get(ApplicationName::class)->value);
 exampleValue('Greeting', $greeter->greet('team'));
+
+$createdContainer = ContainerFactory::create($provider);
+exampleValue('Static factory greeting', $createdContainer->get(Greeter::class)->greet('team'));

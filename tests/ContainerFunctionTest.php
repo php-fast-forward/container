@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace FastForward\Container\Tests;
 
 use RuntimeException;
+use stdClass;
 use FastForward\Config\ConfigInterface;
 use FastForward\Config\Container\ConfigContainer;
 use FastForward\Container\AggregateContainer;
@@ -129,6 +130,16 @@ final class ContainerFunctionTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         container(uniqid());
+    }
+
+    /**
+     * @return void
+     */
+    public function testThrowsForExistingUnsupportedInitializer(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        container(stdClass::class);
     }
 
     /**

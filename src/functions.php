@@ -26,8 +26,8 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
 /**
  * Creates and assembles a fully composed container instance.
  *
- * This convenience function delegates composition to ContainerFactory. Accepted
- * initializers include:
+ * This convenience function delegates composition to ContainerFactory::create().
+ * Accepted initializers include:
  * - PSR-11 container instances
  * - Service providers implementing ServiceProviderInterface
  * - Configuration instances implementing ConfigInterface
@@ -35,7 +35,8 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
  *
  * If a ConfigContainer is included, it SHALL attempt to resolve additional nested container
  * definitions from its configuration using the key `${alias}.${ContainerInterface::class}`.
- * Any invalid initializers MUST result in an InvalidArgumentException being thrown.
+ * Unknown initializer classes and unsupported constructed objects MUST result in
+ * an InvalidArgumentException being thrown.
  *
  * The final container returned is an AutowireContainer that wraps an
  * AggregateContainer composed of all resolved sources.
@@ -45,10 +46,10 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
  *
  * @return ContainerInterface the composed and autowire-enabled container
  *
- * @throws InvalidArgumentException if an unsupported initializer type is encountered
+ * @throws InvalidArgumentException if an initializer class cannot be found or adapted
  */
 function container(
     ConfigInterface|PsrContainerInterface|ServiceProviderInterface|string ...$initializers,
 ): ContainerInterface {
-    return (new ContainerFactory())(...$initializers);
+    return ContainerFactory::create(...$initializers);
 }

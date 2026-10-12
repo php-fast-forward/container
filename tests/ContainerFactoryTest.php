@@ -24,6 +24,7 @@ use FastForward\Container\AggregateContainer;
 use FastForward\Container\AutowireContainer;
 use FastForward\Container\ContainerFactory;
 use FastForward\Container\ContainerInterface;
+use FastForward\Container\Exception\InvalidArgumentException;
 use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\Factory\ServiceFactory;
 use FastForward\Container\ServiceProvider\AggregateServiceProvider;
@@ -46,13 +47,14 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
 #[UsesClass(AggregateServiceProvider::class)]
 #[UsesClass(ServiceFactory::class)]
 #[UsesClass(NotFoundException::class)]
+#[UsesClass(InvalidArgumentException::class)]
 final class ContainerFactoryTest extends TestCase
 {
     /**
      * @return void
      */
     #[Test]
-    public function reusedFactoryCreatesIndependentContainerCaches(): void
+    public function successiveCallsCreateIndependentContainerCaches(): void
     {
         $calls = 0;
         $provider = new ArrayServiceProvider([
@@ -62,9 +64,8 @@ final class ContainerFactoryTest extends TestCase
                 return new stdClass();
             },
         ]);
-        $factory = new ContainerFactory();
-        $first = $factory($provider);
-        $second = $factory($provider);
+        $first = ContainerFactory::create($provider);
+        $second = ContainerFactory::create($provider);
 
         $firstService = $first->get('service');
         $secondService = $second->get('service');
@@ -91,7 +92,7 @@ final class ContainerFactoryTest extends TestCase
             'service' => static fn(): stdClass => new stdClass(),
         ]);
 
-        $container = (new ContainerFactory())($first, $second);
+        $container = ContainerFactory::create($first, $second);
 
         self::assertSame($dependency, $container->get('service'));
         self::assertSame($dependency, $container->get('dependency'));
@@ -111,9 +112,37 @@ final class ContainerFactoryTest extends TestCase
             ],
         ]);
 
-        $container = (new ContainerFactory())(AggregateServiceProvider::class, $config);
+        $container = ContainerFactory::create(AggregateServiceProvider::class, $config);
 
         self::assertInstanceOf(AggregateServiceProvider::class, $container->get(AggregateServiceProvider::class));
         self::assertSame('nested value', $container->get('configured'));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function invalidNestedInitializerStopsExpansionAndKeepsExplicitSources(): void
+    {
+        $config = new ArrayConfig([
+            ContainerInterface::class => [
+                new ArrayServiceProvider([
+                    'before_invalid' => static fn(): string => 'kept',
+                ]),
+                new stdClass(),
+                new ArrayServiceProvider([
+                    'after_invalid' => static fn(): string => 'skipped',
+                ]),
+            ],
+        ]);
+        $explicit = new ArrayServiceProvider([
+            'outside_config' => static fn(): string => 'available',
+        ]);
+
+        $container = ContainerFactory::create($config, $explicit);
+
+        self::assertSame('kept', $container->get('before_invalid'));
+        self::assertSame('available', $container->get('outside_config'));
+        self::assertFalse($container->has('after_invalid'));
     }
 }

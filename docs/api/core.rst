@@ -8,7 +8,7 @@ Overview
 API                              Responsibility                                     Most common use
 ===============================  ================================================  ===========================================
 ``container()``                  Build the final composed container                Application entry point
-``ContainerFactory``             Compose a fresh container stack                   Invocable application bootstrap
+``ContainerFactory``             Compose a fresh container stack                   Static application bootstrap
 ``ContainerInterface``           FastForward-specific PSR-11 interface             Type hint inside FastForward packages
 ``AggregateContainer``           Resolve services across several child containers  Layering, overrides, fallback
 ``AutowireContainer``            Add autowiring on top of another container        Mixed explicit registration and autowiring
@@ -39,29 +39,34 @@ Important behavior:
 - The helper wraps providers in ``ServiceProviderContainer`` automatically.
 - The helper wraps config objects in ``ConfigContainer`` automatically.
 - Earlier initializers take precedence over later ones in aggregate resolution.
+- Unknown class strings and classes that produce unsupported initializer objects raise ``InvalidArgumentException``.
 
-The function delegates composition to ``ContainerFactory``.
+The function delegates composition to ``ContainerFactory::create()``.
 
 ``ContainerFactory``
 --------------------
 
-``FastForward\Container\ContainerFactory`` exposes the same composition as an
-invocable object. It accepts the same variadic initializers as ``container()``:
+``FastForward\Container\ContainerFactory::create()`` exposes the same composition
+through a static method. It accepts the same variadic initializers as ``container()``:
 
 .. code-block:: php
 
    use FastForward\Container\ContainerFactory;
 
-   $factory = new ContainerFactory();
-   $container = $factory($provider, $config);
-   $another = $factory($provider, $config);
+   $container = ContainerFactory::create($provider, $config);
+   $another = ContainerFactory::create($provider, $config);
 
-Each invocation creates a fresh aggregate, provider adapters, and autowiring
+Each call creates a fresh aggregate, provider adapters, and autowiring
 container. The factory keeps no assembled container state. Existing PSR-11
 containers supplied as initializers remain the same supplied objects.
 
-Initializer order, provider wrapper injection, nested configuration entries,
-and the helper's existing optional-configuration error handling are preserved.
+Initializer order, provider wrapper injection, and nested configuration entries
+are preserved. Unsupported initializer classes raise ``InvalidArgumentException``
+before an invalid source reaches the aggregate.
+
+Failures while reading or adapting optional nested configuration stop that
+configuration's expansion and are ignored. Previously appended sources remain
+available, and later explicit initializers are still processed.
 
 ``ContainerInterface``
 ----------------------

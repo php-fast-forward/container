@@ -13,6 +13,18 @@ Overview
    use function FastForward\Container\container;
    $container = container($initializer1, $initializer2, ...);
 
+The helper delegates to ``ContainerFactory::create()``. You can call the same
+composition directly through the static factory:
+
+.. code-block:: php
+
+   use FastForward\Container\ContainerFactory;
+
+   $container = ContainerFactory::create($initializer1, $initializer2);
+
+Both forms accept the same variadic initializers and create a fresh stack on each
+call. Existing PSR-11 container objects passed as initializers are reused.
+
 Supported initializers
 ----------------------
 
@@ -35,7 +47,7 @@ How It Works
    - If it's a service provider, it's wrapped in a ServiceProviderContainer.
    - If it's a config, it's wrapped in a ConfigContainer.
    - If it's a string, the class is instantiated and then resolved as above.
-   - Any unsupported type throws an InvalidArgumentException.
+   - Unknown class names and unsupported constructed objects throw an InvalidArgumentException.
 2. All resolved containers are appended to an AggregateContainer.
 3. If a ConfigContainer is present, it may provide nested initializers, which are also resolved and appended.
 4. The final result is always an AutowireContainer wrapping the aggregate.
@@ -107,8 +119,17 @@ Using a config object with nested providers:
 Error Handling
 --------------
 
-If you pass an unsupported value, or a string that does not correspond to a valid class,
-the function throws ``InvalidArgumentException``.
+Unknown class names and classes that cannot be adapted to a supported container,
+provider, or config source raise ``InvalidArgumentException``. For example,
+``container(stdClass::class)`` and ``ContainerFactory::create(stdClass::class)``
+raise this exception before an invalid source reaches the aggregate.
+
+Values outside the public parameter types, such as an array or a direct
+``stdClass`` object, are rejected by PHP with ``TypeError``.
+
+Failures while expanding optional nested configuration are caught. Expansion
+stops for that configuration, previously appended sources remain available,
+and later explicit initializers are still processed.
 
 Configuration note
 ------------------
