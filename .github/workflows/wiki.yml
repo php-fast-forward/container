@@ -2,16 +2,104 @@ name: "Fast Forward Wiki Update"
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
 
 jobs:
-  wiki:
-    uses: php-fast-forward/dev-tools/.github/workflows/wiki.yml@main
-    secrets: inherit
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Checkout the shared dev-tools actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: php-fast-forward/dev-tools
+          ref: d5a3b7eec9896f9ea50974ff09b23c32887acbc0
+          path: .dev-tools-actions
+          persist-credentials: false
+      - name: Resolve PHP version
+        id: php
+        uses: ./.dev-tools-actions/.github/actions/php/resolve-version
+      - name: Select the same pinned renderer
+        run: |
+          php <<'PHP'
+          <?php
+          $file = 'composer.json';
+          $data = json_decode(file_get_contents($file), true, 512, JSON_THROW_ON_ERROR);
+          $data['repositories']['pinned-dev-tools'] = [
+              'type' => 'path',
+              'url' => '.dev-tools-actions',
+              'options' => ['symlink' => false, 'versions' => ['fast-forward/dev-tools' => 'dev-main']],
+          ];
+          $data['config']['allow-plugins']['fast-forward/dev-tools'] = false;
+          file_put_contents($file, json_encode($data, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+          PHP
+      - name: Setup PHP and dependencies
+        uses: ./.dev-tools-actions/.github/actions/php/setup-composer
+        with:
+          php-version: ${{ steps.php.outputs.php-version }}
+          root-version: dev-main
+      - name: Generate API pages
+        run: |
+          dev-tools wiki --target=.dev-tools/wiki-generated --cache-dir="${RUNNER_TEMP}/wiki-phpdoc-cache"
+          test -s .dev-tools/wiki-generated/Home.md
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: wiki
+          path: .dev-tools/wiki-generated
+          if-no-files-found: error
+
+  publish:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: generate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: container-wiki-publication
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: wiki
+          path: wiki-generated
+      - name: Publish API pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current=$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo 'A newer main run will publish the current documentation.'
+            exit 0
+          fi
+          git -c credential.helper= -c 'credential.helper=!gh auth git-credential' clone "https://github.com/${GITHUB_REPOSITORY}.wiki.git" wiki
+          if find wiki-generated wiki -path wiki/.git -prune -o \( -type l -o -name AGENTS.md \) -print -quit | grep -q .; then
+            echo 'Unexpected symlink or agent instruction page.' >&2
+            exit 1
+          fi
+          # classes/ and functions/ are phpDocumentor-owned API namespaces.
+          # Pages outside those namespaces are preserved.
+          for namespace in classes functions; do
+            mkdir -p "wiki-generated/${namespace}" "wiki/${namespace}"
+            rsync -a --delete "wiki-generated/${namespace}/" "wiki/${namespace}/"
+          done
+          cp wiki-generated/Home.md wiki/Home.md
+          git -C wiki add --all
+          if ! git -C wiki diff --cached --quiet; then
+            git -C wiki config user.name 'github-actions[bot]'
+            git -C wiki config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git -C wiki commit -m "Update Wiki from ${GITHUB_SHA}"
+            current=$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)
+            if [ "$current" != "$GITHUB_SHA" ]; then
+              echo 'Main advanced during generation; skip outdated publication.'
+              exit 0
+            fi
+            git -C wiki -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin HEAD
+          fi

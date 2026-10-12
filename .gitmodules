@@ -1,3 +1,0 @@
-[submodule ".github/wiki"]
-	path = .github/wiki
-	url = https://github.com/php-fast-forward/container.wiki.git
