@@ -1,17 +1,24 @@
 name: "Fast Forward Wiki Update"
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
+
+concurrency:
+  group: fast-forward-wiki-preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  wiki:
-    uses: php-fast-forward/dev-tools/.github/workflows/wiki.yml@main
-    secrets: inherit
+  preview:
+    # Fork and Dependabot PR tokens cannot publish wiki or parent-pointer commits.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: read
+    uses: php-fast-forward/dev-tools/.github/workflows/wiki-preview.yml@d5a3b7eec9896f9ea50974ff09b23c32887acbc0

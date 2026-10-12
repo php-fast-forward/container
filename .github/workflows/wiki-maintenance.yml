@@ -1,0 +1,28 @@
+name: "Fast Forward Wiki Maintenance"
+
+on:
+  pull_request_target:
+    types: [closed]
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fast-forward-wiki-maintenance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  maintenance:
+    # Only PRs eligible for wiki previews can publish or delete preview branches.
+    if: >-
+      github.event_name != 'pull_request_target' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.user.login != 'dependabot[bot]')
+    permissions:
+      contents: write
+      pull-requests: read
+    # The callee publishes the existing preview after merge; it does not build PR code.
+    uses: php-fast-forward/dev-tools/.github/workflows/wiki-maintenance.yml@d5a3b7eec9896f9ea50974ff09b23c32887acbc0
