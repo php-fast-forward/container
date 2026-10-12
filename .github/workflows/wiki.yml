@@ -4,147 +4,98 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    if: >-
-      github.event_name != 'pull_request' ||
-      (github.event.pull_request.head.repo.full_name == github.repository &&
-       github.event.pull_request.user.login != 'dependabot[bot]')
+  generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    outputs:
-      source-sha: ${{ steps.source.outputs.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.repository.default_branch }}
           persist-credentials: false
-      - name: Record the actual documentation source
-        id: source
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Validate publication and cleanup guards without network access
-        run: python3 .github/tests/wiki_workflows_test.py
-      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+      - name: Checkout the shared dev-tools actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          php-version: '8.3'
-          tools: composer:v2
-          coverage: none
-      - name: Install the pinned renderer without project plugins or scripts
-        env:
-          COMPOSER_ROOT_VERSION: dev-${{ github.head_ref || github.ref_name }}
+          repository: php-fast-forward/dev-tools
+          ref: d5a3b7eec9896f9ea50974ff09b23c32887acbc0
+          path: .dev-tools-actions
+          persist-credentials: false
+      - name: Resolve PHP version
+        id: php
+        uses: ./.dev-tools-actions/.github/actions/php/resolve-version
+      - name: Select the same pinned renderer
         run: |
-          composer require --dev 'fast-forward/dev-tools:dev-main#d5a3b7eec9896f9ea50974ff09b23c32887acbc0' --with-all-dependencies --no-plugins --no-scripts --no-interaction --prefer-dist --no-progress
-          php -r 'require "vendor/autoload.php"; if (Composer\InstalledVersions::getReference("fast-forward/dev-tools") !== "d5a3b7eec9896f9ea50974ff09b23c32887acbc0") { throw new RuntimeException("Unexpected renderer source."); }'
-      - name: Install the signed documentation generator in isolation
-        shell: bash
-        run: |
-          command -v gpg
-          mkdir -p "$RUNNER_TEMP/phpdoc-tool"
           php <<'PHP'
           <?php
-          $manifest = [
-              'require' => ['phpdocumentor/shim' => '3.9.1'],
-              'config' => ['allow-plugins' => ['phpdocumentor/shim' => true]],
-          ];
-          file_put_contents(getenv('RUNNER_TEMP') . '/phpdoc-tool/composer.json', json_encode($manifest, JSON_THROW_ON_ERROR));
+          $file = 'composer.json';
+          $data = json_decode(file_get_contents($file), true, 512, JSON_THROW_ON_ERROR);
+          $data['require-dev']['fast-forward/dev-tools'] = 'dev-main#d5a3b7eec9896f9ea50974ff09b23c32887acbc0';
+          $data['config']['allow-plugins']['fast-forward/dev-tools'] = false;
+          file_put_contents($file, json_encode($data, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
           PHP
-          COMPOSER_HOME="$RUNNER_TEMP/phpdoc-home" composer install --working-dir="$RUNNER_TEMP/phpdoc-tool" --no-scripts --no-interaction --prefer-dist --no-progress 2>&1 | tee "$RUNNER_TEMP/phpdoc-install.log"
-          grep -F 'PHAR signature successfully verified' "$RUNNER_TEMP/phpdoc-install.log"
-          install -m 0755 "$RUNNER_TEMP/phpdoc-tool/vendor/bin/phpdoc" vendor/bin/phpdoc
+      - name: Setup PHP and dependencies
+        uses: ./.dev-tools-actions/.github/actions/php/setup-composer
+        with:
+          php-version: ${{ steps.php.outputs.php-version }}
+          root-version: dev-main
       - name: Generate API pages
         run: |
-          mkdir -p "$RUNNER_TEMP/wiki-pages"
-          php vendor/bin/dev-tools github:wiki --target="$RUNNER_TEMP/wiki-pages" --no-logo
-          test -s "$RUNNER_TEMP/wiki-pages/Home.md"
+          dev-tools wiki --target=.dev-tools/wiki-generated --cache-dir="${RUNNER_TEMP}/wiki-phpdoc-cache"
+          test -s .dev-tools/wiki-generated/Home.md
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: wiki-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/wiki-pages
+          name: wiki
+          path: .dev-tools/wiki-generated
           if-no-files-found: error
-          retention-days: 7
 
   publish:
-    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: generate
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     permissions:
       contents: write
-      pull-requests: read
-    # All publishers and close cleanup use this lock. Builds hold no write token.
     concurrency:
-      group: fast-forward-wiki-writes
+      group: container-wiki-publication
       cancel-in-progress: false
+      queue: max
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: wiki-${{ github.run_id }}-${{ github.run_attempt }}
-          path: wiki-pages
-      - name: Publish only a current source snapshot
+          name: wiki
+          path: wiki-generated
+      - name: Publish API pages
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_SHA: ${{ needs.build.outputs.source-sha }}
-          EVENT_NAME: ${{ github.event_name }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        shell: bash
         run: |
-          set -euo pipefail
-          current_source() {
-            if [[ "$EVENT_NAME" == pull_request ]]; then
-              gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq 'select(.state == "open") | .head.sha'
-            else
-              gh api "repos/$GITHUB_REPOSITORY/commits/$DEFAULT_BRANCH" --jq .sha
-            fi
-          }
-          current_sha=$(current_source)
-          if [[ "$current_sha" != "$SOURCE_SHA" ]]; then
-            echo 'The source changed or the PR closed; skip obsolete Wiki publication.'
+          current=$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo 'A newer main run will publish the current documentation.'
             exit 0
           fi
-          test -s wiki-pages/Home.md
-          if find wiki-pages -type l -print -quit | grep -q . ||
-             find wiki-pages -type f ! -name '*.md' -print -quit | grep -q . ||
-             find wiki-pages -name AGENTS.md -print -quit | grep -q .; then
-            echo 'Unexpected Wiki artifact content.' >&2
+          git -c credential.helper= -c 'credential.helper=!gh auth git-credential' clone "https://github.com/${GITHUB_REPOSITORY}.wiki.git" wiki
+          if find wiki-generated wiki -path wiki/.git -prune -o \( -type l -o -name AGENTS.md \) -print -quit | grep -q .; then
+            echo 'Unexpected symlink or agent instruction page.' >&2
             exit 1
           fi
-          wiki_git() { git -c credential.helper= -c 'credential.helper=!gh auth git-credential' "$@"; }
-          wiki_git clone "https://github.com/$GITHUB_REPOSITORY.wiki.git" wiki
-          wiki_default=$(git -C wiki branch --show-current)
-          target=$wiki_default
-          if [[ "$EVENT_NAME" == pull_request ]]; then
-            target="pr-$PR_NUMBER"
-            if git -C wiki show-ref --verify --quiet "refs/remotes/origin/$target"; then
-              git -C wiki switch --track "origin/$target"
-            else
-              git -C wiki switch -c "$target"
-            fi
-          fi
-          if find wiki -path wiki/.git -prune -o -type l -print | grep -q .; then
-            echo 'Refusing to copy documentation through Wiki symlinks.' >&2
-            exit 1
-          fi
-          # Copy generated pages without deleting independently maintained Wiki pages.
-          cp -R wiki-pages/. wiki/
-          git -C wiki config user.name 'github-actions[bot]'
-          git -C wiki config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # classes/ and functions/ are phpDocumentor-owned API namespaces.
+          # Pages outside those namespaces are preserved.
+          for namespace in classes functions; do
+            mkdir -p "wiki-generated/${namespace}" "wiki/${namespace}"
+            rsync -a --delete "wiki-generated/${namespace}/" "wiki/${namespace}/"
+          done
+          cp wiki-generated/Home.md wiki/Home.md
           git -C wiki add --all
-          if git -C wiki diff --cached --quiet; then
-            echo "Wiki $target already matches the generated API pages."
-            exit 0
+          if ! git -C wiki diff --cached --quiet; then
+            git -C wiki config user.name 'github-actions[bot]'
+            git -C wiki config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git -C wiki commit -m "Update Wiki from ${GITHUB_SHA}"
+            current=$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)
+            if [ "$current" != "$GITHUB_SHA" ]; then
+              echo 'Main advanced during generation; skip outdated publication.'
+              exit 0
+            fi
+            git -C wiki -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin HEAD
           fi
-          git -C wiki commit -m "Update API docs from $SOURCE_SHA"
-          # Recheck under the shared writer lock immediately before the push.
-          current_sha=$(current_source)
-          if [[ "$current_sha" != "$SOURCE_SHA" ]]; then
-            echo 'The source changed or the PR closed; discard obsolete publication.'
-            exit 0
-          fi
-          wiki_git -C wiki push origin "HEAD:refs/heads/$target"
-          echo "Published Wiki $target from $SOURCE_SHA."
