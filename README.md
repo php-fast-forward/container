@@ -21,6 +21,7 @@ A PSR-11 compliant aggregate container for PHP, designed to unify and resolve se
 - Caches resolved entries
 - Integrates with `php-di`
 - First-class support for configuration containers
+- Incremental composition with `ContainerBuilder`
 - PSR-11 compliant
 
 ## 🚀 Installation
@@ -71,6 +72,26 @@ $container = ContainerFactory::create($config);
 Both forms accept the same variadic initializers. Each call creates a fresh
 aggregate, provider adapters, and autowiring container; supplied PSR-11 container
 objects are reused. Unsupported initializer classes raise `InvalidArgumentException`.
+
+For conditional registration or setup across several stages, use the incremental builder:
+
+```php
+use FastForward\Container\ContainerBuilder;
+
+$builder = (new ContainerBuilder())->add($config);
+
+if ($featureEnabled) {
+    $builder->add($featureProvider);
+}
+
+$container = $builder->build();
+```
+
+`add()` accepts the same initializers and preserves registration order. Each
+`build()` creates a fresh composition; adding sources later affects subsequent
+builds only. Supplied source objects are reused, so independent composition
+caches do not imply cloning external containers or their services.
+`ContainerFactory::create()` delegates to this same builder implementation.
 
 ## 📄 License
 

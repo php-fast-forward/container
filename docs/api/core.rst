@@ -9,6 +9,7 @@ API                              Responsibility                                 
 ===============================  ================================================  ===========================================
 ``container()``                  Build the final composed container                Application entry point
 ``ContainerFactory``             Compose a fresh container stack                   Static application bootstrap
+``ContainerBuilder``             Register sources and build fresh compositions     Conditional or staged application setup
 ``ContainerInterface``           FastForward-specific PSR-11 interface             Type hint inside FastForward packages
 ``AggregateContainer``           Resolve services across several child containers  Layering, overrides, fallback
 ``AutowireContainer``            Add autowiring on top of another container        Mixed explicit registration and autowiring
@@ -67,6 +68,39 @@ before an invalid source reaches the aggregate.
 Failures while reading or adapting optional nested configuration stop that
 configuration's expansion and are ignored. Previously appended sources remain
 available, and later explicit initializers are still processed.
+
+The factory delegates registration and assembly to a new ``ContainerBuilder``.
+
+``ContainerBuilder``
+--------------------
+
+``FastForward\Container\ContainerBuilder`` exposes incremental registration using
+the same initializer types as the factory:
+
+.. code-block:: php
+
+   use FastForward\Container\ContainerBuilder;
+
+   $builder = new ContainerBuilder();
+   $builder->add($provider, $config);
+   $first = $builder->build();
+
+   $builder->add($featureProvider);
+   $second = $builder->build();
+
+``add(...$initializers): self`` appends sources and returns the same builder.
+``build(): ContainerInterface`` returns a fresh ``AutowireContainer`` composition.
+An empty builder provides autowiring, just like ``ContainerFactory::create()``.
+
+Earlier registrations have precedence. Providers receive their build's aggregate
+and can resolve dependencies from sources registered in other setup stages.
+Optional nested configuration retains the factory's expansion and error policy.
+
+Each build creates new composition caches and adapters. Later registrations do
+not mutate earlier builds. Supplied config/provider/container objects are reused;
+external PSR-11 containers retain their own state. Class strings are constructed
+anew for every build and must be instantiable without required arguments.
+Unknown or unsupported classes raise ``InvalidArgumentException`` during build.
 
 ``ContainerInterface``
 ----------------------
