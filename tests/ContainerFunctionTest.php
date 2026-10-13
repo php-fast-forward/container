@@ -24,6 +24,7 @@ use FastForward\Config\ConfigInterface;
 use FastForward\Config\Container\ConfigContainer;
 use FastForward\Container\AggregateContainer;
 use FastForward\Container\AutowireContainer;
+use FastForward\Container\ContainerBuilder;
 use FastForward\Container\ContainerFactory;
 use FastForward\Container\ContainerInterface;
 use FastForward\Container\Exception\InvalidArgumentException;
@@ -35,7 +36,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
-
 use function FastForward\Container\container;
 
 /**
@@ -43,6 +43,7 @@ use function FastForward\Container\container;
  */
 #[CoversFunction('FastForward\Container\container')]
 #[CoversClass(ContainerFactory::class)]
+#[UsesClass(ContainerBuilder::class)]
 #[UsesClass(AggregateContainer::class)]
 #[UsesClass(AutowireContainer::class)]
 #[UsesClass(ServiceProviderContainer::class)]

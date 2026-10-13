@@ -22,6 +22,7 @@ use stdClass;
 use FastForward\Config\ArrayConfig;
 use FastForward\Container\AggregateContainer;
 use FastForward\Container\AutowireContainer;
+use FastForward\Container\ContainerBuilder;
 use FastForward\Container\ContainerFactory;
 use FastForward\Container\ContainerInterface;
 use FastForward\Container\Exception\InvalidArgumentException;
@@ -40,6 +41,7 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
  * @internal
  */
 #[CoversClass(ContainerFactory::class)]
+#[UsesClass(ContainerBuilder::class)]
 #[UsesClass(AggregateContainer::class)]
 #[UsesClass(AutowireContainer::class)]
 #[UsesClass(ServiceProviderContainer::class)]

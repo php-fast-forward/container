@@ -25,6 +25,39 @@ composition directly through the static factory:
 Both forms accept the same variadic initializers and create a fresh stack on each
 call. Existing PSR-11 container objects passed as initializers are reused.
 
+Incremental construction
+------------------------
+
+Use ``ContainerBuilder`` when registration depends on feature flags or occurs
+across several setup stages. The factory creates a new builder internally, so
+both construction styles use the same assembly implementation.
+
+.. code-block:: php
+
+   use FastForward\Container\ContainerBuilder;
+
+   $builder = (new ContainerBuilder())->add($config, $baseProvider);
+
+   if ($featureEnabled) {
+       $builder->add($featureProvider);
+   }
+
+   $container = $builder->build();
+
+``add()`` returns the same builder and accepts the initializers listed below.
+Sources are retained in registration order without being instantiated or resolved
+during registration. Class strings are instantiated during each build, and
+unsupported classes are rejected at that point. Service factories retain their
+existing lazy resolution behavior.
+
+The builder is reusable. Each ``build()`` creates fresh aggregate, provider/config
+adapters, and autowiring state. Adding sources after a build affects only future
+builds. Existing source objects are reused: external PSR-11 containers may still
+share their own caches and services across compositions.
+
+The runnable ``examples/07-incremental-builder.php`` demonstrates conditional
+registration and the independence of previously built containers.
+
 Supported initializers
 ----------------------
 

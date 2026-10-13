@@ -24,6 +24,7 @@ use stdClass;
 use TypeError;
 use FastForward\Container\AggregateContainer;
 use FastForward\Container\AutowireContainer;
+use FastForward\Container\ContainerBuilder;
 use FastForward\Container\ContainerFactory;
 use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\NotFoundException;
@@ -40,7 +41,6 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\Attributes\UsesFunction;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
-
 use function FastForward\Container\container;
 
 /**
@@ -53,6 +53,7 @@ use function FastForward\Container\container;
 #[UsesClass(AggregateContainer::class)]
 #[UsesClass(AutowireContainer::class)]
 #[UsesClass(ContainerFactory::class)]
+#[UsesClass(ContainerBuilder::class)]
 #[UsesClass(ServiceFactory::class)]
 #[UsesClass(ContainerException::class)]
 #[UsesClass(NotFoundException::class)]

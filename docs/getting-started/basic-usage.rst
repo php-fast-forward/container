@@ -136,10 +136,35 @@ Class-string initializers are convenient when the class has a parameterless cons
 If either class needs constructor arguments, instantiate it yourself instead of relying
 on the shortcut.
 
+Step 5: Register sources in stages
+----------------------------------
+
+Use ``ContainerBuilder`` when sources are registered conditionally or across several
+setup stages:
+
+.. code-block:: php
+
+   use FastForward\Container\ContainerBuilder;
+
+   $builder = (new ContainerBuilder())->add($catalogProvider, $legacyContainer);
+
+   if ($featureEnabled) {
+       $builder->add($featureProvider);
+   }
+
+   $container = $builder->build();
+
+``add()`` is fluent and accepts the same initializer types. Each ``build()`` creates
+a fresh composition. Adding sources later affects subsequent builds only; supplied
+PSR-11 containers continue to share their own state.
+
+See :doc:`../advanced/container-helper` for reuse, precedence, and error handling.
+
 Summary
 -------
 
 - ``container()`` and ``ContainerFactory::create()`` both return an autowire-enabled container.
 - You can mix providers, PSR-11 containers, config objects, and instantiable class names.
+- ``ContainerBuilder`` exposes the same composition incrementally through ``add()`` and ``build()``.
 - The first matching container wins during aggregate resolution.
 - Raw config keys and ``config.*`` service IDs are related, but they are not the same thing.
