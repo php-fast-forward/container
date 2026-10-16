@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace FastForward\Container;
 
+use Fiber;
 use Throwable;
 use WeakMap;
 use FastForward\Container\Exception\ContainerException;
@@ -68,6 +69,16 @@ final class ServiceProviderContainer implements ContainerInterface
      * @var array<string, mixed>
      */
     private array $cache = [];
+
+    /**
+     * Active provider entries grouped by Fiber, or by wrapper in the main context.
+     *
+     * Provider identity permits ordered fallback to another source for the same ID.
+     * Completed resolutions remove their entries instead of retaining service graphs.
+     *
+     * @var WeakMap<object, list<array{container: self, id: string}>>|null
+     */
+    private static ?WeakMap $resolutionPaths = null;
 
     /**
      * Constructs a new ServiceProviderContainer instance.
@@ -125,7 +136,7 @@ final class ServiceProviderContainer implements ContainerInterface
      * @return mixed the service instance associated with the identifier
      *
      * @throws NotFoundException if neither a callable factory nor an ID-based extension exists
-     * @throws ContainerException if factory or extension resolution fails
+     * @throws ContainerException if factory or extension resolution fails or a dependency cycle exists
      */
     public function get(string $id): mixed
     {
@@ -133,7 +144,62 @@ final class ServiceProviderContainer implements ContainerInterface
             return $this->cache[$id];
         }
 
-        return $this->resolveUncachedEntry($id);
+        $context = Fiber::getCurrent() ?? $this->wrapperContainer;
+        $activePaths = self::$resolutionPaths ??= new WeakMap();
+        $previousPath = $activePaths[$context] ?? [];
+
+        $this->assertEntryIsNotResolving($id, $previousPath);
+
+        $currentEntry = [
+            'container' => $this,
+            'id' => $id,
+        ];
+        $activePaths[$context] = [...$previousPath, $currentEntry];
+
+        try {
+            return $this->resolveUncachedEntry($id);
+        } finally {
+            $this->restoreResolutionPath($activePaths, $context, $previousPath);
+        }
+    }
+
+    /**
+     * Rejects re-entry into this provider's active service while allowing ordered fallback to other providers.
+     *
+     * @param string $id the requested service identifier
+     * @param list<array{container: self, id: string}> $path the current execution context's active entries
+     *
+     * @return void
+     *
+     * @throws ContainerException if this provider is already resolving the same identifier
+     */
+    private function assertEntryIsNotResolving(string $id, array $path): void
+    {
+        foreach ($path as $entry) {
+            if ($entry['container'] === $this && $entry['id'] === $id) {
+                throw ContainerException::forCircularDependency([...array_column($path, 'id'), $id]);
+            }
+        }
+    }
+
+    /**
+     * Restores the caller's path after resolution or releases an empty execution context.
+     *
+     * @param WeakMap<object, list<array{container: self, id: string}>> $paths active paths by execution context
+     * @param object $context the current Fiber or main-context wrapper
+     * @param list<array{container: self, id: string}> $previousPath the path before this entry was resolved
+     *
+     * @return void
+     */
+    private function restoreResolutionPath(WeakMap $paths, object $context, array $previousPath): void
+    {
+        if ([] === $previousPath) {
+            unset($paths[$context]);
+
+            return;
+        }
+
+        $paths[$context] = $previousPath;
     }
 
     /**
