@@ -18,9 +18,9 @@ declare(strict_types=1);
 
 namespace FastForward\Container;
 
+use Fiber;
 use Throwable;
 use WeakMap;
-use Fiber;
 use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\Extension\ServiceExtension;
