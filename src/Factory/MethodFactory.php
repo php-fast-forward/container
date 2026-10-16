@@ -19,13 +19,13 @@ declare(strict_types=1);
 namespace FastForward\Container\Factory;
 
 use ReflectionMethod;
-use Throwable;
 use ReflectionException;
 use FastForward\Container\Exception\RuntimeException;
 use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
- * A factory that invokes a specified method on a class using reflection and the PSR-11 container.
+ * A factory that invokes a public method on a class or a container-provided object.
  *
  * This factory MUST be used when service creation requires calling a non-constructor method,
  * and supports both static and instance methods.
@@ -37,7 +37,7 @@ use Psr\Container\ContainerInterface;
 final readonly class MethodFactory implements FactoryInterface
 {
     /**
-     * @var array<int, mixed> arguments to be passed to the method during invocation
+     * @var array<int|string, mixed> positional or named arguments passed to the method
      */
     private array $arguments;
 
@@ -60,8 +60,9 @@ final readonly class MethodFactory implements FactoryInterface
      * Resolves the class and invokes the configured method with arguments.
      *
      * Arguments MAY be resolved from the container if passed as string identifiers and found.
-     * Static methods are invoked without instantiating the class. If the method is not public,
-     * this method MUST throw a RuntimeException.
+     * Public static class methods are invoked without resolving an instance. Instance targets
+     * are retrieved by class name or service ID and reflected using the resolved object.
+     * A missing class-name entry permits direct construction; other resolution failures propagate.
      *
      * @param ContainerInterface $container The container used to resolve the class and arguments
      *
@@ -69,32 +70,77 @@ final readonly class MethodFactory implements FactoryInterface
      *
      * @throws ReflectionException If the method does not exist
      * @throws RuntimeException If the method is not public
+     * @throws NotFoundExceptionInterface if a non-class service ID is absent
      */
     public function __invoke(ContainerInterface $container): mixed
     {
-        $arguments = array_map(
+        $arguments = $this->resolveArguments($container);
+
+        if (class_exists($this->class)) {
+            $method = $this->reflectPublicMethod($this->class);
+
+            if ($method->isStatic()) {
+                return $method->invokeArgs(null, $arguments);
+            }
+        }
+
+        $object = $this->resolveObject($container);
+
+        return $this->reflectPublicMethod($object)
+            ->invokeArgs($object, $arguments);
+    }
+
+    /**
+     * @param ContainerInterface $container the source of named method arguments
+     *
+     * @return array<int|string, mixed> resolved arguments with their positional or named keys
+     */
+    private function resolveArguments(ContainerInterface $container): array
+    {
+        return array_map(
             static fn($argument) => \is_string($argument) && $container->has($argument)
                 ? $container->get($argument)
                 : $argument,
             $this->arguments
         );
+    }
 
-        $reflectionMethod = new ReflectionMethod($this->class, $this->method);
+    /**
+     * @param object|class-string $target the resolved object or a static method's class
+     *
+     * @return ReflectionMethod the public method to invoke
+     *
+     * @throws ReflectionException if the method does not exist
+     * @throws RuntimeException if the method is not public
+     */
+    private function reflectPublicMethod(object|string $target): ReflectionMethod
+    {
+        $reflectionMethod = new ReflectionMethod($target, $this->method);
 
         if (! $reflectionMethod->isPublic()) {
             throw RuntimeException::forNonPublicMethod($this->class, $this->method);
         }
 
-        if ($reflectionMethod->isStatic()) {
-            return $reflectionMethod->invokeArgs(null, $arguments);
-        }
+        return $reflectionMethod;
+    }
 
+    /**
+     * @param ContainerInterface $container the source of the target instance
+     *
+     * @return object the configured instance, or a directly constructed missing class
+     *
+     * @throws NotFoundExceptionInterface if a non-class service ID is absent
+     */
+    private function resolveObject(ContainerInterface $container): object
+    {
         try {
-            $object = $container->get($this->class);
-        } catch (Throwable) {
-            $object = new ($this->class)();
-        }
+            return $container->get($this->class);
+        } catch (NotFoundExceptionInterface $notFoundException) {
+            if (! class_exists($this->class)) {
+                throw $notFoundException;
+            }
 
-        return $reflectionMethod->invokeArgs($object, $arguments);
+            return new ($this->class)();
+        }
     }
 }

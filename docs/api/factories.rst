@@ -79,14 +79,16 @@ This makes it safe to mix service IDs and ordinary scalar values in one construc
 ``MethodFactory``
 -----------------
 
-``MethodFactory`` calls a named public method on a class.
+``MethodFactory`` calls a named public method on a class or an object registered
+under a container service ID.
 
 Resolution rules:
 
 - string arguments follow the same service-ID-or-literal logic as ``InvokableFactory``
 - public static methods are invoked directly
-- public instance methods first try ``$container->get(ClassName::class)``
-- if that lookup fails, the factory tries ``new ClassName()``, which means the class must be instantiable without constructor arguments in that branch
+- instance targets resolve through ``$container->get($target)`` using the supplied class name or service ID; methods are reflected on the actual object
+- when a class-name lookup throws ``NotFoundExceptionInterface``, the factory tries ``new ClassName()``; that class must be instantiable without constructor arguments
+- missing non-class service IDs remain not-found errors; container, factory and constructor execution failures propagate without constructing a replacement
 - non-public methods cause ``RuntimeException``
 
 This is a good fit when your domain already exposes named constructors such as

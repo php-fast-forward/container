@@ -27,7 +27,7 @@ Factory               Best when                                        Important
 ``AliasFactory``      Two IDs should return the same service           Supports cached static helper ``AliasFactory::get()``
 ``CallableFactory``   Construction depends on typed services           Resolves class/interface-typed parameters from the container
 ``InvokableFactory``  You want ``new ClassName(...)``                  Resolves string arguments only when they match existing service IDs
-``MethodFactory``     You need a static or instance factory method     Falls back to ``new ClassName()`` for instance methods when needed
+``MethodFactory``     You need a static or instance factory method     Constructs a class directly only when its container entry is absent
 ``ServiceFactory``    You already have the final object                Always returns the same instance
 ====================  ===============================================  ==========================================
 
@@ -87,7 +87,8 @@ String arguments are treated conservatively:
 4. MethodFactory
 ^^^^^^^^^^^^^^^^
 
-``MethodFactory`` calls a public static or instance method on a class.
+``MethodFactory`` calls a public static method on a class or a public instance
+method on a container-provided object. The target may be a class name or a service ID.
 
 .. code-block:: php
 
@@ -99,8 +100,9 @@ String arguments are treated conservatively:
 Important behavior:
 
 - Static methods are invoked without instantiating the class.
-- Instance methods first try ``$container->get(MyService::class)``.
-- If that lookup fails, the factory falls back to ``new MyService()``, so the class must be instantiable without constructor arguments in that branch.
+- Instance methods first resolve the target through ``$container->get()``. A service ID such as ``factory.target`` uses the method on the returned object.
+- A class-name lookup that throws ``NotFoundExceptionInterface`` falls back to ``new MyService()``; the class must be instantiable without constructor arguments in that branch.
+- A missing non-class service ID stays a not-found error. Other resolution failures propagate instead of silently creating a default-configured replacement.
 - Non-public methods trigger ``RuntimeException``.
 
 5. ServiceFactory
