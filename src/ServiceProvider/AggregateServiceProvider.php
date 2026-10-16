@@ -24,8 +24,6 @@ use FastForward\Container\Factory\ServiceFactory;
 use Interop\Container\ServiceProviderInterface;
 use Psr\Container\ContainerInterface;
 
-use function DI\string;
-
 /**
  * Aggregates multiple service providers into a single provider.
  *

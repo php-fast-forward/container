@@ -43,8 +43,8 @@ You can use a configuration object to register providers dynamically:
    $container = container($config);
    $cache = $container->get('cache');
 
-Autowiring a Service (using PHP-DI)
------------------------------------
+Autowiring a Service (native reflection)
+----------------------------------------
 
 The container supports autowiring for classes with type-hinted dependencies:
 

@@ -19,14 +19,14 @@ declare(strict_types=1);
 namespace FastForward\Container;
 
 use Throwable;
-use DI\Container;
+use FastForward\Container\Autowire\ReflectionContainer;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * A composite container implementation that wraps another PSR-11 container and appends
- * an internal PHP-DI autowiring container.
+ * an internal reflection-based autowiring container.
  *
  * It provides auto-resolution of services while maintaining compatibility with
  * pre-defined service providers.
@@ -45,7 +45,7 @@ final readonly class AutowireContainer implements ContainerInterface
      * Constructs the AutowireContainer.
      *
      * If the provided container is not an AggregateContainer, it is wrapped within one.
-     * A PHP-DI container is appended to the aggregate to support autowiring.
+     * A reflection container is appended to the aggregate to support autowiring.
      *
      * @param PsrContainerInterface $delegateContainer the delegate container to wrap and extend
      */
@@ -55,7 +55,7 @@ final readonly class AutowireContainer implements ContainerInterface
             ? $delegateContainer
             : new AggregateContainer($delegateContainer);
 
-        $aggregateContainer->append(new Container(wrapperContainer: $this));
+        $aggregateContainer->append(new ReflectionContainer($aggregateContainer));
 
         $this->container = $aggregateContainer;
     }

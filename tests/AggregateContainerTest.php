@@ -203,6 +203,33 @@ final class AggregateContainerTest extends TestCase
      * @return void
      */
     #[Test]
+    public function getPreservesFirstConstructionFailureWhenFallbackIsExhausted(): void
+    {
+        $failure = new class ('construction failed') extends Exception implements ContainerExceptionInterface {};
+        $first = $this->prophesize(ContainerInterface::class);
+        $first->has('broken')
+            ->willReturn(true);
+        $first->get('broken')
+            ->willThrow($failure);
+        $last = $this->prophesize(ContainerInterface::class);
+        $last->has('broken')
+            ->willReturn(true);
+        $last->get('broken')
+            ->willThrow(NotFoundException::class);
+        $container = new AggregateContainer($first->reveal(), $last->reveal());
+
+        try {
+            $container->get('broken');
+            self::fail('The original failure must be preserved.');
+        } catch (ContainerExceptionInterface $containerException) {
+            self::assertSame($failure, $containerException);
+        }
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
     public function appendAddsContainerAtTheEnd(): void
     {
         $key   = uniqid('svc_', true);

@@ -145,13 +145,14 @@ Example:
 ``AutowireContainer``
 ---------------------
 
-``AutowireContainer`` wraps another PSR-11 container and appends an internal PHP-DI
+``AutowireContainer`` wraps another PSR-11 container and appends an internal reflection
 container for autowiring.
 
 Important behavior:
 
 - If the delegate is not already an ``AggregateContainer``, it is wrapped in one.
 - Explicit registrations are still checked before autowiring.
+- Optional object dependencies are resolved before falling back to their declared defaults.
 - ``has($id)`` is strict: it attempts resolution and returns ``false`` when resolution throws.
 
 This strict ``has()`` behavior is useful because it prevents false positives for services

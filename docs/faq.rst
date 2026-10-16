@@ -84,6 +84,14 @@ Why does ``AutowireContainer::has()`` sometimes return ``false`` even when a del
 to resolve the service and returns ``false`` if construction throws. This avoids reporting a
 service as available when it is declared but not actually buildable.
 
+Why is my optional dependency injected instead of staying null?
+----------------------------------------------------------------
+
+The native constructor resolver tries registered entries and concrete-class
+autowiring before selecting an optional default. A default is used only when the
+entry or inferable dependency graph is unavailable. Construction failures and
+cycles still throw. See :doc:`advanced/autowire` for the complete rules.
+
 What is the safest beginner-friendly default for a new project?
 ---------------------------------------------------------------
 

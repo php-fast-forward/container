@@ -21,7 +21,7 @@ namespace FastForward\Container\Tests;
 use stdClass;
 use RuntimeException;
 use ArrayObject;
-use DI\Container;
+use FastForward\Container\Autowire\ReflectionContainer;
 use FastForward\Container\AggregateContainer;
 use FastForward\Container\AutowireContainer;
 use FastForward\Container\Exception\NotFoundException;
@@ -38,6 +38,7 @@ use Psr\Container\ContainerInterface;
  */
 #[CoversClass(AutowireContainer::class)]
 #[UsesClass(AggregateContainer::class)]
+#[UsesClass(ReflectionContainer::class)]
 #[UsesClass(NotFoundException::class)]
 final class AutowireContainerTest extends TestCase
 {
@@ -124,7 +125,7 @@ final class AutowireContainerTest extends TestCase
             ->willReturn(true);
         $aggregate->get('resolvable')
             ->willReturn($aggregate->reveal());
-        $aggregate->append(Argument::type(Container::class))->shouldBeCalledOnce();
+        $aggregate->append(Argument::type(ReflectionContainer::class))->shouldBeCalledOnce();
 
         $container = new AutowireContainer($aggregate->reveal());
 

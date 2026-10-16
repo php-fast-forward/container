@@ -1,5 +1,5 @@
 Container Helper Function
-========================
+=========================
 
 The ``container()`` helper is the main entry point for building a fully-featured,
 autowire-enabled container in FastForward Container. It is intentionally flexible so
@@ -183,7 +183,8 @@ The function always returns an ``AutowireContainer`` that wraps an ``AggregateCo
 composed of all resolved sources. This gives you autowiring and aggregation out of the box,
 regardless of how you initialize the container.
 
-**Autowiring is powered internally by `PHP-DI <https://php-di.org/>`_.**
+Autowiring uses native PHP reflection, resolving optional dependencies before defaults.
+See :doc:`autowire` for the resolution rules.
 
 See Also
 --------

@@ -4,7 +4,7 @@
   <img src="docs/_static/mascot-banner.png" alt="Dash assembling registered services from a modular cabinet" width="840">
 </p>
 
-A PSR-11 compliant aggregate container for PHP, designed to unify and resolve services across multiple container implementations. Built to work seamlessly with `php-di`, configuration objects, and custom container stacks.
+A PSR-11 compliant aggregate container for PHP, designed to unify and resolve services across multiple container implementations. Includes native constructor autowiring and works with configuration objects and custom container stacks.
 
 [![PHP Version](https://img.shields.io/badge/php-^8.3-777BB4?logo=php&logoColor=white)](https://www.php.net/releases/)
 [![Composer Package](https://img.shields.io/badge/composer-fast--forward%2Fcontainer-F28D1A.svg?logo=composer&logoColor=white)](https://packagist.org/packages/fast-forward/container)
@@ -19,7 +19,7 @@ A PSR-11 compliant aggregate container for PHP, designed to unify and resolve se
 
 - Aggregates multiple containers
 - Caches resolved entries
-- Integrates with `php-di`
+- Native constructor autowiring, including resolvable optional dependencies before defaults
 - First-class support for configuration containers
 - Incremental composition with `ContainerBuilder`
 - PSR-11 compliant

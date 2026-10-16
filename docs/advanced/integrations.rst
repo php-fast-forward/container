@@ -29,10 +29,10 @@ The common pattern is:
 
 See :doc:`container-helper` for the full flow.
 
-Autowiring with PHP-DI
-----------------------
+Native constructor autowiring
+-----------------------------
 
-``AutowireContainer`` uses `PHP-DI <https://php-di.org/>`_ internally to instantiate classes
+``AutowireContainer`` uses PHP reflection internally to instantiate classes
 that are not already available through the explicit registrations you provided.
 
 This works best when:
@@ -40,6 +40,10 @@ This works best when:
 - constructor dependencies are classes or interfaces
 - scalar configuration values are supplied through normal provider registrations
 - services that need runtime configuration are registered explicitly instead of relying on bare autowiring
+
+Optional object dependencies are resolved before their declared defaults. See
+:doc:`autowire` for fallback and failure behavior. Applications can still pass an
+externally installed PHP-DI container as an ordinary PSR-11 source.
 
 Frameworks and application shells
 ---------------------------------

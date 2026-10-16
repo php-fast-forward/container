@@ -1,5 +1,5 @@
 Built-in Containers
-==================
+===================
 
 FastForward Container provides several built-in container classes to cover common use cases and advanced scenarios. Each built-in container has a specific role and can be composed with others for maximum flexibility.
 
@@ -28,7 +28,8 @@ AutowireContainer
 
 Adds autowiring support to any PSR-11 container. It will resolve and instantiate classes automatically if they are not found in the underlying container, using constructor injection.
 
-**Autowiring is powered internally by `PHP-DI <https://php-di.org/>`_.**
+Autowiring uses native PHP reflection. Resolvable optional dependencies are injected
+before their declared defaults; see :doc:`autowire`.
 
 .. code-block:: php
 

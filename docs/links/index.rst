@@ -21,5 +21,4 @@ Standards and related libraries
 -------------------------------
 
 - `PSR-11 Container Interface <https://www.php-fig.org/psr/psr-11/>`_
-- `PHP-DI <https://php-di.org/>`_
 - `FastForward Config <https://packagist.org/packages/fast-forward/config>`_
