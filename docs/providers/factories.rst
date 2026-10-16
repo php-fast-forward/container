@@ -99,7 +99,7 @@ method on a container-provided object. The target may be a class name or a servi
 
 Important behavior:
 
-- Static methods are invoked without instantiating the class.
+- Concrete public static methods are invoked without instantiating the class. Abstract static contracts use the implementation supplied by the container.
 - Instance methods first resolve the target through ``$container->get()``. A service ID such as ``factory.target`` uses the method on the returned object.
 - A class-name entry reported absent by ``has()`` falls back to ``new MyService()``; the class must be instantiable without constructor arguments in that branch.
 - Registered targets always use ``get()``. A nested missing dependency remains an error, including when it implements ``NotFoundExceptionInterface``.

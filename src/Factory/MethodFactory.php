@@ -134,7 +134,7 @@ final readonly class MethodFactory implements FactoryInterface
 
         $method = new ReflectionMethod($this->class, $this->method);
 
-        return $method->isPublic() && $method->isStatic() ? $method : null;
+        return $method->isPublic() && $method->isStatic() && ! $method->isAbstract() ? $method : null;
     }
 
     /**

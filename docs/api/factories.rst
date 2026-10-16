@@ -85,7 +85,7 @@ under a container service ID.
 Resolution rules:
 
 - string arguments follow the same service-ID-or-literal logic as ``InvokableFactory``
-- public static methods are invoked directly
+- concrete public static methods are invoked directly; abstract static contracts resolve their implementation through the container
 - instance targets resolve through ``$container->get($target)`` using the supplied class name or service ID; methods are reflected on the actual object
 - when ``has(ClassName::class)`` reports an absent entry, the factory tries ``new ClassName()``; that class must be instantiable without constructor arguments
 - registered targets always use ``get()``; a nested ``NotFoundExceptionInterface`` remains a construction failure and never triggers a replacement

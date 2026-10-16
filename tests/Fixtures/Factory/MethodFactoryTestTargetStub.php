@@ -21,7 +21,7 @@ namespace FastForward\Container\Tests\Fixtures\Factory;
 /**
  * A target for public instance/static methods and visibility checks.
  */
-class MethodFactoryTestTargetStub
+class MethodFactoryTestTargetStub implements MethodFactoryStaticTargetInterface
 {
     /**
      * @param MethodFactoryTestDependencyStub|null $dependency

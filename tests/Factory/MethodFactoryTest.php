@@ -33,6 +33,7 @@ use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryTestTargetStub;
 use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryTestDependencyStub;
 use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryBaseTargetStub;
 use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryDerivedTargetStub;
+use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryStaticTargetInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -344,5 +345,23 @@ final class MethodFactoryTest extends TestCase
         );
 
         self::assertSame($expected, (new MethodFactory(MethodFactoryBaseTargetStub::class, $method))($container));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function resolvesAbstractStaticContractsThroughTheirConfiguredObject(): void
+    {
+        $container = $this->prophesize(ContainerInterface::class);
+        $container->has('value')
+            ->willReturn(false);
+        $container->get(MethodFactoryStaticTargetInterface::class)->willReturn(
+            new MethodFactoryTestTargetStub()
+        )->shouldBeCalledOnce();
+
+        $factory = new MethodFactory(MethodFactoryStaticTargetInterface::class, 'staticMethod', 'value');
+
+        self::assertSame('static-value', $factory($container->reveal()));
     }
 }
