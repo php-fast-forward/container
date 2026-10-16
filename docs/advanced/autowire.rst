@@ -1,25 +1,184 @@
 Autowire
 ========
 
-FastForward Container supports autowiring via integration with `PHP-DI <https://php-di.org/>`. The ``AutowireContainer`` wraps an aggregate container and appends a PHP-DI container for automatic dependency resolution.
+``AutowireContainer`` builds classes from their constructor types. You can use it
+on its own or pass an existing PSR-11 container whose entries are checked first.
+No external autowiring engine is required.
 
 How It Works
 ------------
-- Services registered in the aggregate container are resolved first.
-- If a service is not found, the PHP-DI container attempts to autowire it.
-- This allows seamless use of both explicit and autowired services.
+- Already resolved entries are returned from the cache.
+- If a delegate was supplied, its entries are looked up before autowiring.
+- Concrete classes that still need to be resolved are built from their constructor types.
+- Constructor dependencies follow this same order, including optional dependencies.
+- Each standalone container has its own cache of successfully constructed services.
 
-Usage Example
--------------
+Autowiring without registrations
+--------------------------------
+
+When all dependencies are concrete classes with inferable arguments, no provider
+or delegate is needed:
 
 .. code-block:: php
 
    use FastForward\Container\AutowireContainer;
-   use FastForward\Container\AggregateContainer;
 
-   $aggregate = new AggregateContainer($providerContainer);
-   $container = new AutowireContainer($aggregate);
+   final readonly class MessageSender
+   {
+       public function __construct(public string $channel = 'default') {}
+   }
 
-   $service = $container->get(MyService::class);
+   final readonly class NotificationService
+   {
+       public function __construct(public MessageSender $sender) {}
+   }
 
-You can also use the ``container()`` helper to automatically build an autowire-enabled container from providers, configs, or other containers.
+   $container = new AutowireContainer();
+   $service = $container->get(NotificationService::class);
+
+   echo $service->sender->channel; // default
+
+Passing ``null`` explicitly has the same effect. Repeated lookups return the same
+successfully constructed instance within that container.
+
+Adding autowiring to an existing container
+----------------------------------------
+
+Pass any object implementing ``Psr\Container\ContainerInterface`` to reuse its
+registrations. In this example, a provider-backed container supplies a configured
+``MessageSender``:
+
+.. code-block:: php
+
+   use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+   use FastForward\Container\ServiceProviderContainer;
+
+   $sender = new MessageSender('configured');
+   $existingContainer = new ServiceProviderContainer(new ArrayServiceProvider([
+       MessageSender::class => static fn(): MessageSender => $sender,
+   ]));
+
+   $container = new AutowireContainer($existingContainer);
+   $service = $container->get(NotificationService::class);
+
+   var_dump($service->sender === $sender); // true
+   var_dump($container->get(MessageSender::class) === $sender); // true
+
+The configured sender wins even though its class could be autowired. The same
+priority applies to direct lookups, nested dependencies and optional object
+parameters. ``NotificationService`` is built automatically because the delegate
+does not define it. Your framework's existing PSR-11 container can be passed in
+the same way.
+
+For several PSR-11 containers, pass ``new AggregateContainer($first, $second)``;
+they are consulted in order before native autowiring. To combine providers,
+configuration and containers directly, use ``container(...)``,
+``ContainerFactory::create(...)`` or ``ContainerBuilder``; see
+:doc:`container-helper`. An existing ``AggregateContainer`` is reused and extended
+with autowiring.
+
+Register sources before the first lookup: successful resolutions are cached.
+If a delegate's ``get()`` throws a PSR-11 exception, aggregate fallback may try
+another source. If every source fails, construction errors are preserved; see
+:doc:`special-patterns` for the full fallback rules.
+
+Optional Dependencies
+---------------------
+
+Named object dependencies are looked up before their declared defaults, even when
+the argument is optional:
+
+.. code-block:: php
+
+   use Psr\Log\LoggerInterface;
+
+   final class Handler
+   {
+       public function __construct(public ?LoggerInterface $logger = null) {}
+   }
+
+If ``LoggerInterface::class`` is registered, its entry is injected. An optional
+concrete class is recursively autowired when possible. If the dependency is absent
+or its constructor graph requires arguments that cannot be inferred, the declared
+default is used. This also applies when the default is an object instead of ``null``.
+
+A registered ``null`` is a real entry and overrides an object default for a nullable
+argument. A nullable argument without a default is still required: ``?LoggerInterface
+$logger`` does not imply a fallback to ``null``.
+
+Constructor/factory failures, incompatible registered values and dependency cycles
+are errors. They do not trigger optional defaults. Cycles include the construction
+path in the exception; failed resolutions are not cached and may be retried.
+
+When an optional dependency fails
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An optional default permits an unavailable dependency. A failure while executing
+its construction is propagated instead of being replaced with that default:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Resolution outcome
+     - Result for an optional parameter
+   * - No entry supplies the requested interface or class
+     - Use the declared default
+   * - Autowiring cannot infer a required argument in the dependency graph
+     - Use the declared default
+   * - A constructor, factory or autoloader throws, or an injected value has an incompatible type
+     - Propagate the construction error if no other source resolves the entry
+   * - Resolution encounters a dependency cycle
+     - Propagate the cycle error if no other source resolves the entry
+   * - Another aggregate source resolves the entry after a delegated failure
+     - Inject the successfully resolved value
+
+For example, ``?LoggerInterface $logger = null`` receives ``null`` when no logger
+implementation is available. If a registered logger factory throws while building
+the logger, the lookup fails with ``ContainerException`` and preserves the original
+cause, unless another source successfully resolves that entry. A cycle also fails
+with ``ContainerException`` and includes the resolution path. The same rules apply
+when the declared default is a non-null value. An error while evaluating the default
+itself is also propagated.
+
+If the application intentionally allows a resource to fail, handle the expected
+failure in an explicit factory and return ``null`` for a nullable dependency or an
+appropriate fallback object. Catch only failures that the application deliberately
+recovers from. This keeps that recovery policy explicit for the affected service.
+
+Supported Parameters
+---------------------
+
+- Required and optional named class/interface types resolve by their type identifier.
+- ``self`` and ``parent`` resolve in the constructor's declaring-class scope,
+  including inherited constructors.
+- Scalar and untyped parameters use their declared defaults. Required values need
+  an explicit factory for the containing service; parameter names are not service IDs.
+- Union, intersection and DNF types use their defaults or require an explicit factory.
+  The resolver does not guess which member of an ambiguous type to inject.
+- Variadic parameters receive no implicit entries. Register an explicit factory
+  when a service needs a collection.
+- Non-instantiable classes, interfaces, traits and enums need explicit registrations.
+
+Migration from Internal PHP-DI
+------------------------------
+
+The public construction APIs stay the same. Applications using PHP-DI directly
+must declare their own Composer dependency; an installed PHP-DI container can still
+be supplied as a normal PSR-11 source.
+
+The intentional behavior changes are optional object injection before defaults,
+preservation of the first delegated construction error when aggregate fallback is
+exhausted, and entry discovery through ``has()`` without attempting construction.
+Previously construction failures could appear as a fresh not-found exception.
+
+``AutowireContainer::has()`` now checks whether the composition knows an entry,
+without calling ``get()``. Native autowiring checks class metadata: a class with a
+required scalar argument or a broken constructor can therefore return ``true`` from
+``has()`` and still throw a construction error from ``get()``. A ``false`` result
+means the entry is unknown and ``get()`` throws ``NotFoundExceptionInterface``.
+This follows PSR-11. Use ``get()`` with exception handling when you need to attempt
+construction; ``has()`` is not a construction health check. Supplied delegates
+retain their own ``has()`` implementation.
+
+The native resolver supports constructor injection. It does not implement PHP-DI's
+definition DSL, attribute/property/setter injection, proxies or compilation.

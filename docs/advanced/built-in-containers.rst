@@ -1,5 +1,5 @@
 Built-in Containers
-==================
+===================
 
 FastForward Container provides several built-in container classes to cover common use cases and advanced scenarios. Each built-in container has a specific role and can be composed with others for maximum flexibility.
 
@@ -7,7 +7,7 @@ Overview
 --------
 
 - **AggregateContainer**: Aggregates multiple containers into one, resolving services in order.
-- **AutowireContainer**: Adds autowiring capabilities on top of any PSR-11 container.
+- **AutowireContainer**: Builds concrete classes, on its own or alongside a PSR-11 delegate.
 - **ServiceProviderContainer**: Wraps a ServiceProviderInterface as a PSR-11 container.
 - **ConfigContainer**: Wraps a ConfigInterface as a PSR-11 container.
 
@@ -26,14 +26,19 @@ Aggregates multiple containers. When you call ``get($id)``, it queries each cont
 AutowireContainer
 -----------------
 
-Adds autowiring support to any PSR-11 container. It will resolve and instantiate classes automatically if they are not found in the underlying container, using constructor injection.
-
-**Autowiring is powered internally by `PHP-DI <https://php-di.org/>`_.**
+Builds concrete classes through constructor injection. Start without registrations,
+or pass an existing PSR-11 container to give its entries priority over autowiring:
 
 .. code-block:: php
 
    use FastForward\Container\AutowireContainer;
+
+   $standalone = new AutowireContainer();
    $container = new AutowireContainer($baseContainer);
+
+This priority also applies to nested and optional object dependencies. The delegate
+is optional; passing ``null`` is equivalent to omitting it. See :doc:`autowire` for
+complete examples and parameter limits.
 
 ServiceProviderContainer
 ------------------------

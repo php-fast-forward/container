@@ -8,13 +8,24 @@ PSR-11 containers
 -----------------
 
 Any object implementing ``Psr\Container\ContainerInterface`` can be passed directly to
-``container()`` or appended to ``AggregateContainer``.
+``new AutowireContainer($existingContainer)``, ``container()`` or ``AggregateContainer``.
+Use ``AutowireContainer`` to add constructor autowiring to one existing container.
+Its entries are checked first, including when resolving nested dependencies.
+Use ``container(...)`` to mix several containers with providers or configuration;
+earlier sources take precedence and autowiring is the final fallback.
 
 This is the easiest integration path when:
 
 - your framework already provides a container
 - you are gradually migrating from another dependency injection solution
 - one subsystem already exposes services through PSR-11
+
+An existing container keeps its own factory and dependency-resolution rules.
+FastForward can use the entries it exposes; wrapping it does not change how its
+own factories look up dependencies. Pass providers directly to ``container(...)``
+or ``ContainerBuilder`` when their factories should receive FastForward's complete
+container composition. A delegate's own autowiring can also resolve a requested
+class; that result takes precedence over FastForward's autowiring fallback.
 
 FastForward Config
 ------------------
@@ -29,17 +40,24 @@ The common pattern is:
 
 See :doc:`container-helper` for the full flow.
 
-Autowiring with PHP-DI
-----------------------
+Native constructor autowiring
+-----------------------------
 
-``AutowireContainer`` uses `PHP-DI <https://php-di.org/>`_ internally to instantiate classes
+``AutowireContainer`` uses PHP reflection internally to instantiate classes
 that are not already available through the explicit registrations you provided.
+``new AutowireContainer()`` also works without a delegate or provider when the
+application's constructor dependencies can be inferred from concrete types.
 
 This works best when:
 
-- constructor dependencies are classes or interfaces
-- scalar configuration values are supplied through normal provider registrations
+- concrete constructor dependencies can be built automatically
+- interface dependencies have explicit bindings in a delegate or provider
+- services with required scalar configuration are created by explicit factories
 - services that need runtime configuration are registered explicitly instead of relying on bare autowiring
+
+Optional object dependencies are resolved before their declared defaults. See
+:doc:`autowire` for fallback and failure behavior. Applications can still pass an
+externally installed PHP-DI container as an ordinary PSR-11 source.
 
 Frameworks and application shells
 ---------------------------------

@@ -1,5 +1,5 @@
 Container Helper Function
-========================
+=========================
 
 The ``container()`` helper is the main entry point for building a fully-featured,
 autowire-enabled container in FastForward Container. It is intentionally flexible so
@@ -92,7 +92,12 @@ The aggregate container resolves services from left to right. In practice, this 
 
 - earlier initializers take precedence over later initializers when both can resolve the same ID
 - explicit registrations win before autowiring is attempted
+- nested and optional object dependencies follow the same source order
 - ``container($tests, $defaults)`` is a simple override pattern for tests and local development
+
+For autowiring alone, ``new AutowireContainer()`` needs no initializers. To extend
+one existing PSR-11 container, use ``new AutowireContainer($existingContainer)``;
+its entries are checked before autowiring. See :doc:`autowire` for both examples.
 
 Examples
 --------
@@ -183,7 +188,8 @@ The function always returns an ``AutowireContainer`` that wraps an ``AggregateCo
 composed of all resolved sources. This gives you autowiring and aggregation out of the box,
 regardless of how you initialize the container.
 
-**Autowiring is powered internally by `PHP-DI <https://php-di.org/>`_.**
+Autowiring uses native PHP reflection, resolving optional dependencies before defaults.
+See :doc:`autowire` for the resolution rules.
 
 See Also
 --------

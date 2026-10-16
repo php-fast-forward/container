@@ -23,7 +23,6 @@ the overall container workflow:
 Package                                 Why it is needed
 ======================================  ================================================
 ``psr/container``                       Common PSR-11 interfaces used across the package
-``php-di/php-di``                       Autowiring engine used by ``AutowireContainer``
 ``container-interop/service-provider``  Provider contract used by built-in providers
 ``fast-forward/config``                 Optional configuration-backed container support
 ======================================  ================================================

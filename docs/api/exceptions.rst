@@ -9,6 +9,7 @@ Exception class                  Relationship to PSR-11 exceptions              
 ===============================  ================================================  ===========================================
 ``NotFoundException``            Implements ``NotFoundExceptionInterface``          A service ID cannot be resolved
 ``ContainerException``           Implements ``ContainerExceptionInterface``         A provider factory throws a PSR container exception
+``AutowiringException``          Implements ``ContainerExceptionInterface``         Required constructor arguments cannot be inferred
 ``InvalidArgumentException``     Extends PHP ``InvalidArgumentException``          Container composition receives an invalid class
 ``RuntimeException``             Extends PHP ``RuntimeException``                  Invalid extensions, invalid callable parameters, or non-public methods
 ===============================  ================================================  ===========================================
@@ -21,11 +22,19 @@ Used when a service identifier is unknown or cannot be found in the current cont
 ``ContainerException``
 ----------------------
 
-Used by ``ServiceProviderContainer`` to wrap container-specific failures that happen while
-building a service.
+Used by ``ServiceProviderContainer`` and the native autowiring resolver to wrap
+execution failures while building a service. Also reports native dependency cycles.
 
 This preserves the original exception as ``getPrevious()`` so callers can inspect the
 underlying failure when needed.
+
+``AutowiringException``
+-----------------------
+
+Signals a structurally unresolvable constructor graph, such as a required scalar or
+an unregistered interface. Optional object arguments can use their declared defaults
+for this condition. Constructor/factory execution errors use ``ContainerException``
+and remain visible instead of selecting a default.
 
 ``InvalidArgumentException``
 ----------------------------

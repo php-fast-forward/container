@@ -43,18 +43,26 @@ You can use a configuration object to register providers dynamically:
    $container = container($config);
    $cache = $container->get('cache');
 
-Autowiring a Service (using PHP-DI)
------------------------------------
+Autowiring a Service (native reflection)
+----------------------------------------
 
 The container supports autowiring for classes with type-hinted dependencies:
 
 .. code-block:: php
 
-   use function FastForward\Container\container;
+   use FastForward\Container\AutowireContainer;
+
+   class MyDependency {}
 
    class MyService {
        public function __construct(MyDependency $dep) { /* ... */ }
    }
 
-   $container = container();
+   $container = new AutowireContainer();
    $service = $container->get(MyService::class); // MyDependency is autowired
+
+Pass an existing PSR-11 container to ``new AutowireContainer($existingContainer)``
+to give its entries priority, including for constructor dependencies. Use
+``container(...)`` when combining providers, configuration or several containers;
+autowiring remains the final fallback. See :doc:`../advanced/autowire` for complete
+examples of both standalone and delegated autowiring.

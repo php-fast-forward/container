@@ -21,6 +21,7 @@ namespace FastForward\Container\Tests;
 use stdClass;
 use FastForward\Config\ArrayConfig;
 use FastForward\Container\AggregateContainer;
+use FastForward\Container\Autowire\ReflectionContainer;
 use FastForward\Container\AutowireContainer;
 use FastForward\Container\ContainerBuilder;
 use FastForward\Container\ContainerFactory;
@@ -44,6 +45,7 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
 #[UsesClass(ContainerBuilder::class)]
 #[UsesClass(AggregateContainer::class)]
 #[UsesClass(AutowireContainer::class)]
+#[UsesClass(ReflectionContainer::class)]
 #[UsesClass(ServiceProviderContainer::class)]
 #[UsesClass(ArrayServiceProvider::class)]
 #[UsesClass(AggregateServiceProvider::class)]

@@ -21,6 +21,7 @@ namespace FastForward\Container\Tests\Exception;
 use RuntimeException;
 use FastForward\Container\Exception\ContainerException;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerExceptionInterface;
@@ -31,6 +32,36 @@ use Psr\Container\ContainerExceptionInterface;
 #[CoversClass(ContainerException::class)]
 final class ContainerExceptionTest extends TestCase
 {
+    /**
+     * @param list<string> $path
+     * @param string $message
+     *
+     * @return void
+     */
+    #[Test]
+    #[DataProvider('circularDependencyPaths')]
+    public function forCircularDependencyPreservesTheResolutionPath(array $path, string $message): void
+    {
+        $exception = ContainerException::forCircularDependency($path);
+
+        self::assertInstanceOf(ContainerExceptionInterface::class, $exception);
+        self::assertSame($message, $exception->getMessage());
+        self::assertSame(0, $exception->getCode());
+        self::assertNull($exception->getPrevious());
+    }
+
+    /**
+     * @return iterable<string, array{list<string>, string}>
+     */
+    public static function circularDependencyPaths(): iterable
+    {
+        yield 'self dependency' => [['Service', 'Service'], 'Circular dependency: Service -> Service.'];
+        yield 'nested dependency' => [
+            ['Consumer', 'First', 'Second', 'First'],
+            'Circular dependency: Consumer -> First -> Second -> First.',
+        ];
+    }
+
     /**
      * @return void
      */

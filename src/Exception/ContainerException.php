@@ -31,6 +31,18 @@ use Psr\Container\ContainerExceptionInterface;
 final class ContainerException extends Exception implements ContainerExceptionInterface
 {
     /**
+     * Creates an exception describing the active dependency cycle.
+     *
+     * @param list<string> $path the service identifiers, including the repeated entry
+     *
+     * @return self an exception preserving the complete resolution path
+     */
+    public static function forCircularDependency(array $path): self
+    {
+        return new self(\sprintf('Circular dependency: %s.', implode(' -> ', $path)));
+    }
+
+    /**
      * Creates an exception for an invalid or unresolvable service identifier.
      *
      * This factory method MUST be invoked when a service ID fails to resolve

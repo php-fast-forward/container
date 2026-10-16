@@ -4,10 +4,23 @@ Basic Usage
 This section explains the most common ways to build a FastForward container once you
 understand the basic quickstart flow.
 
+Choose an entry point
+---------------------
+
+- ``new AutowireContainer()`` builds concrete classes without registrations.
+- ``new AutowireContainer($existingContainer)`` checks an existing PSR-11 container
+  first and uses autowiring for the remaining classes, including nested dependencies.
+- ``container(...)`` combines providers, configuration and PSR-11 containers.
+  ``ContainerFactory`` offers the same composition through a static method;
+  ``ContainerBuilder`` lets you register sources across several setup stages.
+
+See :doc:`../advanced/autowire` for complete examples of the first two forms.
+The following sections explain composition through the helper.
+
 The mental model
 ----------------
 
-The ``container()`` helper accepts one or more initializers and always returns an
+The ``container()`` helper accepts zero or more initializers and always returns an
 autowire-enabled container. Each initializer can be one of the following:
 
 ====================================  ==========================================================
@@ -76,9 +89,11 @@ or when you need to reuse an existing PSR-11 container:
 
    $container = container($catalogProvider, $legacyContainer);
 
-When multiple initializers can resolve the same service ID, the first matching container
-inside the aggregate wins. This makes ``container($override, $defaults)`` a useful pattern
-for tests and environment-specific overrides.
+When multiple initializers can resolve the same service ID, the first successful
+source wins. Explicit sources are checked before autowiring, including for nested
+and optional object dependencies. This makes ``container($override, $defaults)``
+a useful pattern for tests and environment-specific overrides. Configure the sources
+before the first lookup: successfully resolved entries are cached.
 
 Step 3: Register providers through configuration
 ------------------------------------------------

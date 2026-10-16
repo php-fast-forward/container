@@ -4,7 +4,7 @@
   <img src="docs/_static/mascot-banner.png" alt="Dash assembling registered services from a modular cabinet" width="840">
 </p>
 
-A PSR-11 compliant aggregate container for PHP, designed to unify and resolve services across multiple container implementations. Built to work seamlessly with `php-di`, configuration objects, and custom container stacks.
+A PSR-11 compliant aggregate container for PHP, designed to unify and resolve services across multiple container implementations. Includes native constructor autowiring and works with configuration objects and custom container stacks.
 
 [![PHP Version](https://img.shields.io/badge/php-^8.3-777BB4?logo=php&logoColor=white)](https://www.php.net/releases/)
 [![Composer Package](https://img.shields.io/badge/composer-fast--forward%2Fcontainer-F28D1A.svg?logo=composer&logoColor=white)](https://packagist.org/packages/fast-forward/container)
@@ -19,7 +19,7 @@ A PSR-11 compliant aggregate container for PHP, designed to unify and resolve se
 
 - Aggregates multiple containers
 - Caches resolved entries
-- Integrates with `php-di`
+- Native constructor autowiring, including resolvable optional dependencies before defaults
 - First-class support for configuration containers
 - Incremental composition with `ContainerBuilder`
 - PSR-11 compliant
@@ -31,6 +31,34 @@ composer require fast-forward/container
 ```
 
 ## 🛠️ Usage
+
+For constructor autowiring without registrations:
+
+```php
+use FastForward\Container\AutowireContainer;
+
+$container = new AutowireContainer();
+$service = $container->get(SomeService::class);
+```
+
+Concrete constructor dependencies are built recursively when their arguments can
+be inferred. Interfaces need explicit bindings, and required scalar arguments need
+a factory for the containing service.
+
+To reuse an existing PSR-11 container, pass it as the delegate:
+
+```php
+$container = new AutowireContainer($existingContainer);
+```
+
+The delegate's entries are looked up before autowiring, including for nested and
+optional object dependencies. Passing `null` is equivalent to omitting the delegate.
+Optional defaults apply to missing or uninferable dependencies. Construction failures
+and cycles remain errors when no other source resolves the entry.
+See the [autowiring guide](docs/advanced/autowire.rst) for complete examples.
+
+To combine providers, configuration and several PSR-11 containers, use `container(...)`.
+Earlier sources take precedence, with autowiring as the final fallback:
 
 ```php
 use FastForward\Container\ContainerInterface;
@@ -100,6 +128,7 @@ This package is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## 🔗 Links
 
 - [Repository](https://github.com/php-fast-forward/container)
+- [Changelog](CHANGELOG.md)
 - [Packagist](https://packagist.org/packages/fast-forward/container)
 - [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119)
 - [PSR-11 Container Interface](https://www.php-fig.org/psr/psr-11/)

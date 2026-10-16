@@ -133,7 +133,8 @@ class AggregateContainer implements ContainerInterface
      *
      * This method SHALL resolve from its internal cache first, and otherwise iterate
      * through the aggregated containers to resolve the entry. It MUST throw a
-     * NotFoundException if the identifier cannot be resolved.
+     * NotFoundException if the identifier is absent. If all candidates fail, the first
+     * delegated construction exception SHALL be retained instead.
      *
      * @param string $id the identifier of the entry to retrieve
      *
@@ -161,8 +162,10 @@ class AggregateContainer implements ContainerInterface
                 return $this->resolved[$id];
             } catch (NotFoundExceptionInterface) {
                 // Ignore NotFoundExceptionInterface
-            } catch (ContainerExceptionInterface) {
-                // Future enhancement: Replace with a domain-specific exception if desired
+            } catch (ContainerExceptionInterface $failure) {
+                if ($exception instanceof NotFoundExceptionInterface) {
+                    $exception = $failure;
+                }
             }
         }
 

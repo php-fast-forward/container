@@ -4,9 +4,28 @@ FAQ
 Where should I start if I am completely new to this package?
 ------------------------------------------------------------
 
-Start with :doc:`getting-started/quickstart`. It introduces the package with one
-``ArrayServiceProvider`` and one call to ``container()``. That is the smallest setup
-that still reflects how the package is meant to be used in real projects.
+Start with :doc:`getting-started/quickstart`. It introduces standalone autowiring,
+then adds configured services through a provider.
+See :doc:`advanced/autowire` for reusing an existing PSR-11 container.
+
+Can I use autowiring without a provider or another container?
+-----------------------------------------------------------
+
+Yes. ``new AutowireContainer()`` recursively builds concrete classes whose
+constructor arguments can be inferred. Passing ``null`` explicitly has the same
+effect. Interfaces need explicit bindings; services with required scalar arguments
+need an explicit factory. See :doc:`advanced/autowire` for a complete example.
+
+Do existing registrations take precedence over autowiring?
+--------------------------------------------------------
+
+Yes. ``new AutowireContainer($existingContainer)`` checks the delegate before
+autowiring. This applies both to direct lookups and to constructor dependencies,
+including optional object parameters. A configured instance can therefore override
+a class that could otherwise be built automatically. When combining several sources
+with ``container(...)``, earlier sources take precedence. Successful resolutions are
+cached; configure sources before resolving services. See :doc:`advanced/special-patterns`
+for fallback behavior when a delegated lookup fails.
 
 Do I have to register every class manually?
 -------------------------------------------
@@ -77,12 +96,34 @@ Use ``prepend()`` when you want a new container to override existing registratio
 ``append()`` when you want a fallback container that is only consulted after the current
 resolution chain is exhausted.
 
-Why does ``AutowireContainer::has()`` sometimes return ``false`` even when a delegate says ``true``?
------------------------------------------------------------------------------------------------------
+Does ``has()`` guarantee that a service can be constructed?
+--------------------------------------------------------
 
-``AutowireContainer`` performs a stricter check than a plain delegated ``has()`` call. It tries
-to resolve the service and returns ``false`` if construction throws. This avoids reporting a
-service as available when it is declared but not actually buildable.
+No. ``has()`` reports whether an entry is known. For native autowiring, it checks
+whether the class is instantiable without attempting constructor injection. A known
+service can return ``true`` and still fail during ``get()`` because of missing scalar
+configuration, a factory error or a cycle. Unknown entries return ``false`` and
+``get()`` throws ``NotFoundExceptionInterface``. Use ``get()`` with exception handling
+to attempt construction. See :doc:`advanced/error-reporting`.
+
+Why is my optional dependency injected instead of staying null?
+----------------------------------------------------------------
+
+The native constructor resolver tries registered entries and concrete-class
+autowiring before selecting an optional default. A default is used only when the
+entry or inferable dependency graph is unavailable. Construction failures and
+cycles still throw. See :doc:`advanced/autowire` for the complete rules.
+
+Why does an optional dependency throw instead of using its default?
+------------------------------------------------------------------
+
+The default is used when the dependency is missing or its constructor arguments
+cannot be inferred. If a constructor, factory or autoloader fails during execution,
+or a dependency cycle is found, the error is propagated when no other source resolves
+the entry. This applies even when the parameter has a non-null default. If the
+application should recover from a particular failure, handle that expected failure
+in an explicit factory and return a compatible fallback. See :doc:`advanced/autowire`
+for the outcome table and examples.
 
 What is the safest beginner-friendly default for a new project?
 ---------------------------------------------------------------
