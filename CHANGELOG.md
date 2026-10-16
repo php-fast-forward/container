@@ -10,10 +10,14 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
 ## [Unreleased]
 
+### Changed
+
+- Require FastForward Config 1.6 or newer within 1.x, using its native configuration storage and removing the transitive `dflydev/dot-access-data` dependency.
+
 ### Fixed
 
 - Correct typed callable factory examples, Slim 4 application creation and JSON responses, and Laravel 12 factory binding adapters. Explain framework requirements, binding lifetimes and provider extension boundaries.
-- Reject incompatible dependency combinations by requiring PSR Container 1.1 or 2.x and FastForward Config 1.1.4 or newer, with production consumer checks for the minimum and current versions.
+- Reject incompatible dependency combinations by requiring PSR Container 1.1 or 2.x and a compatible FastForward Config version, with production consumer checks for the minimum and current versions.
 
 ## [1.9.0] - 2026-10-16
 

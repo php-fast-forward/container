@@ -10,7 +10,7 @@ Package                                 Version                   Why this packa
 ``php``                                 ``^8.3``                  Language baseline used by the package
 ``psr/container``                       ``^1.1 || ^2.0``          PSR-11 interfaces with compatible method signatures
 ``container-interop/service-provider``  ``^0.4.1``                Service provider contract used by built-in providers
-``fast-forward/config``                 ``^1.1.4``                Prefixed config entries and configuration-driven providers
+``fast-forward/config``                 ``^1.6``                  Native config storage, prefixed entries and provider lists
 ======================================  ========================  ===========================================
 
 Development dependency

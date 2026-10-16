@@ -37,7 +37,7 @@ jobs:
           $requirements = ['fast-forward/container' => 'dev-main'];
           if (getenv('DEPENDENCY_SET') === 'minimum') {
               $requirements['psr/container'] = '1.1.0';
-              $requirements['fast-forward/config'] = '1.1.4';
+              $requirements['fast-forward/config'] = '1.6.0';
           }
           $manifest = [
               'name' => 'fast-forward/container-compatibility-test',
