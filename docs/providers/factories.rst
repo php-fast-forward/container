@@ -101,7 +101,8 @@ Important behavior:
 
 - Static methods are invoked without instantiating the class.
 - Instance methods first resolve the target through ``$container->get()``. A service ID such as ``factory.target`` uses the method on the returned object.
-- A class-name lookup that throws ``NotFoundExceptionInterface`` falls back to ``new MyService()``; the class must be instantiable without constructor arguments in that branch.
+- A class-name entry reported absent by ``has()`` falls back to ``new MyService()``; the class must be instantiable without constructor arguments in that branch.
+- Registered targets always use ``get()``. A nested missing dependency remains an error, including when it implements ``NotFoundExceptionInterface``.
 - A missing non-class service ID stays a not-found error. Other resolution failures propagate instead of silently creating a default-configured replacement.
 - Non-public methods trigger ``RuntimeException``.
 

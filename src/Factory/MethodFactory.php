@@ -62,7 +62,8 @@ final readonly class MethodFactory implements FactoryInterface
      * Arguments MAY be resolved from the container if passed as string identifiers and found.
      * Public static class methods are invoked without resolving an instance. Instance targets
      * are retrieved by class name or service ID and reflected using the resolved object.
-     * A missing class-name entry permits direct construction; other resolution failures propagate.
+     * Direct construction is permitted only when has() reports a class-name entry as absent.
+     * Failures resolving registered targets propagate, including missing nested dependencies.
      *
      * @param ContainerInterface $container The container used to resolve the class and arguments
      *
@@ -76,12 +77,10 @@ final readonly class MethodFactory implements FactoryInterface
     {
         $arguments = $this->resolveArguments($container);
 
-        if (class_exists($this->class)) {
-            $method = $this->reflectPublicMethod($this->class);
+        $method = $this->findPublicStaticMethod();
 
-            if ($method->isStatic()) {
-                return $method->invokeArgs(null, $arguments);
-            }
+        if (null !== $method) {
+            return $method->invokeArgs(null, $arguments);
         }
 
         $object = $this->resolveObject($container);
@@ -125,22 +124,34 @@ final readonly class MethodFactory implements FactoryInterface
     }
 
     /**
+     * @return ReflectionMethod|null a public static method that needs no target instance
+     */
+    private function findPublicStaticMethod(): ?ReflectionMethod
+    {
+        if (! method_exists($this->class, $this->method)) {
+            return null;
+        }
+
+        $method = new ReflectionMethod($this->class, $this->method);
+
+        return $method->isPublic() && $method->isStatic() ? $method : null;
+    }
+
+    /**
      * @param ContainerInterface $container the source of the target instance
      *
-     * @return object the configured instance, or a directly constructed missing class
+     * @return object the configured instance, or a class with no registered entry
      *
      * @throws NotFoundExceptionInterface if a non-class service ID is absent
      */
     private function resolveObject(ContainerInterface $container): object
     {
-        try {
+        if (! class_exists($this->class) || $container->has($this->class)) {
             return $container->get($this->class);
-        } catch (NotFoundExceptionInterface $notFoundException) {
-            if (! class_exists($this->class)) {
-                throw $notFoundException;
-            }
-
-            return new ($this->class)();
         }
+
+        $this->reflectPublicMethod($this->class);
+
+        return new ($this->class)();
     }
 }

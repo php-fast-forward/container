@@ -31,6 +31,8 @@ use FastForward\Container\ServiceProvider\ArrayServiceProvider;
 use FastForward\Container\ServiceProviderContainer;
 use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryTestTargetStub;
 use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryTestDependencyStub;
+use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryBaseTargetStub;
+use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryDerivedTargetStub;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -139,9 +141,8 @@ final class MethodFactoryTest extends TestCase
         $container = $this->prophesize(ContainerInterface::class);
         $container->has('prefix')
             ->willReturn(false);
-        $container->get(MethodFactoryTestTargetStub::class)->willThrow(
-            NotFoundException::forServiceID(MethodFactoryTestTargetStub::class)
-        );
+        $container->has(MethodFactoryTestTargetStub::class)->willReturn(false);
+        $container->get(MethodFactoryTestTargetStub::class)->shouldNotBeCalled();
 
         $factory = new MethodFactory(MethodFactoryTestTargetStub::class, 'instanceMethod', 'prefix');
 
@@ -241,6 +242,7 @@ final class MethodFactoryTest extends TestCase
     public static function resolutionFailures(): iterable
     {
         yield 'container failure' => [new ContainerException('registered factory failed')];
+        yield 'missing nested dependency' => [NotFoundException::forServiceID('nested.missing')];
         yield 'execution exception' => [new LogicException('invalid target configuration')];
         yield 'execution error' => [new Error('target initialization failed')];
     }
@@ -252,6 +254,8 @@ final class MethodFactoryTest extends TestCase
     public function testExistingTargetFailuresPropagateUnchanged(Throwable $failure): void
     {
         $container = $this->createMock(ContainerInterface::class);
+        $container->method('has')
+            ->with(MethodFactoryTestTargetStub::class)->willReturn(true);
         $container->expects(self::once())->method('get')->with(MethodFactoryTestTargetStub::class)->willThrowException(
             $failure
         );
@@ -306,6 +310,7 @@ final class MethodFactoryTest extends TestCase
     public function preservesNamedMethodArguments(): void
     {
         $container = $this->prophesize(ContainerInterface::class);
+        $container->has(MethodFactoryTestTargetStub::class)->willReturn(true);
         $container->get(MethodFactoryTestTargetStub::class)->willReturn(new MethodFactoryTestTargetStub());
         $container->has('literal')
             ->willReturn(false);
@@ -313,5 +318,31 @@ final class MethodFactoryTest extends TestCase
         $factory = new MethodFactory(MethodFactoryTestTargetStub::class, 'instanceMethod', prefix: 'literal');
 
         self::assertSame('literal-instance', $factory($container->reveal()));
+    }
+
+    /**
+     * @return iterable<string, array{string, string}> methods provided by the resolved subclass
+     */
+    public static function configuredSubclassMethods(): iterable
+    {
+        yield 'introduced method' => ['addedMethod', 'configured added'];
+        yield 'widened visibility' => ['overriddenMethod', 'configured override'];
+    }
+
+    /**
+     * @param string $method the method on the actual configured target
+     * @param string $expected the subclass-specific result
+     */
+    #[DataProvider('configuredSubclassMethods')]
+    public function testClassNameBindingsUseTheActualObjectMethod(string $method, string $expected): void
+    {
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('has')
+            ->with(MethodFactoryBaseTargetStub::class)->willReturn(true);
+        $container->expects(self::once())->method('get')->with(MethodFactoryBaseTargetStub::class)->willReturn(
+            new MethodFactoryDerivedTargetStub()
+        );
+
+        self::assertSame($expected, (new MethodFactory(MethodFactoryBaseTargetStub::class, $method))($container));
     }
 }

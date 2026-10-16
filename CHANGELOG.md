@@ -16,7 +16,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
 ### Changed
 
-- `MethodFactory` directly constructs a class-name target only after a PSR-11 not-found result. Existing target construction and execution failures now propagate instead of silently using an unconfigured replacement.
+- `MethodFactory` directly constructs a class-name target only when `has()` reports it absent. Existing target construction and execution failures, including nested not-found errors, now propagate instead of silently using an unconfigured replacement.
 
 ## [1.9.0] - 2026-10-16
 
