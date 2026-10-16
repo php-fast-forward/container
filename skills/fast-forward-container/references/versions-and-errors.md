@@ -15,7 +15,8 @@ Before 1.9.0, the internal engine used PHP-DI, an `AutowireContainer` delegate w
 | Named object with explicit entry | Try explicit entries before native autowiring |
 | Constructible concrete named object | Recursively build and cache on success |
 | Optional object absent or graph structurally uninferable | Use declared default, including non-null defaults |
-| Constructor/factory/autoloader/type/default-expression failure or cycle | Propagate error if no later source succeeds |
+| Constructor/factory/autoloader/type/default-expression failure or cycle from a source's `get()` | PSR-11 errors permit later sources; propagate the first construction error if none succeeds |
+| Source `has()` failure, including unreadable provider metadata | Propagate immediately without trying later sources |
 | Nullable parameter without default | Required; nullable does not mean omittable |
 | Required scalar, ambiguous union/intersection/DNF | Explicit factory for the containing service |
 | Variadic collection | No automatic element discovery; supply elements explicitly |

@@ -15,7 +15,7 @@ $first = container($test, $base); // label: test; first successful source wins
 $merged = container(new AggregateServiceProvider($base, $test)); // label: test; later factory wins
 ```
 
-Separate sources try the next source after failure. If none succeeds, the first construction error is preserved. A successful fallback is cached; later lookups do not automatically retry the earlier source.
+Separate sources first call `has()`. When it succeeds, a PSR-11 exception raised by that source's `get()` permits trying the next source. If none succeeds, the first construction error is preserved. An exception from `has()` itself, including a failure reading provider factories/extensions, propagates immediately; later sources are not tried. A successful fallback is cached; later lookups do not automatically retry the earlier source.
 
 ## Select the factory by its argument contract
 

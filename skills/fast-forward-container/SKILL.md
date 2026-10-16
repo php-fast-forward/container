@@ -110,7 +110,7 @@ It must print `configuration: ok`; mismatches throw regardless of PHP's `assert(
 
 ## Preserve resolution and lifetime rules
 
-- Separate sources are tried in order: `container($testOverrides, $config, $defaults)`. The first successful source wins. Explicit entries precede native autowiring, including nested and optional dependencies. Later sources may recover after a prior source fails.
+- Separate sources are tried in order: `container($testOverrides, $config, $defaults)`. The first successful source wins. Explicit entries precede native autowiring, including nested and optional dependencies. Later sources may recover from PSR-11 errors thrown by a source's `get()` after its `has()` succeeds. Errors from `has()`, including provider metadata failures, stop the lookup immediately.
 - `AggregateServiceProvider($base, $overrides)` merges factories: **later duplicate factory keys win**. Duplicate extensions compose in provider order. This differs from first-source precedence.
 - Interfaces and required scalars need explicit registration/factories. Bind the containing service for scalar arguments. `?Type $value` without a default remains required.
 - Optional named objects try explicit entries and concrete autowiring before their defaults. Missing/uninferable graphs may use the default. Constructor/factory/type/autoload/default-expression failures and cycles propagate when no later source succeeds. Do not blanket-catch failures and silently substitute null.

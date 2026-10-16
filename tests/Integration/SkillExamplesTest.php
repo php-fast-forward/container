@@ -4,9 +4,15 @@ declare(strict_types=1);
 
 namespace FastForward\Container\Tests\Integration;
 
+use RuntimeException;
+use FastForward\Container\Exception\ContainerException;
+use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+use Interop\Container\ServiceProviderInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
+
+use function FastForward\Container\container;
 
 /**
  * Exercises the portable examples as consumer CLI programs.
@@ -47,5 +53,33 @@ final class SkillExamplesTest extends TestCase
 
         self::assertSame(0, proc_close($process), (string) $error);
         self::assertSame($expected . \PHP_EOL, $output);
+    }
+
+    /**
+     * @return void
+     */
+    public function testProviderMetadataFailuresDoNotTryLaterSources(): void
+    {
+        $failure = new RuntimeException('Provider metadata failed.');
+        $provider = self::createStub(ServiceProviderInterface::class);
+        $provider->method('getFactories')
+            ->willThrowException($failure);
+        $fallbackUsed = false;
+        $fallback = new ArrayServiceProvider([
+            'entry' => static function () use (&$fallbackUsed): string {
+                $fallbackUsed = true;
+
+                return 'fallback';
+            },
+        ]);
+
+        try {
+            container($provider, $fallback)->get('entry');
+            self::fail('Provider metadata failure must stop the lookup.');
+        } catch (ContainerException $containerException) {
+            self::assertSame($failure, $containerException->getPrevious());
+        }
+
+        self::assertFalse($fallbackUsed);
     }
 }
