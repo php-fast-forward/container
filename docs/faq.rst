@@ -4,9 +4,28 @@ FAQ
 Where should I start if I am completely new to this package?
 ------------------------------------------------------------
 
-Start with :doc:`getting-started/quickstart`. It introduces the package with one
-``ArrayServiceProvider`` and one call to ``container()``. That is the smallest setup
-that still reflects how the package is meant to be used in real projects.
+Start with :doc:`getting-started/quickstart`. It introduces standalone autowiring,
+then adds configured services through a provider.
+See :doc:`advanced/autowire` for reusing an existing PSR-11 container.
+
+Can I use autowiring without a provider or another container?
+-----------------------------------------------------------
+
+Yes. ``new AutowireContainer()`` recursively builds concrete classes whose
+constructor arguments can be inferred. Passing ``null`` explicitly has the same
+effect. Interfaces need explicit bindings; services with required scalar arguments
+need an explicit factory. See :doc:`advanced/autowire` for a complete example.
+
+Do existing registrations take precedence over autowiring?
+--------------------------------------------------------
+
+Yes. ``new AutowireContainer($existingContainer)`` checks the delegate before
+autowiring. This applies both to direct lookups and to constructor dependencies,
+including optional object parameters. A configured instance can therefore override
+a class that could otherwise be built automatically. When combining several sources
+with ``container(...)``, earlier sources take precedence. Successful resolutions are
+cached; configure sources before resolving services. See :doc:`advanced/special-patterns`
+for fallback behavior when a delegated lookup fails.
 
 Do I have to register every class manually?
 -------------------------------------------

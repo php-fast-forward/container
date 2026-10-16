@@ -16,15 +16,27 @@ All built-in factories implement ``FactoryInterface``:
 Factory matrix
 --------------
 
-=================  ===============================================  ===========================================
-Factory            Primary purpose                                   Key behavior
-=================  ===============================================  ===========================================
-``AliasFactory``   Reuse another service under a new ID             Also offers ``AliasFactory::get()``
-``CallableFactory``  Build services with a typed callable           Resolves class/interface parameters by type
-``InvokableFactory``  Instantiate a class through its constructor   Resolves string arguments when they match service IDs
-``MethodFactory``  Call a public static or instance method          Can fall back to ``new ClassName()``
-``ServiceFactory``  Wrap an existing instance or value             Always returns the same object or value
-=================  ===============================================  ===========================================
+.. list-table::
+   :header-rows: 1
+
+   * - Factory
+     - Primary purpose
+     - Key behavior
+   * - ``AliasFactory``
+     - Reuse another service under a new ID
+     - Also offers ``AliasFactory::get()``
+   * - ``CallableFactory``
+     - Build services with a typed callable
+     - Resolves class/interface parameters by type
+   * - ``InvokableFactory``
+     - Instantiate a class through its constructor
+     - Resolves string arguments when they match service IDs
+   * - ``MethodFactory``
+     - Call a public static or instance method
+     - Can fall back to ``new ClassName()``
+   * - ``ServiceFactory``
+     - Wrap an existing instance or value
+     - Always returns the same object or value
 
 ``AliasFactory``
 ----------------

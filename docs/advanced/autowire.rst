@@ -1,40 +1,86 @@
 Autowire
 ========
 
-FastForward Container implements constructor autowiring using native PHP reflection.
-``AutowireContainer`` appends a reflection resolver to an aggregate container, after
-the explicitly registered sources. No external autowiring engine is required.
+``AutowireContainer`` builds classes from their constructor types. You can use it
+on its own or pass an existing PSR-11 container whose entries are checked first.
+No external autowiring engine is required.
 
 How It Works
 ------------
-- Services registered in the aggregate container are resolved first.
-- If a service is not found, the reflection resolver attempts to autowire it.
-- This allows seamless use of both explicit and autowired services.
-- Nested constructor dependencies resolve through the complete aggregate, including
-  other providers, configuration containers and explicit PSR-11 sources.
-- Successful resolutions are cached; separate builder builds have separate caches.
+- Already resolved entries are returned from the cache.
+- If a delegate was supplied, its entries are looked up before autowiring.
+- Concrete classes that still need to be resolved are built from their constructor types.
+- Constructor dependencies follow this same order, including optional dependencies.
+- Each standalone container has its own cache of successfully constructed services.
 
-Usage Example
--------------
+Autowiring without registrations
+--------------------------------
+
+When all dependencies are concrete classes with inferable arguments, no provider
+or delegate is needed:
 
 .. code-block:: php
 
    use FastForward\Container\AutowireContainer;
-   use FastForward\Container\AggregateContainer;
 
-   $aggregate = new AggregateContainer($providerContainer);
-   $container = new AutowireContainer($aggregate);
+   final readonly class MessageSender
+   {
+       public function __construct(public string $channel = 'default') {}
+   }
 
-   $service = $container->get(MyService::class);
+   final readonly class NotificationService
+   {
+       public function __construct(public MessageSender $sender) {}
+   }
 
-You can also use the ``container()`` helper to automatically build an autowire-enabled container from providers, configs, or other containers.
+   $container = new AutowireContainer();
+   $service = $container->get(NotificationService::class);
 
-For constructor autowiring without explicit registrations, use
-``new AutowireContainer(new AggregateContainer())``.
+   echo $service->sender->channel; // default
 
-The reflection resolver is an internal implementation detail. ``AutowireContainer``
-connects it to the same aggregate used for nested dependency lookups. This connection
-allows recursive autowiring through the complete container composition.
+Passing ``null`` explicitly has the same effect. Repeated lookups return the same
+successfully constructed instance within that container.
+
+Adding autowiring to an existing container
+----------------------------------------
+
+Pass any object implementing ``Psr\Container\ContainerInterface`` to reuse its
+registrations. In this example, a provider-backed container supplies a configured
+``MessageSender``:
+
+.. code-block:: php
+
+   use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+   use FastForward\Container\ServiceProviderContainer;
+
+   $sender = new MessageSender('configured');
+   $existingContainer = new ServiceProviderContainer(new ArrayServiceProvider([
+       MessageSender::class => static fn(): MessageSender => $sender,
+   ]));
+
+   $container = new AutowireContainer($existingContainer);
+   $service = $container->get(NotificationService::class);
+
+   var_dump($service->sender === $sender); // true
+   var_dump($container->get(MessageSender::class) === $sender); // true
+
+The configured sender wins even though its class could be autowired. The same
+priority applies to direct lookups, nested dependencies and optional object
+parameters. ``NotificationService`` is built automatically because the delegate
+does not define it. Your framework's existing PSR-11 container can be passed in
+the same way.
+
+For several PSR-11 containers, pass ``new AggregateContainer($first, $second)``;
+they are consulted in order before native autowiring. To combine providers,
+configuration and containers directly, use ``container(...)``,
+``ContainerFactory::create(...)`` or ``ContainerBuilder``; see
+:doc:`container-helper`. An existing ``AggregateContainer`` is reused and extended
+with autowiring.
+
+Register sources before the first lookup: successful resolutions are cached.
+If a delegate's ``get()`` throws a PSR-11 exception, aggregate fallback may try
+another source. If every source fails, construction errors are preserved; see
+:doc:`special-patterns` for the full fallback rules.
 
 Optional Dependencies
 ---------------------

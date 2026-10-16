@@ -25,14 +25,10 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
 /**
- * A composite container implementation that wraps another PSR-11 container and appends
- * an internal reflection-based autowiring container.
+ * Resolves services through an optional delegate and native constructor autowiring.
  *
- * It provides auto-resolution of services while maintaining compatibility with
- * pre-defined service providers.
- *
- * This container MUST be used in scenarios where automatic dependency resolution
- * via autowiring is required alongside explicitly registered services.
+ * Explicit delegate entries take precedence over autowiring. Without a delegate,
+ * an empty aggregate is created to resolve concrete dependency graphs directly.
  */
 final readonly class AutowireContainer implements ContainerInterface
 {
@@ -44,13 +40,16 @@ final readonly class AutowireContainer implements ContainerInterface
     /**
      * Constructs the AutowireContainer.
      *
-     * If the provided container is not an AggregateContainer, it is wrapped within one.
-     * A reflection container is appended to the aggregate to support autowiring.
+     * Omission or null creates an empty AggregateContainer. An existing aggregate is
+     * reused; other PSR-11 containers are wrapped. Autowiring is appended last so
+     * delegate entries take precedence, including for nested dependencies.
      *
-     * @param PsrContainerInterface $delegateContainer the delegate container to wrap and extend
+     * @param PsrContainerInterface|null $delegateContainer the optional delegate to wrap and extend
      */
-    public function __construct(PsrContainerInterface $delegateContainer)
+    public function __construct(?PsrContainerInterface $delegateContainer = null)
     {
+        $delegateContainer ??= new AggregateContainer();
+
         $aggregateContainer = $delegateContainer instanceof AggregateContainer
             ? $delegateContainer
             : new AggregateContainer($delegateContainer);

@@ -32,6 +32,32 @@ composer require fast-forward/container
 
 ## 🛠️ Usage
 
+For constructor autowiring without registrations:
+
+```php
+use FastForward\Container\AutowireContainer;
+
+$container = new AutowireContainer();
+$service = $container->get(SomeService::class);
+```
+
+Concrete constructor dependencies are built recursively when their arguments can
+be inferred. Interfaces need explicit bindings, and required scalar arguments need
+a factory for the containing service.
+
+To reuse an existing PSR-11 container, pass it as the delegate:
+
+```php
+$container = new AutowireContainer($existingContainer);
+```
+
+The delegate's entries are looked up before autowiring, including for nested and
+optional object dependencies. Passing `null` is equivalent to omitting the delegate.
+See the [autowiring guide](docs/advanced/autowire.rst) for complete examples.
+
+To combine providers, configuration and several PSR-11 containers, use `container(...)`.
+Earlier sources take precedence, with autowiring as the final fallback:
+
 ```php
 use FastForward\Container\ContainerInterface;
 use function FastForward\Container\container;

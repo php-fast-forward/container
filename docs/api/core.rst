@@ -12,7 +12,7 @@ API                              Responsibility                                 
 ``ContainerBuilder``             Register sources and build fresh compositions     Conditional or staged application setup
 ``ContainerInterface``           FastForward-specific PSR-11 interface             Type hint inside FastForward packages
 ``AggregateContainer``           Resolve services across several child containers  Layering, overrides, fallback
-``AutowireContainer``            Add autowiring on top of another container        Mixed explicit registration and autowiring
+``AutowireContainer``            Construct classes with an optional delegate       Standalone or delegated autowiring
 ``ServiceProviderContainer``     Expose a provider as a PSR-11 container           Bridging providers into the container stack
 ===============================  ================================================  ===========================================
 
@@ -126,6 +126,7 @@ Resolution rules:
 - If an entry was already resolved once, the cached value is returned.
 - Otherwise, child containers are checked from first to last.
 - If one child reports ``has($id)`` but throws a PSR not-found or container exception during ``get($id)``, the aggregate keeps checking later containers.
+- If no source succeeds, the first construction exception is rethrown. Lookups that only encounter missing entries throw ``NotFoundException``.
 
 Useful methods:
 
@@ -145,18 +146,30 @@ Example:
 ``AutowireContainer``
 ---------------------
 
-``AutowireContainer`` wraps another PSR-11 container and appends an internal reflection
-container for autowiring.
+``AutowireContainer`` provides constructor autowiring, with an optional PSR-11 delegate:
+
+.. code-block:: php
+
+   use FastForward\Container\AutowireContainer;
+
+   $standalone = new AutowireContainer();
+   $withDelegate = new AutowireContainer($existingContainer);
 
 Important behavior:
 
-- If the delegate is not already an ``AggregateContainer``, it is wrapped in one.
-- Explicit registrations are still checked before autowiring.
+- Omitting the delegate or passing ``null`` creates an empty aggregate internally.
+- An existing ``AggregateContainer`` is reused; other delegates are wrapped in one.
+- The delegate is checked before autowiring, including for nested constructor dependencies.
+- An explicit delegate entry wins even when its concrete class could be autowired.
 - Optional object dependencies are resolved before falling back to their declared defaults.
+- Successful resolutions are cached. Separate standalone containers have independent caches.
 - ``has($id)`` is strict: it attempts resolution and returns ``false`` when resolution throws.
 
 This strict ``has()`` behavior is useful because it prevents false positives for services
 that are declared but not actually constructible.
+
+See :doc:`../advanced/autowire` for complete standalone and delegated examples,
+interface bindings, scalar arguments and fallback behavior.
 
 ``ServiceProviderContainer``
 ----------------------------

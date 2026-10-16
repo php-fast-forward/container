@@ -20,12 +20,15 @@ Choosing a provider composition style
 FastForward supports two different ways to combine providers, and they are intentionally
 different:
 
-===============================  ==========================================================
-Approach                         Resolution behavior
-===============================  ==========================================================
-``container($providerA, $providerB)``  The first provider whose container has the ID wins
-``new AggregateServiceProvider(...)``  Factories are merged first, so later providers overwrite earlier keys
-===============================  ==========================================================
+.. list-table::
+   :header-rows: 1
+
+   * - Approach
+     - Resolution behavior
+   * - ``container($providerA, $providerB)``
+     - The first provider that successfully resolves the ID wins
+   * - ``new AggregateServiceProvider(...)``
+     - Factories are merged first, so later providers overwrite earlier keys
 
 Use ``container($providerA, $providerB)`` when you want layered fallback or overrides.
 Use ``AggregateServiceProvider`` when you want to publish one merged provider as a single unit.

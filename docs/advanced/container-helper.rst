@@ -92,7 +92,12 @@ The aggregate container resolves services from left to right. In practice, this 
 
 - earlier initializers take precedence over later initializers when both can resolve the same ID
 - explicit registrations win before autowiring is attempted
+- nested and optional object dependencies follow the same source order
 - ``container($tests, $defaults)`` is a simple override pattern for tests and local development
+
+For autowiring alone, ``new AutowireContainer()`` needs no initializers. To extend
+one existing PSR-11 container, use ``new AutowireContainer($existingContainer)``;
+its entries are checked before autowiring. See :doc:`autowire` for both examples.
 
 Examples
 --------

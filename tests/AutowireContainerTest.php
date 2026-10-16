@@ -25,7 +25,10 @@ use FastForward\Container\Autowire\ReflectionContainer;
 use FastForward\Container\AggregateContainer;
 use FastForward\Container\AutowireContainer;
 use FastForward\Container\Exception\NotFoundException;
+use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+use FastForward\Container\ServiceProviderContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -40,9 +43,71 @@ use Psr\Container\ContainerInterface;
 #[UsesClass(AggregateContainer::class)]
 #[UsesClass(ReflectionContainer::class)]
 #[UsesClass(NotFoundException::class)]
+#[UsesClass(ArrayServiceProvider::class)]
+#[UsesClass(ServiceProviderContainer::class)]
 final class AutowireContainerTest extends TestCase
 {
     use ProphecyTrait;
+
+    /**
+     * @param list<null> $delegateArguments
+     *
+     * @return void
+     */
+    #[Test]
+    #[DataProvider('standaloneDelegates')]
+    public function standaloneContainerResolvesAndSharesConcreteDependencies(array $delegateArguments): void
+    {
+        $container = new AutowireContainer(...$delegateArguments);
+        $service = $container->get(AutowireOnlyService::class);
+
+        self::assertInstanceOf(AutowireOnlyDependency::class, $service->dependency);
+        self::assertSame($container->get(AutowireOnlyLeaf::class), $service->dependency->leaf);
+        self::assertSame($service->dependency->leaf, $service->optionalLeaf);
+        self::assertSame($service, $container->get(AutowireOnlyService::class));
+        self::assertTrue($container->has(AutowireOnlyService::class));
+        self::assertFalse($container->has('missing.standalone.service'));
+    }
+
+    /**
+     * @return iterable<string, array{list<null>}>
+     */
+    public static function standaloneDelegates(): iterable
+    {
+        yield 'omitted delegate' => [[]];
+        yield 'explicit null delegate' => [[null]];
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function standaloneContainersHaveIndependentInstances(): void
+    {
+        $first = new AutowireContainer();
+        $second = new AutowireContainer();
+
+        self::assertNotSame($first->get(AutowireOnlyLeaf::class), $second->get(AutowireOnlyLeaf::class));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function delegateEntriesTakePrecedenceForDirectAndNestedDependencies(): void
+    {
+        $expected = new AutowireOnlyLeaf();
+        $delegate = new ServiceProviderContainer(new ArrayServiceProvider([
+            AutowireOnlyLeaf::class => static fn(): AutowireOnlyLeaf => $expected,
+        ]));
+        $container = new AutowireContainer($delegate);
+        $service = $container->get(AutowireOnlyService::class);
+
+        self::assertSame($expected, $container->get(AutowireOnlyLeaf::class));
+        self::assertSame($expected, $service->dependency->leaf);
+        self::assertSame($expected, $service->optionalLeaf);
+        self::assertSame($service, $container->get(AutowireOnlyService::class));
+    }
 
     /**
      * @return void
@@ -133,3 +198,27 @@ final class AutowireContainerTest extends TestCase
         self::assertSame($aggregate->reveal(), $container->get('resolvable'));
     }
 }
+
+final readonly class AutowireOnlyService
+{
+    /**
+     * @param AutowireOnlyDependency $dependency
+     * @param AutowireOnlyLeaf|null $optionalLeaf
+     */
+    public function __construct(
+        public AutowireOnlyDependency $dependency,
+        public ?AutowireOnlyLeaf $optionalLeaf = null,
+    ) {}
+}
+
+final readonly class AutowireOnlyDependency
+{
+    /**
+     * @param AutowireOnlyLeaf $leaf
+     */
+    public function __construct(
+        public AutowireOnlyLeaf $leaf
+    ) {}
+}
+
+final class AutowireOnlyLeaf {}
