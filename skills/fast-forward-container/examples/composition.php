@@ -19,33 +19,8 @@ use function FastForward\Container\container;
 
 require $argv[1] ?? getcwd() . '/vendor/autoload.php';
 
-/**
- * A configured scalar value.
- */
-interface LabelContract {}
-
-/**
- * A configured implementation of the application contract.
- */
-final readonly class Label implements LabelContract
-{
-    /**
-     * @param string $text the displayed text
-     */
-    public function __construct(
-        public string $text
-    ) {}
-
-    /**
-     * @param string $text the supplied text
-     *
-     * @return self a configured value
-     */
-    public static function create(string $text): self
-    {
-        return new self($text);
-    }
-}
+require __DIR__ . '/Fixtures/Composition/LabelContract.php';
+require __DIR__ . '/Fixtures/Composition/Label.php';
 
 $base = new ArrayServiceProvider([
     'label' => static fn(): string => 'base',

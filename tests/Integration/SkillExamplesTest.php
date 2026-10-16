@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FastForward\Container\Tests;
+namespace FastForward\Container\Tests\Integration;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\CoversNothing;
@@ -31,7 +31,7 @@ final class SkillExamplesTest extends TestCase
     #[DataProvider('examples')]
     public function testExampleAgainstConsumerAutoloader(string $file, string $expected): void
     {
-        $root = \dirname(__DIR__);
+        $root = \dirname(__DIR__, 2);
         $php = false === php_ini_loaded_file() ? [\PHP_BINARY, '-n'] : [\PHP_BINARY];
         $process = proc_open([
             ...$php,

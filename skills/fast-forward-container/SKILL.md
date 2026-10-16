@@ -33,13 +33,44 @@ Helper, factory and builder accept `ConfigInterface`, PSR-11 containers, interop
 
 ## Ordinary configuration-backed setup
 
-Create `bootstrap/container.php` in a consumer with Composer dependencies installed. Its autoloader path assumes this layout. Reuse the application's existing loader/classes when present.
+Reuse the application's existing classes and Composer autoloader. Keep each class or interface in its own file with the matching name. For this example, Composer maps `App\\` to `src/`.
+
+`src/GreetingInterface.php`:
+
+```php
+<?php
+
+namespace App;
+
+interface GreetingInterface
+{
+    public function greet(): string;
+}
+```
+
+`src/Greeting.php`:
+
+```php
+<?php
+
+namespace App;
+
+final readonly class Greeting implements GreetingInterface
+{
+    public function __construct(private string $name) {}
+    public function greet(): string { return 'Hello ' . $this->name; }
+}
+```
+
+Create `bootstrap/container.php` after installing the Composer dependencies:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
+use App\Greeting;
+use App\GreetingInterface;
 use FastForward\Config\ArrayConfig;
 use FastForward\Container\ContainerInterface as ContainerConfig;
 use FastForward\Container\ServiceProvider\ArrayServiceProvider;
@@ -47,17 +78,6 @@ use Psr\Container\ContainerInterface;
 use function FastForward\Container\container;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
-
-interface GreetingInterface
-{
-    public function greet(): string;
-}
-
-final readonly class Greeting implements GreetingInterface
-{
-    public function __construct(private string $name) {}
-    public function greet(): string { return 'Hello ' . $this->name; }
-}
 
 $config = new ArrayConfig([
     'app' => ['name' => 'Storefront'],
@@ -75,7 +95,7 @@ return container($config);
 Verify from the project root:
 
 ```sh
-php -r '$c = require "bootstrap/container.php"; if ($c->get(GreetingInterface::class)->greet() !== "Hello Storefront") { throw new RuntimeException("Unexpected greeting"); }'
+php -r '$c = require "bootstrap/container.php"; if ($c->get(App\GreetingInterface::class)->greet() !== "Hello Storefront") { throw new RuntimeException("Unexpected greeting"); }'
 ```
 
 The raw nested-provider key is **`FastForward\Container\ContainerInterface::class`**, not the PSR interface or a `config.*` key. Raw config reads `app.name`; the composed container exposes `config.app.name`. A plain provider closure receives the composed PSR-11 wrapper and can retrieve configuration or sibling services.

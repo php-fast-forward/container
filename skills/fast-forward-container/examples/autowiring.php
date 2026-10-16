@@ -14,83 +14,13 @@ use RuntimeException;
 
 require $argv[1] ?? getcwd() . '/vendor/autoload.php';
 
-/**
- * An intentionally unbound optional interface.
- */
-interface OptionalContract {}
-
-/**
- * A concrete dependency that can be constructed without registrations.
- */
-final class Dependency {}
-
-/**
- * An ordinary optional object graph.
- */
-final readonly class Application
-{
-    /**
-     * @param Dependency|null $dependency a constructible optional dependency
-     * @param OptionalContract|null $optional an absent optional interface
-     */
-    public function __construct(
-        public ?Dependency $dependency = null,
-        public ?OptionalContract $optional = null
-    ) {}
-}
-
-/**
- * A known class whose required scalar is not inferable.
- */
-final readonly class RequiredScalar
-{
-    /**
-     * @param string $value the required scalar
-     */
-    public function __construct(
-        public string $value
-    ) {}
-}
-
-/**
- * A dependency with a genuine execution failure.
- */
-final class Broken
-{
-    /**
-     * Always fail to model a broken optional integration.
-     */
-    public function __construct()
-    {
-        throw new RuntimeException('example constructor failure');
-    }
-}
-
-/**
- * A default must not hide Broken's execution failure.
- */
-final readonly class OptionalBroken
-{
-    /**
-     * @param Broken|null $dependency the failing optional dependency
-     */
-    public function __construct(
-        public ?Broken $dependency = null
-    ) {}
-}
-
-/**
- * An optional circular graph still has to report its cycle.
- */
-final readonly class Cycle
-{
-    /**
-     * @param self|null $dependency the circular optional dependency
-     */
-    public function __construct(
-        public ?self $dependency = null
-    ) {}
-}
+require __DIR__ . '/Fixtures/Autowiring/OptionalContract.php';
+require __DIR__ . '/Fixtures/Autowiring/Dependency.php';
+require __DIR__ . '/Fixtures/Autowiring/Application.php';
+require __DIR__ . '/Fixtures/Autowiring/RequiredScalar.php';
+require __DIR__ . '/Fixtures/Autowiring/Broken.php';
+require __DIR__ . '/Fixtures/Autowiring/OptionalBroken.php';
+require __DIR__ . '/Fixtures/Autowiring/Cycle.php';
 
 $standalone = new AutowireContainer();
 $application = $standalone->get(Application::class);

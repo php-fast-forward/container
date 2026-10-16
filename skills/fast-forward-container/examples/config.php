@@ -17,37 +17,8 @@ use function FastForward\Container\container;
 
 require $argv[1] ?? getcwd() . '/vendor/autoload.php';
 
-/**
- * A configured application dependency.
- */
-interface GreetingInterface
-{
-    /**
-     * @return string the configured greeting
-     */
-    public function greet(): string;
-}
-
-/**
- * A service with a required scalar that needs an explicit factory.
- */
-final readonly class Greeting implements GreetingInterface
-{
-    /**
-     * @param string $name the application name
-     */
-    public function __construct(
-        private string $name
-    ) {}
-
-    /**
-     * @return string the configured greeting
-     */
-    public function greet(): string
-    {
-        return 'Hello ' . $this->name;
-    }
-}
+require __DIR__ . '/Fixtures/Configuration/GreetingInterface.php';
+require __DIR__ . '/Fixtures/Configuration/Greeting.php';
 
 $config = new ArrayConfig([
     'app' => [
