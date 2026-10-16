@@ -10,3 +10,4 @@ Advanced Topics
    container-helper
    built-in-containers
    special-patterns
+   agent-skill
