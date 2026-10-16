@@ -20,6 +20,8 @@ namespace FastForward\Container\Tests\Autowire;
 
 use Countable;
 use Error;
+use IntlGregorianCalendar;
+use ReflectionClass;
 use RuntimeException;
 use stdClass;
 use FastForward\Container\AggregateContainer;
@@ -33,6 +35,7 @@ use FastForward\Container\ServiceProvider\ArrayServiceProvider;
 use FastForward\Container\ServiceProviderContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -446,6 +449,81 @@ final class ReflectionContainerTest extends TestCase
     }
 
     /**
+     * @param bool $wrapped
+     * @param string $method
+     *
+     * @return void
+     */
+    #[Test]
+    #[DataProvider('classProbes')]
+    public function autoloaderFailuresPreserveTheirCauseAcrossRetries(bool $wrapped, string $method): void
+    {
+        $id = __NAMESPACE__ . '\\BrokenAutoloadService';
+        $failure = new RuntimeException('autoload failed');
+        $loader = static function (string $class) use ($id, $failure): void {
+            if ($id === $class) {
+                throw $failure;
+            }
+        };
+        $container = $wrapped ? $this->container() : new ReflectionContainer(new AggregateContainer());
+        spl_autoload_register($loader);
+
+        try {
+            for ($attempt = 0; $attempt < 2; ++$attempt) {
+                try {
+                    $container->{$method}($id);
+                    self::fail('Class probing must report a container exception.');
+                } catch (ContainerException $exception) {
+                    self::assertSame($failure, $exception->getPrevious());
+                }
+            }
+
+            self::assertInstanceOf(NativeDependency::class, $container->get(NativeDependency::class));
+        } finally {
+            spl_autoload_unregister($loader);
+        }
+    }
+
+    /**
+     * @return iterable<string, array{bool, string}>
+     */
+    public static function classProbes(): iterable
+    {
+        yield 'internal has' => [false, 'has'];
+        yield 'internal get' => [false, 'get'];
+        yield 'composed get' => [true, 'get'];
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    #[RequiresPhpExtension('intl')]
+    public function internalOptionalArgumentsWithoutReflectedDefaultsAreOmitted(): void
+    {
+        $parameter = (new ReflectionClass(IntlGregorianCalendar::class))->getConstructor()->getParameters()[0];
+
+        self::assertTrue($parameter->isOptional());
+        self::assertFalse($parameter->isDefaultValueAvailable());
+        self::assertInstanceOf(IntlGregorianCalendar::class, $this->container()->get(IntlGregorianCalendar::class));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function constructorReferenceArgumentsHaveIndependentStorage(): void
+    {
+        $container = $this->container();
+        $consumer = $container->get(ReferenceArguments::class);
+
+        self::assertSame($container->get(NativeDependency::class), $consumer->dependency);
+        self::assertSame('default:updated', $consumer->label);
+        self::assertSame('other:updated', $consumer->other);
+        self::assertNull($consumer->missing);
+    }
+
+    /**
      * @param array<string, callable> $factories
      *
      * @return AutowireContainer
@@ -696,3 +774,22 @@ final class PrivateConstructor
 }
 
 abstract class AbstractService {}
+
+final class ReferenceArguments
+{
+    /**
+     * @param NativeDependency $dependency
+     * @param string $label
+     * @param NativeContract|null $missing
+     * @param string $other
+     */
+    public function __construct(
+        public NativeDependency &$dependency,
+        public string &$label = 'default',
+        public ?NativeContract &$missing = null,
+        public string &$other = 'other',
+    ) {
+        $label .= ':updated';
+        $other .= ':updated';
+    }
+}

@@ -13,12 +13,13 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 ### Added
 
 - Native constructor autowiring with recursive dependency resolution, shared instances, cycle diagnostics and cleanup after failed construction.
+- Support for constructor parameters passed by reference and optional internal arguments whose default values are unavailable through reflection.
 - A versioned changelog, including the release history from `1.0.0` through `1.8.0`.
 
 ### Changed
 
 - Optional named object dependencies resolve explicit container entries or autowire concrete classes before using their declared defaults, including non-null defaults.
-- Missing entries and structurally unavailable dependency graphs use an optional argument's default. Constructor, factory, type, cycle and default-expression failures remain errors with their original causes preserved.
+- Missing entries and structurally unavailable dependency graphs use an optional argument's default. Autoloader, constructor, factory, type, cycle and default-expression failures remain errors with their original causes preserved.
 - Aggregate lookups still try later sources after delegated failures, but preserve the first construction exception when no source succeeds instead of reporting a fresh not-found exception.
 
 - The public `AutowireContainer`, `ContainerBuilder`, `ContainerFactory` and `container()` APIs remain available. PHP `^8.3` remains the minimum requirement.

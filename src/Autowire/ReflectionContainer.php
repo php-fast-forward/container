@@ -59,10 +59,12 @@ final class ReflectionContainer implements ContainerInterface
      * @param string $id the entry identifier
      *
      * @return bool whether the class can be instantiated
+     *
+     * @throws ContainerException if class loading or reflection fails
      */
     public function has(string $id): bool
     {
-        return class_exists($id) && (new ReflectionClass($id))->isInstantiable();
+        return $this->reflectClass($id) instanceof ReflectionClass;
     }
 
     /**
@@ -82,13 +84,9 @@ final class ReflectionContainer implements ContainerInterface
             return $this->resolved[$id];
         }
 
-        if (! class_exists($id)) {
-            throw NotFoundException::forServiceID($id);
-        }
+        $class = $this->reflectClass($id);
 
-        $class = new ReflectionClass($id);
-
-        if (! $class->isInstantiable()) {
+        if (! $class instanceof ReflectionClass) {
             throw NotFoundException::forServiceID($id);
         }
 
@@ -103,12 +101,32 @@ final class ReflectionContainer implements ContainerInterface
 
         try {
             $arguments = [];
+            $referenceValues = [];
             $constructor = $class->getConstructor();
 
             if (null !== $constructor) {
                 foreach ($constructor->getParameters() as $parameter) {
-                    if (! $parameter->isVariadic()) {
-                        $arguments[] = $this->resolveParameter($parameter, $constructor->getDeclaringClass());
+                    if ($parameter->isVariadic()) {
+                        continue;
+                    }
+
+                    try {
+                        $value = $this->resolveParameter($parameter, $constructor->getDeclaringClass());
+                    } catch (AutowiringException $exception) {
+                        if (! $parameter->isOptional() || $parameter->isDefaultValueAvailable()) {
+                            throw $exception;
+                        }
+
+                        continue;
+                    }
+
+                    $name = $parameter->getName();
+
+                    if ($parameter->isPassedByReference()) {
+                        $referenceValues[$name] = $value;
+                        $arguments[$name] = &$referenceValues[$name];
+                    } else {
+                        $arguments[$name] = $value;
                     }
                 }
             }
@@ -120,6 +138,32 @@ final class ReflectionContainer implements ContainerInterface
             }
         } finally {
             unset($this->resolving[$id]);
+        }
+    }
+
+    /**
+     * Looks up instantiable class metadata within the PSR-11 error boundary.
+     *
+     * @param string $id the class identifier
+     *
+     * @return ReflectionClass<object>|null the class metadata, if instantiable
+     *
+     * @throws ContainerException if class loading or reflection fails
+     */
+    private function reflectClass(string $id): ?ReflectionClass
+    {
+        try {
+            if (class_exists($id)) {
+                $class = new ReflectionClass($id);
+
+                if ($class->isInstantiable()) {
+                    return $class;
+                }
+            }
+
+            return null;
+        } catch (Throwable $throwable) {
+            throw ContainerException::forInvalidService($id, $throwable);
         }
     }
 
