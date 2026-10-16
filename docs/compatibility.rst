@@ -27,7 +27,9 @@ method signatures. FastForward Config 1.6 provides the ``config.*`` entry namesp
 and configuration-driven provider lists used here, with native configuration
 storage that no longer depends on ``dflydev/dot-access-data``.
 Production consumer checks exercise the minimum versions and current dependencies
-without installing development tools into the consumer.
+without installing development tools into the consumer. The minimum scenario uses
+Composer's ``--prefer-lowest`` against this package's dependency constraints, so it
+automatically follows future changes to the declared version bounds.
 
 Integration guidance
 --------------------
