@@ -8,26 +8,17 @@ boundaries. Its portable entrypoint is
 ``resources/skills/fast-forward-container/SKILL.md``;
 references, runnable examples and its MIT license travel with it.
 
-Availability and prerequisites
-------------------------------
+Compatibility and prerequisites
+-------------------------------
 
-The skill remains under review separately from the published runtime release
-v1.9.1. Neither v1.9.0 nor v1.9.1 contains the skill directory. Until a later
-release bundles it, use a reviewed repository checkout or an immutable Git
-revision containing the skill.
+The skill supports ``fast-forward/container ^1.10``, PHP 8.3+ and Composer 2.
+Earlier library versions are outside its supported API contract. Its four
+examples cover configuration, composition, autowiring and provider resolution.
+The agent checks the application's installed versions before applying these
+instructions. A global copy does not upgrade dependencies or extend support to
+older versions; report a mismatch rather than silently upgrading the application.
 
-All four examples target the published v1.9.1 API, PHP 8.3+ and Composer. The
-provider-resolution example covers numeric IDs, method-factory targets,
-class-extension identity and provider cycles corrected in that release. The
-skill explains the Config ``^1.6`` requirement and precautions for older installs;
-the other three examples also support v1.9.0 with compatible dependencies.
-The agent checks the consumer's installed version before choosing APIs; a global
-copy does not upgrade an application's dependencies. Installing the published
-v1.9.1 runtime does not install this skill, and the skill must not prompt a
-dependency upgrade to obtain itself.
-
-After a release includes the directory, ``composer install`` makes its files
-available under
+``composer install`` makes the bundled files available under
 ``vendor/fast-forward/container/resources/skills/fast-forward-container``.
 The library declares ``extra.skills.source`` as ``resources/skills`` and suggests
 ``llm/skills`` as an optional installer. The directory uses the plural
@@ -70,13 +61,11 @@ Automatic project installation with Composer
 The optional `llm/skills <https://github.com/roxblnfk/skills>`_ Composer plugin
 discovers the library's metadata and copies the complete skill directory into
 the consumer project. It is suggested, not required: installing this library
-does not install or authorize the plugin. The route below was exercised with
-``llm/skills`` 1.15.0 on PHP 8.3 and 8.5.
+does not install or authorize the plugin. The configuration below uses
+``llm/skills ^1.15``.
 
-First confirm that your installed library or reviewed checkout contains
-``resources/skills/fast-forward-container/SKILL.md``. Published v1.9.1 does not
-contain it. Before installing the plugin, create ``skills.json`` at the
-application root so your choices apply to its first automatic sync:
+Before installing the plugin, create ``skills.json`` at the application root so
+your choices apply to its first automatic sync:
 
 .. code-block:: json
 
@@ -173,7 +162,7 @@ a fresh backup outside all discovery paths using the copy-management procedure
 below, then refresh the agent. Review the dry-run before any broader cleanup.
 
 Copy from the installed library
-------------------------------
+-------------------------------
 
 From the consumer project root, select a source and one destination:
 
@@ -191,11 +180,10 @@ From the consumer project root, select a source and one destination:
    mkdir -p "$(dirname "$skill_target")" &&
    cp -R "$skill_source" "$skill_target"
 
-The command refuses an existing destination, including a dangling symlink. A
-missing source means the installed release predates the bundled skill: select a
-reviewed checkout and set ``skill_source`` to its skill directory instead. Do not
-create a placeholder ``SKILL.md`` or change production dependencies to install
-agent instructions.
+The command refuses an existing destination, including a dangling symlink. If
+the source is missing, check the installed library version and package contents
+before continuing. Do not create a placeholder ``SKILL.md`` or silently upgrade
+production dependencies to install agent instructions.
 
 Inspect the copied entrypoint and resources, then refresh the agent session and
 confirm the skill appears in its available skills. For an explicit activation,
@@ -203,7 +191,7 @@ ask the agent to use ``fast-forward-container`` to configure the application.
 Installation alone does not prove that an agent has loaded the skill.
 
 Update, removal and rollback for a copy
---------------------------------------
+---------------------------------------
 
 Record the new source version/reference and review the diff before an update.
 Move the old package to a fresh backup path **outside every skill discovery
@@ -227,8 +215,8 @@ Assisted installation with Skills CLI
 -------------------------------------
 
 The optional `Skills CLI <https://github.com/vercel-labs/skills>`_ supports both
-scopes and agent-specific paths. The following commands were verified with
-``skills@1.7.2`` and Node.js 22.23.3; that CLI requires Node.js 22.20.0+.
+scopes and agent-specific paths. The commands use ``skills@1.7.2``, which requires
+Node.js 22.20.0+.
 Repository-source installation also requires Git. The CLI is a development tool,
 not a PHP runtime dependency.
 
@@ -243,8 +231,8 @@ Add ``--global`` to ``add`` and ``list`` for a global installation. Replace
 ``--agent codex`` with ``--agent claude-code`` for Claude Code. The explicit
 ``--copy`` avoids symlinks into a vendor directory that Composer may replace.
 
-Before the first skill-bearing release, or to pin instructions separately, set
-``SKILL_REF`` to a **reviewed full commit SHA containing the package**, then use:
+To pin instructions separately, set ``SKILL_REF`` to a **full commit SHA from
+the library version used by the project**, then use:
 
 .. code-block:: sh
 
@@ -273,20 +261,6 @@ already choosing that workflow, but it executes as a Composer plugin and changes
 project instruction files. It is not required by this library and no automatic
 registration hook is enabled here.
 
-The published 2.1.1 manifest requires PHP 8.4, so it does not cover the full PHP
+Version 2.1.1 requires PHP 8.4, so it does not cover the full PHP
 8.3 range supported here. If a project adopts it separately, review its version,
-allow-plugins/trust policy and generated-instruction ownership. This guide does
-not claim an operational test of that separate integration.
-
-Validation scope
------------------
-
-The skill examples are tested as PHP consumer programs. The optional
-``llm/skills`` path was checked with isolated Composer consumers, including
-archive payload hashes, automatic sync, repeated installs, overwritten local
-edits and stale copies after dependency removal. The broader cleanup mode was
-checked with a dry-run. Installation, pinned
-reinstallation, listing and removal were exercised for Codex and Claude Code paths
-inside an isolated container. This checks file distribution and CLI discovery,
-not live model behavior in every agent. No developer's global skills are changed
-by repository tests. See the skill's bundled references for the API baseline.
+allow-plugins/trust policy and generated-instruction ownership.
