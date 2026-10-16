@@ -12,7 +12,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
 ### Fixed
 
-- Apply concrete-class extensions to distinct services independently of lookup order, while avoiding repeated extension of an alias to the cached class instance.
+- Apply concrete-class extensions to distinct services independently of lookup order, while avoiding repeated extension of aliases to any cached object, including replacement objects.
 
 ## [1.9.0] - 2026-10-16
 

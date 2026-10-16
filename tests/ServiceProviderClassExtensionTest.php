@@ -125,6 +125,62 @@ final class ServiceProviderClassExtensionTest extends TestCase
     }
 
     /**
+     * @param bool $classFirst whether the distinct class entry is resolved before the named alias
+     * @param bool $replace whether the class extension replaces the service with a new object
+     *
+     * @return void
+     */
+    #[Test]
+    #[DataProvider('namedAliasOrders')]
+    public function namedAliasesRetainTheExtendedObject(bool $classFirst, bool $replace): void
+    {
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            stdClass::class => static fn(): stdClass => (object) [
+                'extensions' => 0,
+            ],
+            'named' => static fn(): stdClass => (object) [
+                'extensions' => 0,
+            ],
+            'alias' => new AliasFactory('named'),
+            'alias.chain' => new AliasFactory('alias'),
+        ], [
+            stdClass::class => static function (ContainerInterface $container, stdClass $service) use (
+                $replace
+            ): stdClass {
+                ++$service->extensions;
+
+                return $replace ? clone $service : $service;
+            },
+        ]));
+
+        if ($classFirst) {
+            $container->get(stdClass::class);
+        }
+
+        $alias = $container->get('alias.chain');
+        $named = $container->get('named');
+        $class = $container->get(stdClass::class);
+
+        self::assertSame($named, $alias);
+        self::assertSame($named, $container->get('alias'));
+        self::assertSame($named, $container->get('alias.chain'));
+        self::assertNotSame($class, $named);
+        self::assertSame(1, $class->extensions);
+        self::assertSame(1, $named->extensions);
+    }
+
+    /**
+     * @return iterable<string, array{bool, bool}> lookup orders for mutating and replacing class extensions
+     */
+    public static function namedAliasOrders(): iterable
+    {
+        yield 'class first, mutation' => [true, false];
+        yield 'named alias first, mutation' => [false, false];
+        yield 'class first, replacement' => [true, true];
+        yield 'named alias first, replacement' => [false, true];
+    }
+
+    /**
      * @return void
      */
     #[Test]
