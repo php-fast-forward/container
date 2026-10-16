@@ -8,9 +8,14 @@ Using CallableFactory for Dependency Injection
 .. code-block:: php
 
    use FastForward\Container\Factory\CallableFactory;
+   use Psr\Container\ContainerInterface;
 
-   $factory = new CallableFactory(fn($container) => new Mailer($container->get('logger')));
+   $factory = new CallableFactory(fn(ContainerInterface $container) => new Mailer($container->get('logger')));
    $mailer = $factory($container);
+
+``CallableFactory`` resolves each named object parameter by its type. Type the
+parameter as ``Psr\Container\ContainerInterface`` when the callable needs the
+container itself; an untyped ``$container`` parameter cannot be resolved.
 
 Aliasing Services with AliasFactory
 -----------------------------------
