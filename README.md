@@ -123,10 +123,11 @@ caches do not imply cloning external containers or their services.
 
 ## Agent skill
 
-The bundled [fast-forward-container skill](skills/fast-forward-container/SKILL.md)
+The bundled [fast-forward-container skill](resources/skills/fast-forward-container/SKILL.md)
 guides agents through configuration, providers, factories, overrides and autowiring.
-See the [installation guide](docs/advanced/agent-skill.rst) for project-local and
-global copies, pinned Skills CLI commands, updates and removal. The skill is not
+See the [installation guide](docs/advanced/agent-skill.rst) for optional automatic
+project installation with `llm/skills`, project/global copies, pinned Skills CLI
+commands, updates and removal. The skill is not
 included in v1.9.1; use a reviewed repository revision until a release includes it.
 
 ## 📄 License

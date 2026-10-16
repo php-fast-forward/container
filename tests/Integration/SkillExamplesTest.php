@@ -42,7 +42,7 @@ final class SkillExamplesTest extends TestCase
         $php = false === php_ini_loaded_file() ? [\PHP_BINARY, '-n'] : [\PHP_BINARY];
         $process = proc_open([
             ...$php,
-            $root . '/skills/fast-forward-container/examples/' . $file,
+            $root . '/resources/skills/fast-forward-container/examples/' . $file,
             $root . '/vendor/autoload.php',
         ], [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, sys_get_temp_dir());
         self::assertIsResource($process);
