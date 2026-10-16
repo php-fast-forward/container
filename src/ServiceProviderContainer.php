@@ -176,7 +176,8 @@ final class ServiceProviderContainer implements ContainerInterface
      * Applies ID-based and concrete-class extensions, retaining each returned value.
      *
      * The ID-based extension SHALL run first. If its result is an object, an extension
-     * for that object's concrete class MAY run next. Invalid extensions SHALL be ignored.
+     * for that object's concrete class MAY run next, unless that exact object is already
+     * cached under its class identifier. Invalid extensions SHALL be ignored.
      *
      * Extensions declared void SHALL retain the previous value for compatibility.
      *
@@ -196,7 +197,7 @@ final class ServiceProviderContainer implements ContainerInterface
 
         if (\is_object($service)
             && $id !== $service::class
-            && ! \array_key_exists($service::class, $this->cache)
+            && $service !== ($this->cache[$service::class] ?? null)
             && \is_callable($extensions[$service::class] ?? null)
         ) {
             return (new ServiceExtension($extensions[$service::class]))($this->wrapperContainer, $service);
