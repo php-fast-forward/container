@@ -18,6 +18,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
 - Correct typed callable factory examples, Slim 4 application creation and JSON responses, and Laravel 12 factory binding adapters. Explain framework requirements, binding lifetimes and provider extension boundaries.
 - Reject incompatible dependency combinations by requiring PSR Container 1.1 or 2.x and a compatible FastForward Config version, with production consumer checks for the minimum and current versions.
+- Preserve numeric-looking service identifiers when aggregating provider factories, retaining later-provider precedence and matching factory/extension keys.
 
 ## [1.9.0] - 2026-10-16
 

@@ -22,9 +22,12 @@ use stdClass;
 use FastForward\Container\Exception\RuntimeException;
 use FastForward\Container\Factory\ServiceFactory;
 use FastForward\Container\ServiceProvider\AggregateServiceProvider;
+use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+use FastForward\Container\ServiceProviderContainer;
 use FastForward\Container\Extension\ServiceExtension;
 use Interop\Container\ServiceProviderInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -38,6 +41,8 @@ use Psr\Container\ContainerInterface;
 #[UsesClass(ServiceFactory::class)]
 #[UsesClass(RuntimeException::class)]
 #[UsesClass(ServiceExtension::class)]
+#[UsesClass(ArrayServiceProvider::class)]
+#[UsesClass(ServiceProviderContainer::class)]
 final class AggregateServiceProviderTest extends TestCase
 {
     use ProphecyTrait;
@@ -114,6 +119,80 @@ final class AggregateServiceProviderTest extends TestCase
         );
 
         self::assertSame('base.ext1.ext2', $result);
+    }
+
+    /**
+     * @param string $id the opaque service identifier
+     *
+     * @return void
+     */
+    #[Test]
+    #[DataProvider('numericIdentifiers')]
+    public function numericIdentifiersRetainFactoryPrecedenceExtensionsAndCaching(string $id): void
+    {
+        $calls = 0;
+        $extensions = [];
+        $first = new ArrayServiceProvider([
+            $id => static fn(): string => 'first',
+        ], [
+            $id => static function (ContainerInterface $container, string $previous) use (&$extensions): string {
+                $extensions[] = 'first';
+
+                return $previous . ':first';
+            },
+        ]);
+        $second = new ArrayServiceProvider([
+            $id => static function () use (&$calls): string {
+                ++$calls;
+
+                return 'second';
+            },
+        ], [
+            $id => static function (ContainerInterface $container, string $previous) use (&$extensions): string {
+                $extensions[] = 'second';
+
+                return $previous . ':second';
+            },
+        ]);
+        $container = new ServiceProviderContainer(new AggregateServiceProvider($first, $second));
+
+        self::assertTrue($container->has($id));
+        self::assertSame('second:first:second', $container->get($id));
+        self::assertSame('second:first:second', $container->get($id));
+        self::assertSame(1, $calls);
+        self::assertSame(['first', 'second'], $extensions);
+    }
+
+    /**
+     * @return iterable<string, array{string}> numeric-looking identifiers that PHP may normalize as array keys
+     */
+    public static function numericIdentifiers(): iterable
+    {
+        yield 'zero' => ['0'];
+        yield 'positive' => ['42'];
+        yield 'negative' => ['-42'];
+        yield 'leading zeros' => ['0001'];
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function distinctNumericIdentifiersAreNotRenumberedOrIntroduced(): void
+    {
+        $container = new ServiceProviderContainer(new AggregateServiceProvider(
+            new ArrayServiceProvider([
+                '42' => static fn(): string => 'forty-two',
+            ]),
+            new ArrayServiceProvider([
+                '84' => static fn(): string => 'eighty-four',
+            ]),
+        ));
+
+        self::assertSame('forty-two', $container->get('42'));
+        self::assertSame('eighty-four', $container->get('84'));
+        self::assertFalse($container->has('0'));
+        self::assertFalse($container->has('1'));
     }
 
     /**

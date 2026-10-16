@@ -71,7 +71,10 @@ class AggregateServiceProvider implements ServiceProviderInterface
 
         return array_reduce(
             $this->serviceProviders,
-            static fn($factories, $serviceProvider): array => array_merge($factories, $serviceProvider->getFactories()),
+            static fn($factories, $serviceProvider): array => array_replace(
+                $factories,
+                $serviceProvider->getFactories()
+            ),
             $serviceProviders,
         );
     }
