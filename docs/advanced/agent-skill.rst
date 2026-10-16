@@ -125,8 +125,9 @@ Keep existing plugin authorizations and commit ``composer.json``,
 ``composer.lock`` and ``skills.json``. Subsequent ``composer install`` and
 ``composer update`` runs synchronize accepted skills automatically; no library
 script or application hook is needed. ``--no-plugins`` prevents the plugin from
-loading, and ``--no-scripts`` skips its automatic script-event hook. Set
-``auto-sync`` to ``false`` to use only explicit commands:
+loading. With Composer 2.10.3 and plugin 1.15.0, ``--no-scripts`` alone still
+allowed the plugin's automatic sync; do not rely on it to disable this feature.
+Set ``auto-sync`` to ``false`` to use only explicit commands:
 
 .. code-block:: sh
 
