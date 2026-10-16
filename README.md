@@ -53,6 +53,8 @@ $container = new AutowireContainer($existingContainer);
 
 The delegate's entries are looked up before autowiring, including for nested and
 optional object dependencies. Passing `null` is equivalent to omitting the delegate.
+Optional defaults apply to missing or uninferable dependencies. Construction failures
+and cycles remain errors when no other source resolves the entry.
 See the [autowiring guide](docs/advanced/autowire.rst) for complete examples.
 
 To combine providers, configuration and several PSR-11 containers, use `container(...)`.

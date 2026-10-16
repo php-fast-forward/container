@@ -110,6 +110,41 @@ Constructor/factory failures, incompatible registered values and dependency cycl
 are errors. They do not trigger optional defaults. Cycles include the construction
 path in the exception; failed resolutions are not cached and may be retried.
 
+When an optional dependency fails
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An optional default permits an unavailable dependency. A failure while executing
+its construction is propagated instead of being replaced with that default:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Resolution outcome
+     - Result for an optional parameter
+   * - No entry supplies the requested interface or class
+     - Use the declared default
+   * - Autowiring cannot infer a required argument in the dependency graph
+     - Use the declared default
+   * - A constructor, factory or autoloader throws, or an injected value has an incompatible type
+     - Propagate the construction error if no other source resolves the entry
+   * - Resolution encounters a dependency cycle
+     - Propagate the cycle error if no other source resolves the entry
+   * - Another aggregate source resolves the entry after a delegated failure
+     - Inject the successfully resolved value
+
+For example, ``?LoggerInterface $logger = null`` receives ``null`` when no logger
+implementation is available. If a registered logger factory throws while building
+the logger, the lookup fails with ``ContainerException`` and preserves the original
+cause, unless another source successfully resolves that entry. A cycle also fails
+with ``ContainerException`` and includes the resolution path. The same rules apply
+when the declared default is a non-null value. An error while evaluating the default
+itself is also propagated.
+
+If the application intentionally allows a resource to fail, handle the expected
+failure in an explicit factory and return ``null`` for a nullable dependency or an
+appropriate fallback object. Catch only failures that the application deliberately
+recovers from. This keeps that recovery policy explicit for the affected service.
+
 Supported Parameters
 ---------------------
 

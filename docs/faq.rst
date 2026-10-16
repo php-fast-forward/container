@@ -111,6 +111,17 @@ autowiring before selecting an optional default. A default is used only when the
 entry or inferable dependency graph is unavailable. Construction failures and
 cycles still throw. See :doc:`advanced/autowire` for the complete rules.
 
+Why does an optional dependency throw instead of using its default?
+------------------------------------------------------------------
+
+The default is used when the dependency is missing or its constructor arguments
+cannot be inferred. If a constructor, factory or autoloader fails during execution,
+or a dependency cycle is found, the error is propagated when no other source resolves
+the entry. This applies even when the parameter has a non-null default. If the
+application should recover from a particular failure, handle that expected failure
+in an explicit factory and return a compatible fallback. See :doc:`advanced/autowire`
+for the outcome table and examples.
+
 What is the safest beginner-friendly default for a new project?
 ---------------------------------------------------------------
 

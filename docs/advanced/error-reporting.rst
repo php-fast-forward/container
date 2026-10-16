@@ -17,6 +17,15 @@ Optional constructor arguments use their declared defaults only for missing entr
 or structurally unresolvable dependency graphs. Runtime constructor/factory errors,
 invalid injected types and cycles remain failures. Their original causes are retained.
 
+For example, a missing optional logger may use its declared ``null`` default. A logger
+factory that throws during construction propagates a ``ContainerException`` with its
+cause preserved when no other source can resolve it. A dependency cycle also propagates
+a ``ContainerException`` with the cycle path. Choosing a default does not recover from
+these execution failures.
+
+See :doc:`autowire` for the optional-dependency outcome table and guidance on explicit
+factory recovery when the application intentionally tolerates a particular failure.
+
 Example:
 
 .. code-block:: php
