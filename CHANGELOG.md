@@ -1,6 +1,10 @@
 # Changelog
 
 Notable changes to `fast-forward/container` are documented here, newest first.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 Historical entries were backfilled from tagged diffs and GitHub release notes.
 Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
@@ -17,16 +21,14 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 - Missing entries and structurally unavailable dependency graphs use an optional argument's default. Constructor, factory, type, cycle and default-expression failures remain errors with their original causes preserved.
 - Aggregate lookups still try later sources after delegated failures, but preserve the first construction exception when no source succeeds instead of reporting a fresh not-found exception.
 
-### Removed
-
-- The runtime `php-di/php-di` dependency and the internal PHP-DI autowiring engine.
-
-### Migration
-
 - The public `AutowireContainer`, `ContainerBuilder`, `ContainerFactory` and `container()` APIs remain available. PHP `^8.3` remains the minimum requirement.
 - Optional dependencies may now execute constructors that were previously skipped. A nullable argument without a default remains required.
 - Applications that use PHP-DI directly must declare their own dependency. External PHP-DI containers remain usable as PSR-11 sources.
 - Scalars, ambiguous union/intersection/DNF types and variadic collections require defaults or explicit service factories. See the [autowiring guide](docs/advanced/autowire.rst) for the complete contract.
+
+### Removed
+
+- The runtime `php-di/php-di` dependency and the internal PHP-DI autowiring engine.
 
 Delivered through [PR #18](https://github.com/php-fast-forward/container/pull/18), addressing [issue #17](https://github.com/php-fast-forward/container/issues/17).
 
@@ -43,14 +45,14 @@ Delivered through [PR #18](https://github.com/php-fast-forward/container/pull/18
 
 ## [1.7.1] - 2026-10-12
 
+### Removed
+
+- The obsolete Wiki submodule pointer; the Wiki repository and its history remain separate.
+
 ### Fixed
 
 - GitHub Wiki generation and direct publication using the shared PHP/Composer tooling and a consistently pinned renderer.
 - Compatibility with the GrumPHP shim required by the development tooling.
-
-### Removed
-
-- The obsolete Wiki submodule pointer; the Wiki repository and its history remain separate.
 
 ## [1.7.0] - 2026-10-11
 
@@ -59,16 +61,16 @@ Delivered through [PR #18](https://github.com/php-fast-forward/container/pull/18
 - Static composition through `ContainerFactory::create()`, sharing its assembly path with `container()`.
 - Runnable provider/factory examples and expanded API, onboarding and integration documentation.
 
+### Changed
+
+- Shared test-status and Pages reporting workflows, documentation presentation and package/archive hygiene.
+
 ### Fixed
 
 - Extension-only entries, including discovery without executing factories or extensions.
 - Extension return values replacing the previous service, including `null`, while explicitly `void` extensions retain the previous value for compatibility.
 - Cached null entries, concrete-class alias precedence and extension composition across providers.
 - Preservation of provider discovery/execution failure causes, including textual exception codes on the previous exception.
-
-### Changed
-
-- Shared test-status and Pages reporting workflows, documentation presentation and package/archive hygiene.
 
 ## [1.6.0] - 2026-03-27
 
@@ -85,13 +87,13 @@ Delivered through [PR #18](https://github.com/php-fast-forward/container/pull/18
 
 ## [1.5.1] - 2025-08-01
 
-### Fixed
-
-- `AggregateServiceProvider` registers its own factory using the concrete static class, supporting subclasses.
-
 ### Added
 
 - Generated API documentation and GitHub Actions automation for tests and Wiki publication.
+
+### Fixed
+
+- `AggregateServiceProvider` registers its own factory using the concrete static class, supporting subclasses.
 
 ## [1.5.0] - 2025-07-01
 
