@@ -17,6 +17,8 @@ $merged = container(new AggregateServiceProvider($base, $test)); // label: test;
 
 Separate sources first call `has()`. When it succeeds, a PSR-11 exception raised by that source's `get()` permits trying the next source. If none succeeds, the first construction error is preserved. An exception from `has()` itself, including a failure reading provider factories/extensions, propagates immediately; later sources are not tried. A successful fallback is cached; later lookups do not automatically retry the earlier source.
 
+Provider merges preserve numeric string IDs and later duplicate precedence in the corrections planned for 1.9.1. In 1.9.0, array merging renumbers numeric keys, so prefer descriptive service names or separate sources until the consumer contains that fix. Constraints such as `^1.9` alone do not prove which code is installed.
+
 ## Select the factory by its argument contract
 
 Factory classes are under `FastForward\Container\Factory`.
@@ -28,19 +30,27 @@ Factory classes are under `FastForward\Container\Factory`.
 | `AliasFactory($id)` | Existing service under another ID/interface | Calls wrapper `get($id)`; preserves object identity |
 | `InvokableFactory(ClassName::class, ...$arguments)` | Constructor with supplied arguments | No implicit parameter inference; strings matching known IDs are dereferenced |
 | `CallableFactory($callable)` | Callable with named object-typed parameters | Resolves by type; scalar/untyped/union/intersection parameters are unsuitable; native constructor default rules do not apply |
-| `MethodFactory(ClassName::class, 'method', ...$arguments)` | Public static/instance creation method | Strings may be IDs; failed instance lookup can fall back to `new ClassName()` |
+| `MethodFactory($target, 'method', ...$arguments)` | Public static/instance creation method | String arguments matching known IDs are resolved; target/fallback behavior depends on the installed version below |
 
-Prefer a plain closure when literal strings could collide with IDs, method fallback would obscure errors, or scalar/default handling is needed. `CallableFactory` is not a wrapper for a callback expecting an untyped `$container`.
+Prefer a plain closure when literal strings could collide with IDs or scalar/default handling is needed. `CallableFactory` is not a wrapper for a callback expecting an untyped `$container`.
 
 For v1.9.0, pass a reflectable class name to `MethodFactory`, not an arbitrary service alias: its implementation reflects the name before looking up the instance ([issue #23](https://github.com/php-fast-forward/container/issues/23)).
+
+The corrections planned for 1.9.1 resolve service-ID/interface instance targets before reflecting the actual object's method. Registered target failures, including nested not-found errors, propagate; direct `new ClassName()` fallback is allowed only when `has(ClassName::class)` is false. Concrete public static methods are invoked without constructing an instance; abstract static contracts resolve their registered implementation. With `AutowireContainer`, a concrete class can be known even when its constructor fails, so that failure propagates rather than taking the absent-entry fallback. On 1.9.0, failed instance lookup can instead construct an unconfigured replacement; use an explicit closure when that would hide an error.
 
 ## Extensions and aliases
 
 `ArrayServiceProvider($factories, $extensions)` accepts extension callbacks keyed by service ID. Each receives the wrapper and previous value; explicitly return the intended next value. A void return declaration preserves the previous value for compatibility; returning null replaces it with null. Duplicate extensions in merged providers compose in registration order.
 
-Class-keyed extensions may apply to objects obtained through other IDs. Avoid accidentally decorating twice through aliases. An extension with no factory can create an entry and receives null initially. Provider containers may cache a resolved object under its concrete class ID as well.
+Class-keyed extensions may apply to objects obtained through other IDs. An extension with no factory can create an entry and receives null initially. Provider containers may infer a concrete-class alias when no explicit factory, extension or cached entry already owns that class ID.
 
 For distinct objects registered under several IDs, prefer ID-specific extensions on v1.9.0: class-keyed extension application can depend on whether the concrete class entry was already cached ([issue #22](https://github.com/php-fast-forward/container/issues/22)).
+
+With the corrections planned for 1.9.1, each provider adapter tracks completed class-extension results by object identity. Distinct instances receive their own class extension; aliases/external lookups returning the same instance reuse its completed result, including object replacements, scalars or null. An alias-specific extension still executes and receives a completed replacement when one is already recorded. An ID extension runs first, then at most one applicable concrete-class extension for that resolution; returning a different class does not request unlimited recursive decoration. This tracking belongs to each adapter, so do not assume that passing the same object through independent adapters makes all decoration global.
+
+Provider factories, aliases and extensions receive circular-resolution diagnostics in the same pending corrections. Inspect the exception's previous-cause chain for the circular path: provider boundaries may wrap it as an invalid-service error. Paths follow the current Fiber, or the wrapper in the main context; failed paths are cleaned up so later retries can succeed. Independent Fibers resolving the same ID do not share an active path. This isolates cycle detection, not concurrent construction: there is no single-flight lock guaranteeing one construction across suspended Fibers. Keep the application's service graph acyclic and use a factory service when deliberate repeated creation is needed.
+
+Run `../examples/provider-resolution.php` only against code containing those corrections. It checks numeric IDs, an instance-method service target and its failure, replacement reuse through aliases, provider cycles/retry and independent Fibers. The first three examples remain usable on 1.9.0.
 
 ## External containers and lifetime boundaries
 

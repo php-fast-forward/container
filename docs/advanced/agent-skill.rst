@@ -10,11 +10,18 @@ references, runnable examples and its MIT license travel with it.
 Availability and prerequisites
 ------------------------------
 
-The skill was added after v1.9.0. That release does not contain the skill directory.
-Until a release bundles it, use a reviewed repository checkout or an immutable Git
-revision containing the skill. The API examples target the published v1.9.0 API,
-PHP 8.3+ and Composer. The agent checks the consumer's installed version before
-choosing APIs; a global copy does not upgrade an application's dependencies.
+The skill remains under review separately from the runtime fixes planned for
+v1.9.1. The published v1.9.0 and the planned runtime-only release do not contain
+the skill directory. Until a later release bundles it, use a reviewed repository
+checkout or an immutable Git revision containing the skill.
+
+The core examples target the published v1.9.0 API, PHP 8.3+ and Composer. A fourth
+provider-resolution example requires the corrections planned for v1.9.1: numeric
+IDs, method-factory targets, class-extension identity and provider cycles. The
+skill explains both sets of behavior and the newer Config ``^1.6`` requirement.
+The agent checks the consumer's installed version before choosing APIs; a global
+copy does not upgrade an application's dependencies. A planned version is not a
+published dependency and the skill must not prompt an upgrade to obtain itself.
 
 After a release includes the directory, ``composer install`` makes its files
 available under ``vendor/fast-forward/container/skills/fast-forward-container``.
