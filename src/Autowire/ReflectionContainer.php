@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace FastForward\Container\Autowire;
 
 use ReflectionClass;
+use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionParameter;
 use Throwable;
@@ -100,42 +101,7 @@ final class ReflectionContainer implements ContainerInterface
         $this->resolving[$id] = true;
 
         try {
-            $arguments = [];
-            $referenceValues = [];
-            $constructor = $class->getConstructor();
-
-            if (null !== $constructor) {
-                foreach ($constructor->getParameters() as $parameter) {
-                    if ($parameter->isVariadic()) {
-                        continue;
-                    }
-
-                    try {
-                        $value = $this->resolveParameter($parameter, $constructor->getDeclaringClass());
-                    } catch (AutowiringException $exception) {
-                        if (! $parameter->isOptional() || $parameter->isDefaultValueAvailable()) {
-                            throw $exception;
-                        }
-
-                        continue;
-                    }
-
-                    $name = $parameter->getName();
-
-                    if ($parameter->isPassedByReference()) {
-                        $referenceValues[$name] = $value;
-                        $arguments[$name] = &$referenceValues[$name];
-                    } else {
-                        $arguments[$name] = $value;
-                    }
-                }
-            }
-
-            try {
-                return $this->resolved[$id] = $class->newInstanceArgs($arguments);
-            } catch (Throwable $throwable) {
-                throw ContainerException::forInvalidService($id, $throwable);
-            }
+            return $this->resolved[$id] = $this->instantiateClass($id, $class);
         } finally {
             unset($this->resolving[$id]);
         }
@@ -153,18 +119,86 @@ final class ReflectionContainer implements ContainerInterface
     private function reflectClass(string $id): ?ReflectionClass
     {
         try {
-            if (class_exists($id)) {
-                $class = new ReflectionClass($id);
-
-                if ($class->isInstantiable()) {
-                    return $class;
-                }
+            if (! class_exists($id)) {
+                return null;
             }
 
-            return null;
+            $class = new ReflectionClass($id);
+
+            return $class->isInstantiable() ? $class : null;
         } catch (Throwable $throwable) {
             throw ContainerException::forInvalidService($id, $throwable);
         }
+    }
+
+    /**
+     * Invokes the constructor while retaining storage for reference arguments.
+     *
+     * @param string $id the requested service identifier
+     * @param ReflectionClass<object> $class the instantiable class
+     *
+     * @return object the constructed service
+     *
+     * @throws AutowiringException if required arguments cannot be inferred
+     * @throws ContainerException if dependency resolution or construction fails
+     */
+    private function instantiateClass(string $id, ReflectionClass $class): object
+    {
+        $constructor = $class->getConstructor();
+        $values = $this->resolveArguments($constructor);
+        $arguments = $values;
+
+        foreach ($constructor?->getParameters() ?? [] as $parameter) {
+            $name = $parameter->getName();
+
+            if ($parameter->isPassedByReference() && \array_key_exists($name, $values)) {
+                $arguments[$name] = &$values[$name];
+            }
+        }
+
+        try {
+            return $class->newInstanceArgs($arguments);
+        } catch (Throwable $throwable) {
+            throw ContainerException::forInvalidService($id, $throwable);
+        }
+    }
+
+    /**
+     * Resolves constructor values, omitting variadics and unavailable optional arguments.
+     *
+     * @param ReflectionMethod|null $constructor the constructor, if declared
+     *
+     * @return array<string, mixed> resolved values keyed by parameter name
+     *
+     * @throws AutowiringException if required arguments cannot be inferred
+     * @throws ContainerException if resolving a dependency or default fails
+     */
+    private function resolveArguments(?ReflectionMethod $constructor): array
+    {
+        if (! $constructor instanceof ReflectionMethod) {
+            return [];
+        }
+
+        $arguments = [];
+
+        foreach ($constructor->getParameters() as $parameter) {
+            if ($parameter->isVariadic()) {
+                continue;
+            }
+
+            try {
+                $arguments[$parameter->getName()] = $this->resolveParameter(
+                    $parameter,
+                    $constructor->getDeclaringClass()
+                );
+            } catch (AutowiringException $exception) {
+                if (! $parameter->isOptional() || $parameter->isDefaultValueAvailable()) {
+                    throw $exception;
+                }
+            }
+        }
+
+        return $arguments;
     }
 
     /**
@@ -180,38 +214,75 @@ final class ReflectionContainer implements ContainerInterface
      */
     private function resolveParameter(ReflectionParameter $parameter, ReflectionClass $declaringClass): mixed
     {
-        $type = $parameter->getType();
+        $id = $this->resolveParameterClassName($parameter, $declaringClass);
         $previous = null;
 
-        if ($type instanceof ReflectionNamedType && ! $type->isBuiltin()) {
-            $id = match ($type->getName()) {
-                'self' => $declaringClass->getName(),
-                'parent' => get_parent_class($declaringClass->getName()),
-                default => $type->getName(),
-            };
-
-            if (false !== $id) {
-                try {
-                    return $this->wrapperContainer->get($id);
-                } catch (NotFoundExceptionInterface|AutowiringException $exception) {
-                    $previous = $exception;
-                }
-            }
-        }
-
-        if ($parameter->isDefaultValueAvailable()) {
+        if (null !== $id) {
             try {
-                return $parameter->getDefaultValue();
-            } catch (Throwable $throwable) {
-                throw ContainerException::forInvalidService($declaringClass->getName(), $throwable);
+                return $this->wrapperContainer->get($id);
+            } catch (NotFoundExceptionInterface|AutowiringException $exception) {
+                $previous = $exception;
             }
         }
 
-        throw new AutowiringException(\sprintf(
-            'Cannot autowire %s::__construct(): parameter $%s (%s) requires an explicit service or factory.',
-            $declaringClass->getName(),
-            $parameter->getName(),
-            null === $type ? 'untyped' : (string) $type,
-        ), 0, $previous);
+        return $this->resolveDefaultValue($parameter, $declaringClass, $previous);
+    }
+
+    /**
+     * Maps a named object type to the service identifier in its declaring scope.
+     *
+     * @param ReflectionParameter $parameter the constructor parameter
+     * @param ReflectionClass<object> $declaringClass the class that declares the constructor
+     *
+     * @return string|null the class name, or null for unsupported parameter types
+     */
+    private function resolveParameterClassName(ReflectionParameter $parameter, ReflectionClass $declaringClass): ?string
+    {
+        $type = $parameter->getType();
+
+        if (! $type instanceof ReflectionNamedType || $type->isBuiltin()) {
+            return null;
+        }
+
+        return match ($type->getName()) {
+            'self' => $declaringClass->getName(),
+            'parent' => get_parent_class($declaringClass->getName()) ?: null,
+            default => $type->getName(),
+        };
+    }
+
+    /**
+     * Reads a declared default or reports why an explicit factory is required.
+     *
+     * @param ReflectionParameter $parameter the constructor parameter
+     * @param ReflectionClass<object> $declaringClass the class that declares the constructor
+     * @param Throwable|null $previous the structural dependency resolution failure
+     *
+     * @return mixed the declared default
+     *
+     * @throws AutowiringException if the parameter has no declared default
+     * @throws ContainerException if evaluating the default fails
+     */
+    private function resolveDefaultValue(
+        ReflectionParameter $parameter,
+        ReflectionClass $declaringClass,
+        ?Throwable $previous
+    ): mixed {
+        if (! $parameter->isDefaultValueAvailable()) {
+            $type = $parameter->getType();
+
+            throw new AutowiringException(\sprintf(
+                'Cannot autowire %s::__construct(): parameter $%s (%s) requires an explicit service or factory.',
+                $declaringClass->getName(),
+                $parameter->getName(),
+                null === $type ? 'untyped' : (string) $type,
+            ), 0, $previous);
+        }
+
+        try {
+            return $parameter->getDefaultValue();
+        } catch (Throwable $throwable) {
+            throw ContainerException::forInvalidService($declaringClass->getName(), $throwable);
+        }
     }
 }
