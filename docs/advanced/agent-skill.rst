@@ -104,7 +104,8 @@ Assisted installation with Skills CLI
 The optional `Skills CLI <https://github.com/vercel-labs/skills>`_ supports both
 scopes and agent-specific paths. The following commands were verified with
 ``skills@1.7.2`` and Node.js 22.23.3; that CLI requires Node.js 22.20.0+.
-It is a development tool, not a PHP runtime dependency.
+Repository-source installation also requires Git. The CLI is a development tool,
+not a PHP runtime dependency.
 
 For a bundled source in the current project:
 
