@@ -13,11 +13,12 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 ### Changed
 
 - `MethodFactory` directly constructs a class-name target only when `has()` reports it absent. Existing target construction and execution failures, including nested not-found errors, now propagate instead of silently using an unconfigured replacement.
-- Correct typed callable factory examples, Slim 4 application creation and JSON responses, and Laravel 12 factory binding adapters. Explain framework requirements, binding lifetimes and provider extension boundaries.
 
 ### Fixed
 
 - Resolve `MethodFactory` service-ID targets before reflecting their instance methods, preserving configured constructor dependencies and method visibility checks.
+- Correct typed callable factory examples, Slim 4 application creation and JSON responses, and Laravel 12 factory binding adapters. Explain framework requirements, binding lifetimes and provider extension boundaries.
+- Preserve numeric-looking service identifiers when aggregating provider factories, retaining later-provider precedence and matching factory/extension keys.
 
 ## [1.9.0] - 2026-10-16
 
