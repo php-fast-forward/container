@@ -19,9 +19,22 @@ declare(strict_types=1);
 namespace FastForward\Container\Tests\Factory;
 
 use stdClass;
-use Exception;
+use Error;
+use LogicException;
+use ReflectionException;
+use Throwable;
+use FastForward\Container\Exception\ContainerException;
+use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\Exception\RuntimeException;
 use FastForward\Container\Factory\MethodFactory;
+use FastForward\Container\ServiceProvider\ArrayServiceProvider;
+use FastForward\Container\ServiceProviderContainer;
+use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryTestTargetStub;
+use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryTestDependencyStub;
+use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryBaseTargetStub;
+use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryDerivedTargetStub;
+use FastForward\Container\Tests\Fixtures\Factory\MethodFactoryStaticTargetInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -34,6 +47,10 @@ use Psr\Container\ContainerInterface;
  */
 #[CoversClass(MethodFactory::class)]
 #[UsesClass(RuntimeException::class)]
+#[UsesClass(ContainerException::class)]
+#[UsesClass(NotFoundException::class)]
+#[UsesClass(ArrayServiceProvider::class)]
+#[UsesClass(ServiceProviderContainer::class)]
 final class MethodFactoryTest extends TestCase
 {
     use ProphecyTrait;
@@ -125,7 +142,8 @@ final class MethodFactoryTest extends TestCase
         $container = $this->prophesize(ContainerInterface::class);
         $container->has('prefix')
             ->willReturn(false);
-        $container->get(MethodFactoryTestTargetStub::class)->willThrow(new Exception());
+        $container->has(MethodFactoryTestTargetStub::class)->willReturn(false);
+        $container->get(MethodFactoryTestTargetStub::class)->shouldNotBeCalled();
 
         $factory = new MethodFactory(MethodFactoryTestTargetStub::class, 'instanceMethod', 'prefix');
 
@@ -156,63 +174,194 @@ final class MethodFactoryTest extends TestCase
 
         self::assertSame(MethodFactoryTestDependencyStub::class . '-suffix', $result);
     }
-}
-
-class MethodFactoryTestTargetStub
-{
-    /**
-     * @param MethodFactoryTestDependencyStub|null $dependency
-     */
-    public function __construct(
-        private readonly ?MethodFactoryTestDependencyStub $dependency = null
-    ) {
-        $this->privateMethod();
-    }
 
     /**
-     * @param string $prefix
-     *
-     * @return string
+     * @return void
      */
-    public function instanceMethod(string $prefix): string
+    #[Test]
+    public function invokesConfiguredTargetThroughANonClassServiceId(): void
     {
-        return $prefix . '-instance';
-    }
+        $dependency = new MethodFactoryTestDependencyStub();
+        $target = new MethodFactoryTestTargetStub($dependency);
+        $container = $this->prophesize(ContainerInterface::class);
+        $container->get('factory.target')
+            ->willReturn($target)
+            ->shouldBeCalledOnce();
+        $container->has('suffix')
+            ->willReturn(false);
 
-    /**
-     * @param string $value
-     *
-     * @return string
-     */
-    public static function staticMethod(string $value): string
-    {
-        return 'static-' . $value;
-    }
+        $result = (new MethodFactory('factory.target', 'usesConstructorArgument', 'suffix'))($container->reveal());
 
-    /**
-     * @param object $obj
-     *
-     * @return object
-     */
-    public function acceptsObject(object $obj): object
-    {
-        return $obj;
-    }
-
-    /**
-     * @param string $suffix
-     *
-     * @return string
-     */
-    public function usesConstructorArgument(string $suffix): string
-    {
-        return $this->dependency::class . '-' . $suffix;
+        self::assertSame(MethodFactoryTestDependencyStub::class . '-suffix', $result);
     }
 
     /**
      * @return void
      */
-    private function privateMethod(): void {}
-}
+    #[Test]
+    public function resolvesAnInterfaceBindingUsingItsActualObject(): void
+    {
+        $container = $this->prophesize(ContainerInterface::class);
+        $container->get(ContainerInterface::class)->willReturn($container->reveal());
+        $container->has('entry')
+            ->willReturn(false);
 
-class MethodFactoryTestDependencyStub {}
+        self::assertFalse((new MethodFactory(ContainerInterface::class, 'has', 'entry'))($container->reveal()));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function rejectsNonPublicMethodsOnAServiceIdTarget(): void
+    {
+        $container = $this->prophesize(ContainerInterface::class);
+        $container->get('factory.target')
+            ->willReturn(new MethodFactoryTestTargetStub());
+        $this->expectException(RuntimeException::class);
+
+        (new MethodFactory('factory.target', 'privateMethod'))($container->reveal());
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function rejectsAnUnknownMethodOnAServiceIdTarget(): void
+    {
+        $container = $this->prophesize(ContainerInterface::class);
+        $container->get('factory.target')
+            ->willReturn(new MethodFactoryTestTargetStub());
+        $this->expectException(ReflectionException::class);
+
+        (new MethodFactory('factory.target', 'missingMethod'))($container->reveal());
+    }
+
+    /**
+     * @return iterable<string, array{Throwable}> failures that must never trigger a new target
+     */
+    public static function resolutionFailures(): iterable
+    {
+        yield 'container failure' => [new ContainerException('registered factory failed')];
+        yield 'missing nested dependency' => [NotFoundException::forServiceID('nested.missing')];
+        yield 'execution exception' => [new LogicException('invalid target configuration')];
+        yield 'execution error' => [new Error('target initialization failed')];
+    }
+
+    /**
+     * @param Throwable $failure the original failure resolving a class-name target
+     */
+    #[DataProvider('resolutionFailures')]
+    public function testExistingTargetFailuresPropagateUnchanged(Throwable $failure): void
+    {
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('has')
+            ->with(MethodFactoryTestTargetStub::class)->willReturn(true);
+        $container->expects(self::once())->method('get')->with(MethodFactoryTestTargetStub::class)->willThrowException(
+            $failure
+        );
+
+        try {
+            (new MethodFactory(MethodFactoryTestTargetStub::class, 'instanceMethod'))($container);
+            self::fail('A failed target resolution must not construct an unconfigured replacement.');
+        } catch (Throwable $throwable) {
+            self::assertSame($failure, $throwable);
+        }
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function retainsTheCauseOfARegisteredFactoryFailure(): void
+    {
+        $failure = new LogicException('registered constructor configuration failed');
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            MethodFactoryTestTargetStub::class => static fn(): never => throw $failure,
+        ]));
+
+        try {
+            (new MethodFactory(MethodFactoryTestTargetStub::class, 'instanceMethod'))($container);
+            self::fail('The broken provider factory must remain an error.');
+        } catch (ContainerException $containerException) {
+            self::assertSame($failure, $containerException->getPrevious());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function retainsNotFoundForANonClassServiceId(): void
+    {
+        $failure = NotFoundException::forServiceID('missing.target');
+        $container = $this->prophesize(ContainerInterface::class);
+        $container->get('missing.target')
+            ->willThrow($failure);
+
+        $this->expectExceptionObject($failure);
+
+        (new MethodFactory('missing.target', 'instanceMethod'))($container->reveal());
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function preservesNamedMethodArguments(): void
+    {
+        $container = $this->prophesize(ContainerInterface::class);
+        $container->has(MethodFactoryTestTargetStub::class)->willReturn(true);
+        $container->get(MethodFactoryTestTargetStub::class)->willReturn(new MethodFactoryTestTargetStub());
+        $container->has('literal')
+            ->willReturn(false);
+
+        $factory = new MethodFactory(MethodFactoryTestTargetStub::class, 'instanceMethod', prefix: 'literal');
+
+        self::assertSame('literal-instance', $factory($container->reveal()));
+    }
+
+    /**
+     * @return iterable<string, array{string, string}> methods provided by the resolved subclass
+     */
+    public static function configuredSubclassMethods(): iterable
+    {
+        yield 'introduced method' => ['addedMethod', 'configured added'];
+        yield 'widened visibility' => ['overriddenMethod', 'configured override'];
+    }
+
+    /**
+     * @param string $method the method on the actual configured target
+     * @param string $expected the subclass-specific result
+     */
+    #[DataProvider('configuredSubclassMethods')]
+    public function testClassNameBindingsUseTheActualObjectMethod(string $method, string $expected): void
+    {
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('has')
+            ->with(MethodFactoryBaseTargetStub::class)->willReturn(true);
+        $container->expects(self::once())->method('get')->with(MethodFactoryBaseTargetStub::class)->willReturn(
+            new MethodFactoryDerivedTargetStub()
+        );
+
+        self::assertSame($expected, (new MethodFactory(MethodFactoryBaseTargetStub::class, $method))($container));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function resolvesAbstractStaticContractsThroughTheirConfiguredObject(): void
+    {
+        $container = $this->prophesize(ContainerInterface::class);
+        $container->has('value')
+            ->willReturn(false);
+        $container->get(MethodFactoryStaticTargetInterface::class)->willReturn(
+            new MethodFactoryTestTargetStub()
+        )->shouldBeCalledOnce();
+
+        $factory = new MethodFactory(MethodFactoryStaticTargetInterface::class, 'staticMethod', 'value');
+
+        self::assertSame('static-value', $factory($container->reveal()));
+    }
+}
