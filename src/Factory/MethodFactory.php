@@ -79,7 +79,7 @@ final readonly class MethodFactory implements FactoryInterface
 
         $method = $this->findPublicStaticMethod();
 
-        if (null !== $method) {
+        if ($method instanceof ReflectionMethod) {
             return $method->invokeArgs(null, $arguments);
         }
 

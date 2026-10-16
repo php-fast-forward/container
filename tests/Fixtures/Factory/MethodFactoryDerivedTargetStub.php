@@ -7,7 +7,7 @@ namespace FastForward\Container\Tests\Fixtures\Factory;
 /**
  * A configured target exposing methods beyond the class-name binding's contract.
  */
-final class MethodFactoryDerivedTargetStub extends MethodFactoryBaseTargetStub
+final class MethodFactoryDerivedTargetStub extends MethodFactoryBaseTargetStub implements MethodFactoryPublicTargetInterface
 {
     /**
      * @return string the configured public override
