@@ -12,6 +12,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
 ### Fixed
 
+- Correct typed callable factory examples, Slim 4 application creation and JSON responses, and Laravel 12 factory binding adapters. Explain framework requirements, binding lifetimes and provider extension boundaries.
 - Preserve numeric-looking service identifiers when aggregating provider factories, retaining later-provider precedence and matching factory/extension keys.
 
 ## [1.9.0] - 2026-10-16
