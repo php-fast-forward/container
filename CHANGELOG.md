@@ -14,6 +14,8 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
 - A portable `fast-forward-container` agent skill with configuration, composition and autowiring examples, version-aware guidance, and documented project/global installation options.
 
+## [1.9.1] - 2026-10-16
+
 ### Changed
 
 - Require FastForward Config 1.6 or newer within 1.x, using its native configuration storage and removing the transitive `dflydev/dot-access-data` dependency.
@@ -27,6 +29,8 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 - Reject incompatible dependency combinations by requiring PSR Container 1.1 or 2.x and a compatible FastForward Config version, with production consumer checks for the minimum and current versions.
 - Preserve numeric-looking service identifiers when aggregating provider factories, retaining later-provider precedence and matching factory/extension keys.
 - Apply concrete-class extensions to distinct services independently of lookup order, reusing each object's completed extension result for aliases and wrapper-backed lookups, including replacement objects, scalars and null.
+
+Delivered through [PR #29](https://github.com/php-fast-forward/container/pull/29), [PR #30](https://github.com/php-fast-forward/container/pull/30), [PR #31](https://github.com/php-fast-forward/container/pull/31), [PR #32](https://github.com/php-fast-forward/container/pull/32), [PR #33](https://github.com/php-fast-forward/container/pull/33) and [PR #34](https://github.com/php-fast-forward/container/pull/34).
 
 ## [1.9.0] - 2026-10-16
 
@@ -184,7 +188,8 @@ Delivered through [PR #18](https://github.com/php-fast-forward/container/pull/18
 - Configuration-backed composition and PHP-DI autowiring through `container()` and the original invokable `Factory\ContainerFactory`.
 - Unit tests, Composer autoloading and the MIT license.
 
-[Unreleased]: https://github.com/php-fast-forward/container/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/php-fast-forward/container/compare/v1.9.1...HEAD
+[1.9.1]: https://github.com/php-fast-forward/container/compare/v1.9.0...v1.9.1
 [1.9.0]: https://github.com/php-fast-forward/container/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/php-fast-forward/container/compare/v1.7.1...v1.8.0
 [1.7.1]: https://github.com/php-fast-forward/container/compare/v1.7.0...v1.7.1
