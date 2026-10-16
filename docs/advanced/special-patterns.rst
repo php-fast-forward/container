@@ -75,6 +75,9 @@ object from a wrapper container. ID-based extensions for each alias receive the
 completed result when available and still run independently. Same-class replacement
 objects count as extended; a replacement of a different class remains eligible for
 its own class extension when resolved through another entry.
+If that replacement has already been extended, later alias ID extensions receive
+its latest completed result. Looking up a cycle of completed results does not
+execute extensions again.
 
 Extensions should return the resulting entry, including when they modify an object
 in place. Existing extensions explicitly declared ``void`` retain the previous value

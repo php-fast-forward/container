@@ -445,6 +445,54 @@ final class ServiceProviderClassExtensionTest extends TestCase
     }
 
     /**
+     * @param bool $classFirst whether the shared source object is first requested through its class entry
+     * @param bool $replace whether the second class extension replaces its input
+     *
+     * @return void
+     */
+    #[Test]
+    #[DataProvider('namedAliasOrders')]
+    public function mappedClassIdentifiersStillApplyTheReplacementClassExtension(bool $classFirst, bool $replace): void
+    {
+        $original = new ArrayObject();
+        $state = (object) [
+            'originalCalls' => 0,
+            'replacementCalls' => 0,
+        ];
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            ArrayObject::class => static fn(): ArrayObject => $original,
+            'named' => static fn(): ArrayObject => $original,
+        ], [
+            ArrayObject::class => static function () use ($state): stdClass {
+                ++$state->originalCalls;
+
+                return (object) [
+                    'extensions' => 0,
+                ];
+            },
+            stdClass::class => static function (ContainerInterface $container, stdClass $service) use (
+                $state,
+                $replace
+            ): stdClass {
+                ++$state->replacementCalls;
+                ++$service->extensions;
+
+                return $replace ? clone $service : $service;
+            },
+        ]));
+
+        if (! $classFirst) {
+            $container->get('named');
+        }
+
+        $service = $container->get(ArrayObject::class);
+        self::assertSame(1, $service->extensions);
+        self::assertSame(1, $state->originalCalls);
+        self::assertSame(1, $state->replacementCalls);
+        self::assertSame($service, $container->get(ArrayObject::class));
+    }
+
+    /**
      * @param list<string> $order the order in which wrapper-backed aliases are requested
      * @param list<string> $expectedMarkers the ID-extension mutations retained on the completed result
      *
@@ -509,6 +557,84 @@ final class ServiceProviderClassExtensionTest extends TestCase
         yield 'plain first' => [['plain', 'mutating', 'void'], ['mutating', 'void']];
         yield 'mutating first' => [['mutating', 'void', 'plain'], ['mutating', 'void']];
         yield 'void first' => [['void', 'plain', 'mutating'], ['void', 'mutating']];
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function aliasIdentifierExtensionsReceiveTheLatestCompletedClassResult(): void
+    {
+        $original = new ArrayObject();
+        $replacement = (object) [
+            'markers' => [],
+        ];
+        $wrapper = self::createStub(ContainerInterface::class);
+        $wrapper->method('get')
+            ->willReturn($original);
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'first' => new AliasFactory('external'),
+            stdClass::class => static fn(): stdClass => $replacement,
+            'decorated' => new AliasFactory('external'),
+        ], [
+            ArrayObject::class => static fn(): stdClass => $replacement,
+            stdClass::class => static fn(ContainerInterface $container, stdClass $service): stdClass => clone $service,
+            'decorated' => static function (ContainerInterface $container, stdClass $service): void {
+                $service->markers[] = 'decorated';
+            },
+        ]), $wrapper);
+
+        $first = $container->get('first');
+        $completed = $container->get(stdClass::class);
+        self::assertNotSame($first, $completed);
+        self::assertSame($completed, $container->get('decorated'));
+        self::assertSame(['decorated'], $completed->markers);
+    }
+
+    /**
+     * @param bool $classFirst whether the original class ID is requested before the replacement class ID
+     *
+     * @return void
+     */
+    #[Test]
+    #[DataProvider('lookupOrders')]
+    public function completedResultCyclesRemainBoundedWithoutRepeatingExtensions(bool $classFirst): void
+    {
+        $original = new ArrayObject();
+        $replacement = new stdClass();
+        $state = (object) [
+            'originalCalls' => 0,
+            'replacementCalls' => 0,
+        ];
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'original' => static fn(): ArrayObject => $original,
+            'replacement' => static fn(): stdClass => $replacement,
+            ArrayObject::class => static fn(): ArrayObject => $original,
+            stdClass::class => static fn(): stdClass => $replacement,
+        ], [
+            ArrayObject::class => static function () use ($state, $replacement): stdClass {
+                ++$state->originalCalls;
+
+                return $replacement;
+            },
+            stdClass::class => static function () use ($state, $original): ArrayObject {
+                ++$state->replacementCalls;
+
+                return $original;
+            },
+        ]));
+
+        self::assertSame($replacement, $container->get('original'));
+        self::assertSame($original, $container->get('replacement'));
+
+        foreach ($classFirst ? [ArrayObject::class, stdClass::class] : [stdClass::class, ArrayObject::class] as $id) {
+            $container->get($id);
+        }
+
+        self::assertSame($original, $container->get(ArrayObject::class));
+        self::assertSame($replacement, $container->get(stdClass::class));
+        self::assertSame(1, $state->originalCalls);
+        self::assertSame(1, $state->replacementCalls);
     }
 
     /**

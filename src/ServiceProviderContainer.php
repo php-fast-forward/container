@@ -207,67 +207,146 @@ final class ServiceProviderContainer implements ContainerInterface
         $classObjects = [];
 
         if (\is_callable($extensions[$id] ?? null)) {
-            $reusedClassResult = false;
-
-            if (\is_object($service) && isset($this->classExtensionResults[$service])) {
-                $result = $this->classExtensionResults[$service]['value'];
-
-                if ($id === $service::class) {
-                    return $result;
-                }
-
-                $service = $result;
-                $reusedClassResult = true;
-            }
-
-            if (\is_object($service) && $id === $service::class) {
-                if (isset($this->classExtensionResults[$service])) {
-                    return $this->classExtensionResults[$service]['value'];
-                }
-
-                $classObjects[] = $service;
-            }
-
-            $previous = $service;
-            $service = (new ServiceExtension($extensions[$id]))($this->wrapperContainer, $service);
-
-            if ($reusedClassResult && $service === $previous && [] === $classObjects) {
-                return $service;
-            }
-
-            if ([] === $classObjects && \is_object($service) && $id === $service::class) {
-                $classObjects[] = $service;
-            }
+            [$service, $classObjects] = $this->applyIdentifierExtension($id, $service, $extensions[$id]);
         }
 
         if (\is_object($service)
             && $id !== $service::class
             && \is_callable($extensions[$service::class] ?? null)
         ) {
-            if (isset($this->classExtensionResults[$service])) {
-                $service = $this->classExtensionResults[$service]['value'];
+            $cachedResult = $this->classExtensionResult($service);
+
+            if (null !== $cachedResult) {
+                $service = $cachedResult['value'];
             } else {
                 $classObjects[] = $service;
                 $service = (new ServiceExtension($extensions[$service::class]))($this->wrapperContainer, $service);
             }
         }
 
-        if ([] !== $classObjects) {
-            $results = $this->classExtensionResults ??= new WeakMap();
+        $this->rememberClassExtensionResult($classObjects, $service);
 
-            foreach ($classObjects as $object) {
-                $results[$object] = [
-                    'value' => $service,
-                ];
+        return $service;
+    }
 
-                if (\is_object($service) && $object::class === $service::class) {
-                    $results[$service] = [
-                        'value' => $service,
-                    ];
-                }
+    /**
+     * Runs an ID extension against a reused value without repeating an already completed class-ID extension.
+     *
+     * @param string $id the requested service identifier
+     * @param mixed $service the factory result or previously extended object
+     * @param callable $extension the callable registered under this identifier
+     *
+     * @return array{mixed, list<object>} the ID-extension result and identities completed by a class-ID extension
+     */
+    private function applyIdentifierExtension(string $id, mixed $service, callable $extension): array
+    {
+        if (\is_object($service) && null !== ($cachedResult = $this->classExtensionResult($service))) {
+            $originalClass = $service::class;
+            $service = $cachedResult['value'];
+
+            if ($id === $originalClass) {
+                return [$service, []];
             }
         }
 
-        return $service;
+        $classObjects = [];
+
+        if (\is_object($service) && $id === $service::class) {
+            $cachedResult = $this->classExtensionResult($service);
+
+            if (null !== $cachedResult) {
+                return [$cachedResult['value'], []];
+            }
+
+            $classObjects[] = $service;
+        }
+
+        $service = (new ServiceExtension($extension))($this->wrapperContainer, $service);
+
+        if ([] === $classObjects && \is_object($service) && $id === $service::class) {
+            $classObjects[] = $service;
+        }
+
+        return [$service, $classObjects];
+    }
+
+    /**
+     * Reads the latest completed value and compresses acyclic identity paths.
+     *
+     * A cycle retains the input's recorded result without compressing the ambiguous path.
+     *
+     * @param object $object the original or same-class result identity
+     *
+     * @return array{value: mixed}|null the wrapped result, or null when no extension completed
+     */
+    private function classExtensionResult(object $object): ?array
+    {
+        $results = $this->classExtensionResults;
+
+        if (! $results instanceof WeakMap) {
+            return null;
+        }
+
+        $initial = $results[$object] ?? null;
+
+        if (null === $initial) {
+            return null;
+        }
+
+        $visited = new WeakMap();
+        $path = [];
+        $current = $object;
+        $result = $initial;
+
+        while (null !== ($cached = $results[$current] ?? null)) {
+            if (isset($visited[$current])) {
+                return $initial;
+            }
+
+            $visited[$current] = true;
+            $path[] = $current;
+            $result = $cached;
+
+            if (! \is_object($result['value']) || $result['value'] === $current) {
+                break;
+            }
+
+            $current = $result['value'];
+        }
+
+        foreach ($path as $input) {
+            $results[$input] = $result;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Records completed results while leaving different-class replacements eligible for their own extensions.
+     *
+     * @param list<object> $objects identities whose completed class-extension result can be reused
+     * @param mixed $service the final value of the completed extension chain
+     *
+     * @return void
+     */
+    private function rememberClassExtensionResult(array $objects, mixed $service): void
+    {
+        if ([] === $objects) {
+            return;
+        }
+
+        $results = $this->classExtensionResults ??= new WeakMap();
+
+        foreach ($objects as $object) {
+            $results[$object] = [
+                'value' => $service,
+            ];
+
+            if (\is_object($service) && $object::class === $service::class) {
+                $results[$service] = [
+                    'value' => $service,
+                ];
+            }
+        }
     }
 }
