@@ -1,0 +1,63 @@
+name: Production Dependency Compatibility
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  consumer:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.3', '8.5']
+        dependencies: [minimum, current]
+    env:
+      CONSUMER_DIR: ${{ runner.temp }}/container-consumer-${{ matrix.dependencies }}
+      DEPENDENCY_SET: ${{ matrix.dependencies }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@d52fc211a0436f8839a587b3b5b8efddab4744ea # v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring
+          tools: composer:v2
+          coverage: none
+      - name: Prepare an isolated production consumer
+        run: |
+          php <<'PHP'
+          <?php
+          $requirements = ['fast-forward/container' => 'dev-main'];
+          if (getenv('DEPENDENCY_SET') === 'minimum') {
+              $requirements['psr/container'] = '1.1.0';
+              $requirements['fast-forward/config'] = '1.1.4';
+          }
+          $manifest = [
+              'name' => 'fast-forward/container-compatibility-test',
+              'repositories' => [[
+                  'type' => 'path',
+                  'url' => getenv('GITHUB_WORKSPACE'),
+                  'options' => ['symlink' => false, 'versions' => ['fast-forward/container' => 'dev-main']],
+              ]],
+              'require' => $requirements,
+              'config' => ['allow-plugins' => false],
+          ];
+          $directory = getenv('CONSUMER_DIR');
+          mkdir($directory, 0777, true);
+          file_put_contents($directory . '/composer.json', json_encode($manifest, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+          PHP
+      - name: Install only production dependencies
+        run: |
+          options=()
+          if [ "$DEPENDENCY_SET" = minimum ]; then
+            options+=(--prefer-lowest)
+          fi
+          composer update --working-dir="$CONSUMER_DIR" --no-plugins --no-scripts --prefer-dist --no-progress --no-interaction "${options[@]}"
+          composer check-platform-reqs --working-dir="$CONSUMER_DIR" --no-dev
+      - name: Exercise configuration, providers, autowiring and shared services
+        run: php tests/Integration/production-consumer.php "$CONSUMER_DIR/vendor/autoload.php"

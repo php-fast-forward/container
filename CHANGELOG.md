@@ -8,6 +8,12 @@ and version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 Historical entries were backfilled from tagged diffs and GitHub release notes.
 Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
+## [Unreleased]
+
+### Fixed
+
+- Reject incompatible dependency combinations by requiring PSR Container 1.1 or 2.x and FastForward Config 1.1.4 or newer, with production consumer checks for the minimum and current versions.
+
 ## [1.9.0] - 2026-10-16
 
 ### Added
