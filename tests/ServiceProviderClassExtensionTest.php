@@ -129,6 +129,35 @@ final class ServiceProviderClassExtensionTest extends TestCase
     }
 
     /**
+     * @param string $firstId the first entry requested for an extension-only class service
+     *
+     * @return void
+     */
+    #[Test]
+    #[DataProvider('aliasLookups')]
+    public function aliasesReuseObjectsConstructedByClassIdentifierExtensions(string $firstId): void
+    {
+        $calls = 0;
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'alias' => new AliasFactory(stdClass::class),
+            'alias.chain' => new AliasFactory('alias'),
+        ], [
+            stdClass::class => static function () use (&$calls): stdClass {
+                ++$calls;
+
+                return new stdClass();
+            },
+        ]));
+
+        $service = $container->get($firstId);
+
+        self::assertSame($service, $container->get(stdClass::class));
+        self::assertSame($service, $container->get('alias'));
+        self::assertSame($service, $container->get('alias.chain'));
+        self::assertSame(1, $calls);
+    }
+
+    /**
      * @param bool $classFirst whether the distinct class entry is resolved before the named alias
      * @param bool $replace whether the class extension replaces the service with a new object
      *

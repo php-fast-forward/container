@@ -204,7 +204,7 @@ final class ServiceProviderContainer implements ContainerInterface
      */
     private function applyServiceExtensions(string $id, mixed $service, array $extensions): mixed
     {
-        $classInputs = [];
+        $classObjects = [];
 
         if (\is_callable($extensions[$id] ?? null)) {
             if (\is_object($service) && $id === $service::class) {
@@ -212,10 +212,14 @@ final class ServiceProviderContainer implements ContainerInterface
                     return $this->classExtensionResults[$service]['value'];
                 }
 
-                $classInputs[] = $service;
+                $classObjects[] = $service;
             }
 
             $service = (new ServiceExtension($extensions[$id]))($this->wrapperContainer, $service);
+
+            if ([] === $classObjects && \is_object($service) && $id === $service::class) {
+                $classObjects[] = $service;
+            }
         }
 
         if (\is_object($service)
@@ -225,16 +229,16 @@ final class ServiceProviderContainer implements ContainerInterface
             if (isset($this->classExtensionResults[$service])) {
                 $service = $this->classExtensionResults[$service]['value'];
             } else {
-                $classInputs[] = $service;
+                $classObjects[] = $service;
                 $service = (new ServiceExtension($extensions[$service::class]))($this->wrapperContainer, $service);
             }
         }
 
-        if ([] !== $classInputs) {
+        if ([] !== $classObjects) {
             $results = $this->classExtensionResults ??= new WeakMap();
 
-            foreach ($classInputs as $input) {
-                $results[$input] = [
+            foreach ($classObjects as $object) {
+                $results[$object] = [
                     'value' => $service,
                 ];
             }
