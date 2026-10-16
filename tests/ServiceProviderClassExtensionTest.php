@@ -22,6 +22,7 @@ use stdClass;
 use ArrayObject;
 use WeakReference;
 use RuntimeException;
+use SplObjectStorage;
 use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Extension\ServiceExtension;
 use FastForward\Container\Factory\AliasFactory;
@@ -589,6 +590,81 @@ final class ServiceProviderClassExtensionTest extends TestCase
         self::assertNotSame($first, $completed);
         self::assertSame($completed, $container->get('decorated'));
         self::assertSame(['decorated'], $completed->markers);
+    }
+
+    /**
+     * @param string $extensionKind whether the named ID or the original concrete class returns the completed object
+     * @param string $replacementKind the value already produced by the returned object's class extension
+     *
+     * @return void
+     */
+    #[Test]
+    #[DataProvider('completedCallbackResults')]
+    public function extensionCallbacksReusePreviouslyCompletedResults(
+        string $extensionKind,
+        string $replacementKind,
+    ): void {
+        $original = new ArrayObject();
+        $returned = new stdClass();
+        $completed = match ($replacementKind) {
+            'object' => new SplObjectStorage(),
+            'null' => null,
+            'scalar' => 'completed',
+        };
+        $calls = (object) [
+            'returned' => 0,
+            'original' => 0,
+            'completed' => 0,
+        ];
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'returned' => static fn(): stdClass => $returned,
+            'named' => static fn(): ArrayObject => $original,
+            'alias' => new AliasFactory('named'),
+            'alias.chain' => new AliasFactory('alias'),
+        ], [
+            stdClass::class => static function () use ($calls, $completed): mixed {
+                ++$calls->returned;
+
+                return $completed;
+            },
+            'id' === $extensionKind ? 'named' : ArrayObject::class => static function () use (
+                $calls,
+                $returned
+            ): stdClass {
+                ++$calls->original;
+
+                return $returned;
+            },
+            SplObjectStorage::class => static function (ContainerInterface $container, mixed $service) use (
+                $calls
+            ): mixed {
+                ++$calls->completed;
+
+                return $service;
+            },
+        ]));
+
+        self::assertSame($completed, $container->get('returned'));
+        self::assertSame($completed, $container->get('named'));
+        self::assertSame(0, $calls->completed);
+        self::assertSame($completed, $container->get('alias'));
+        self::assertSame($completed, $container->get('alias.chain'));
+        self::assertSame($completed, $container->get('named'));
+        self::assertSame(1, $calls->returned);
+        self::assertSame(1, $calls->original);
+        self::assertSame('object' === $replacementKind ? 1 : 0, $calls->completed);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}> ID and class callbacks returning completed object, null and scalar values
+     */
+    public static function completedCallbackResults(): iterable
+    {
+        foreach (['id', 'class'] as $extensionKind) {
+            foreach (['object', 'null', 'scalar'] as $replacementKind) {
+                yield $extensionKind . ', ' . $replacementKind => [$extensionKind, $replacementKind];
+            }
+        }
     }
 
     /**

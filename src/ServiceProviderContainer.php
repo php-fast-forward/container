@@ -51,15 +51,6 @@ final class ServiceProviderContainer implements ContainerInterface
     private readonly PsrContainerInterface $wrapperContainer;
 
     /**
-     * Cache of resolved services keyed by their identifier or class name.
-     *
-     * This array SHALL store already constructed services to enforce singleton-like behavior within the container scope.
-     *
-     * @var array<string, mixed>
-     */
-    private array $cache = [];
-
-    /**
      * Final class-extension values indexed by original and same-class resulting object identities.
      *
      * Weak keys permit discarded input objects to be collected after replacement.
@@ -68,6 +59,15 @@ final class ServiceProviderContainer implements ContainerInterface
      * @var WeakMap<object, array{value: mixed}>|null
      */
     private ?WeakMap $classExtensionResults = null;
+
+    /**
+     * Cache of resolved services keyed by their identifier or class name.
+     *
+     * This array SHALL store already constructed services to enforce singleton-like behavior within the container scope.
+     *
+     * @var array<string, mixed>
+     */
+    private array $cache = [];
 
     /**
      * Constructs a new ServiceProviderContainer instance.
@@ -290,23 +290,14 @@ final class ServiceProviderContainer implements ContainerInterface
             [$service, $classObjects] = $this->applyIdentifierExtension($id, $service, $extensions[$id]);
         }
 
-        if (\is_object($service)
-            && $id !== $service::class
-            && \is_callable($extensions[$service::class] ?? null)
-        ) {
-            $cachedResult = $this->classExtensionResult($service);
+        [$service, $concreteClassObjects] = $this->applyConcreteClassExtension(
+            $id,
+            $service,
+            $extensions,
+            $classObjects
+        );
 
-            if (null !== $cachedResult) {
-                $service = $cachedResult['value'];
-            } else {
-                $classObjects[] = $service;
-                $service = (new ServiceExtension($extensions[$service::class]))($this->wrapperContainer, $service);
-            }
-        }
-
-        $this->rememberClassExtensionResult($classObjects, $service);
-
-        return $service;
+        return $this->completeClassExtensions([...$classObjects, ...$concreteClassObjects], $service);
     }
 
     /**
@@ -320,67 +311,164 @@ final class ServiceProviderContainer implements ContainerInterface
      */
     private function applyIdentifierExtension(string $id, mixed $service, callable $extension): array
     {
-        if (\is_object($service) && null !== ($cachedResult = $this->classExtensionResult($service))) {
-            $originalClass = $service::class;
-            $service = $cachedResult['value'];
-
-            if ($id === $originalClass) {
-                return [$service, []];
-            }
+        if (! \is_object($service) || null === ($cachedResult = $this->classExtensionResult($service))) {
+            return $this->executeIdentifierExtension($id, $service, $extension);
         }
 
-        $classObjects = [];
-
-        if (\is_object($service) && $id === $service::class) {
-            $cachedResult = $this->classExtensionResult($service);
-
-            if (null !== $cachedResult) {
-                return [$cachedResult['value'], []];
-            }
-
-            $classObjects[] = $service;
+        if ($id === $service::class) {
+            return [$cachedResult['value'], []];
         }
 
+        return $this->executeIdentifierExtension($id, $cachedResult['value'], $extension);
+    }
+
+    /**
+     * Executes an ID callback and identifies whether it also completed a class-ID extension.
+     *
+     * @param string $id the requested service identifier
+     * @param mixed $service the previous entry value
+     * @param callable $extension the callable registered under this identifier
+     *
+     * @return array{mixed, list<object>} the callback result and any completed class identity
+     */
+    private function executeIdentifierExtension(string $id, mixed $service, callable $extension): array
+    {
+        $classObject = \is_object($service) && $id === $service::class ? $service : null;
         $service = (new ServiceExtension($extension))($this->wrapperContainer, $service);
 
-        if ([] === $classObjects && \is_object($service) && $id === $service::class) {
-            $classObjects[] = $service;
+        if (null !== $classObject) {
+            return [$service, [$classObject]];
         }
 
-        return [$service, $classObjects];
+        if (\is_object($service) && $id === $service::class) {
+            return [$service, [$service]];
+        }
+
+        return [$service, []];
+    }
+
+    /**
+     * Reuses a completed result or executes one extension for the current concrete class.
+     *
+     * @param string $id the requested service identifier
+     * @param mixed $service the result after the ID extension
+     * @param array<string, mixed> $extensions the provider's extension definitions
+     * @param list<object> $pendingObjects class identities being completed in this resolution
+     *
+     * @return array{mixed, list<object>} the concrete-class result and any newly completed input identity
+     */
+    private function applyConcreteClassExtension(
+        string $id,
+        mixed $service,
+        array $extensions,
+        array $pendingObjects
+    ): array {
+        if (! \is_object($service)) {
+            return [$service, []];
+        }
+
+        $cachedResult = $this->classExtensionResult($service, $pendingObjects);
+
+        if (null !== $cachedResult) {
+            return [$cachedResult['value'], []];
+        }
+
+        if ($id === $service::class || ! \is_callable($extensions[$service::class] ?? null)) {
+            return [$service, []];
+        }
+
+        $extended = (new ServiceExtension($extensions[$service::class]))($this->wrapperContainer, $service);
+
+        return [$extended, [$service]];
+    }
+
+    /**
+     * Normalizes completed replacement values before recording the current class-extension chain.
+     *
+     * This method SHALL follow only recorded results; it SHALL NOT execute another class extension.
+     *
+     * @param list<object> $objects the class identities completed in this resolution
+     * @param mixed $service the final callback value
+     *
+     * @return mixed the latest completed replacement value
+     */
+    private function completeClassExtensions(array $objects, mixed $service): mixed
+    {
+        if ([] === $objects) {
+            return $service;
+        }
+
+        if (\is_object($service) && null !== ($result = $this->classExtensionResult($service, $objects))) {
+            $service = $result['value'];
+        }
+
+        $this->rememberClassExtensionResult($objects, $service);
+
+        return $service;
     }
 
     /**
      * Reads the latest completed value and compresses acyclic identity paths.
      *
      * A cycle retains the input's recorded result without compressing the ambiguous path.
+     * A path returning to a pending input SHALL remain unchanged until its callback chain completes.
      *
      * @param object $object the original or same-class result identity
+     * @param list<object> $pendingObjects class identities being completed in this resolution
      *
      * @return array{value: mixed}|null the wrapped result, or null when no extension completed
      */
-    private function classExtensionResult(object $object): ?array
+    private function classExtensionResult(object $object, array $pendingObjects = []): ?array
     {
-        $results = $this->classExtensionResults;
-
-        if (! $results instanceof WeakMap) {
-            return null;
-        }
-
-        $initial = $results[$object] ?? null;
+        $initial = $this->registeredClassExtensionResult($object);
 
         if (null === $initial) {
             return null;
         }
 
+        [$result, $path] = $this->followClassExtensionResults($object, $initial);
+
+        if (\is_object($result['value']) && \in_array($result['value'], $pendingObjects, true)) {
+            return [
+                'value' => $object,
+            ];
+        }
+
+        $this->compressClassExtensionPath($path, $result);
+
+        return $result;
+    }
+
+    /**
+     * Looks up an object identity without inspecting or executing extension definitions.
+     *
+     * @param object $object the class-extension input or same-class result
+     *
+     * @return array{value: mixed}|null the wrapped completed value, or null when absent
+     */
+    private function registeredClassExtensionResult(object $object): ?array
+    {
+        return $this->classExtensionResults[$object] ?? null;
+    }
+
+    /**
+     * Follows recorded identities while retaining a bounded result for cyclic paths.
+     *
+     * @param object $object the first identity to follow
+     * @param array{value: mixed} $initial the first identity's recorded value
+     *
+     * @return array{array{value: mixed}, list<object>} the completed result and safely compressible identities
+     */
+    private function followClassExtensionResults(object $object, array $initial): array
+    {
         $visited = new WeakMap();
         $path = [];
         $current = $object;
         $result = $initial;
 
-        while (null !== ($cached = $results[$current] ?? null)) {
+        while (null !== ($cached = $this->registeredClassExtensionResult($current))) {
             if (isset($visited[$current])) {
-                return $initial;
+                return [$initial, []];
             }
 
             $visited[$current] = true;
@@ -388,17 +476,34 @@ final class ServiceProviderContainer implements ContainerInterface
             $result = $cached;
 
             if (! \is_object($result['value']) || $result['value'] === $current) {
-                break;
+                return [$result, $path];
             }
 
             $current = $result['value'];
         }
 
-        foreach ($path as $input) {
-            $results[$input] = $result;
+        return [$result, $path];
+    }
+
+    /**
+     * Updates existing acyclic identities to their latest completed result.
+     *
+     * @param list<object> $objects the recorded identities visited during lookup
+     * @param array{value: mixed} $result the latest completed result
+     *
+     * @return void
+     */
+    private function compressClassExtensionPath(array $objects, array $result): void
+    {
+        if ([] === $objects) {
+            return;
         }
 
-        return $result;
+        $results = $this->classExtensionResults ??= new WeakMap();
+
+        foreach ($objects as $object) {
+            $results[$object] = $result;
+        }
     }
 
     /**
