@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace FastForward\Container;
 
 use Throwable;
+use WeakMap;
 use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\Extension\ServiceExtension;
@@ -57,6 +58,16 @@ final class ServiceProviderContainer implements ContainerInterface
      * @var array<string, mixed>
      */
     private array $cache = [];
+
+    /**
+     * Final class-extension values indexed by the original and resulting object identities.
+     *
+     * Weak keys permit discarded input objects to be collected after replacement.
+     * Wrapping values in an array distinguishes a cached null result from an absent entry.
+     *
+     * @var WeakMap<object, array{value: mixed}>|null
+     */
+    private ?WeakMap $classExtensionResults = null;
 
     /**
      * Constructs a new ServiceProviderContainer instance.
@@ -176,8 +187,10 @@ final class ServiceProviderContainer implements ContainerInterface
      * Applies ID-based and concrete-class extensions, retaining each returned value.
      *
      * The ID-based extension SHALL run first. If its result is an object, an extension
-     * for that object's concrete class MAY run next, unless that exact object is already
-     * cached under any identifier. Invalid extensions SHALL be ignored.
+     * for that object's concrete class MAY run next. Each object's class-extension result
+     * SHALL be reused for later aliases, including replacement objects and null values.
+     * ID-based extensions for other identifiers SHALL still run independently.
+     * Invalid extensions SHALL be ignored.
      *
      * Extensions declared void SHALL retain the previous value for compatibility.
      *
@@ -191,16 +204,46 @@ final class ServiceProviderContainer implements ContainerInterface
      */
     private function applyServiceExtensions(string $id, mixed $service, array $extensions): mixed
     {
+        $classInputs = [];
+
         if (\is_callable($extensions[$id] ?? null)) {
+            if (\is_object($service) && $id === $service::class) {
+                if (isset($this->classExtensionResults[$service])) {
+                    return $this->classExtensionResults[$service]['value'];
+                }
+
+                $classInputs[] = $service;
+            }
+
             $service = (new ServiceExtension($extensions[$id]))($this->wrapperContainer, $service);
         }
 
         if (\is_object($service)
             && $id !== $service::class
-            && ! \in_array($service, $this->cache, true)
             && \is_callable($extensions[$service::class] ?? null)
         ) {
-            return (new ServiceExtension($extensions[$service::class]))($this->wrapperContainer, $service);
+            if (isset($this->classExtensionResults[$service])) {
+                $service = $this->classExtensionResults[$service]['value'];
+            } else {
+                $classInputs[] = $service;
+                $service = (new ServiceExtension($extensions[$service::class]))($this->wrapperContainer, $service);
+            }
+        }
+
+        if ([] !== $classInputs) {
+            $results = $this->classExtensionResults ??= new WeakMap();
+
+            foreach ($classInputs as $input) {
+                $results[$input] = [
+                    'value' => $service,
+                ];
+            }
+
+            if (\is_object($service)) {
+                $results[$service] = [
+                    'value' => $service,
+                ];
+            }
         }
 
         return $service;

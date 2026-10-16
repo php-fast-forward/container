@@ -19,6 +19,9 @@ declare(strict_types=1);
 namespace FastForward\Container\Tests;
 
 use stdClass;
+use WeakReference;
+use RuntimeException;
+use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Extension\ServiceExtension;
 use FastForward\Container\Factory\AliasFactory;
 use FastForward\Container\ServiceProvider\ArrayServiceProvider;
@@ -37,6 +40,7 @@ use Psr\Container\ContainerInterface;
 #[UsesClass(ArrayServiceProvider::class)]
 #[UsesClass(ServiceExtension::class)]
 #[UsesClass(AliasFactory::class)]
+#[UsesClass(ContainerException::class)]
 final class ServiceProviderClassExtensionTest extends TestCase
 {
     /**
@@ -178,6 +182,181 @@ final class ServiceProviderClassExtensionTest extends TestCase
         yield 'named alias first, mutation' => [false, false];
         yield 'class first, replacement' => [true, true];
         yield 'named alias first, replacement' => [false, true];
+    }
+
+    /**
+     * @param string $classOrder whether the explicit class entry is requested before, after or outside the aliases
+     * @param string $replacement the kind of value returned by the class extension
+     *
+     * @return void
+     */
+    #[Test]
+    #[DataProvider('externalAliasOrders')]
+    public function wrapperBackedAliasesShareTheirClassExtensionResult(string $classOrder, string $replacement): void
+    {
+        $original = new stdClass();
+        $state = (object) [
+            'calls' => 0,
+            'target' => $original,
+        ];
+        $wrapper = self::createStub(ContainerInterface::class);
+        $wrapper->method('get')
+            ->willReturnCallback(static fn(): mixed => $state->target);
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            stdClass::class => static fn(): stdClass => $original,
+            'first' => new AliasFactory('external'),
+            'second' => new AliasFactory('external'),
+            'replacement' => new AliasFactory('external'),
+        ], [
+            stdClass::class => static function (ContainerInterface $container, stdClass $service) use (
+                $state,
+                $replacement
+            ): mixed {
+                ++$state->calls;
+
+                return match ($replacement) {
+                    'object' => clone $service,
+                    'null' => null,
+                    'scalar' => 'replacement',
+                };
+            },
+        ]), $wrapper);
+
+        if ('before' === $classOrder) {
+            $container->get(stdClass::class);
+        }
+
+        $first = $container->get('first');
+        if ('object' === $replacement) {
+            self::assertInstanceOf(stdClass::class, $first);
+            self::assertNotSame($original, $first);
+        } else {
+            self::assertSame('null' === $replacement ? null : 'replacement', $first);
+        }
+
+        self::assertSame($first, $container->get('second'));
+
+        if ('none' !== $classOrder) {
+            self::assertSame($first, $container->get(stdClass::class));
+        }
+
+        $state->target = $first;
+        self::assertSame($first, $container->get('replacement'));
+        self::assertSame(1, $state->calls);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}> class lookup orders for each replacement type
+     */
+    public static function externalAliasOrders(): iterable
+    {
+        foreach (['none', 'before', 'after'] as $order) {
+            foreach (['object', 'null', 'scalar'] as $replacement) {
+                yield $order . ', ' . $replacement => [$order, $replacement];
+            }
+        }
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function aliasesStillApplyTheirIndividualIdentifierExtensions(): void
+    {
+        $calls = 0;
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'named' => static fn(): stdClass => (object) [
+                'aliases' => [],
+            ],
+            'first' => new AliasFactory('named'),
+            'second' => new AliasFactory('named'),
+        ], [
+            stdClass::class => static function (ContainerInterface $container, stdClass $service) use (
+                &$calls
+            ): stdClass {
+                ++$calls;
+
+                return clone $service;
+            },
+            'first' => static function (ContainerInterface $container, stdClass $service): void {
+                $service->aliases[] = 'first';
+            },
+            'second' => static function (ContainerInterface $container, stdClass $service): void {
+                $service->aliases[] = 'second';
+            },
+        ]));
+
+        $first = $container->get('first');
+        self::assertSame($first, $container->get('second'));
+        self::assertSame($first, $container->get('named'));
+        self::assertSame(['first', 'second'], $first->aliases);
+        self::assertSame(1, $calls);
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function replacedInputsCanBeCollectedWhileTheirResultRemainsCached(): void
+    {
+        $reference = null;
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'named' => static function () use (&$reference): stdClass {
+                $service = new stdClass();
+                $reference = WeakReference::create($service);
+
+                return $service;
+            },
+        ], [
+            stdClass::class => static fn(ContainerInterface $container, stdClass $service): stdClass => clone $service,
+        ]));
+
+        $result = $container->get('named');
+        gc_collect_cycles();
+
+        self::assertInstanceOf(WeakReference::class, $reference);
+        self::assertNull($reference->get());
+        self::assertSame($result, $container->get('named'));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function failedClassExtensionsCanBeRetriedForTheSameInput(): void
+    {
+        $original = new stdClass();
+        $state = (object) [
+            'fail' => true,
+            'calls' => 0,
+        ];
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'named' => static fn(): stdClass => $original,
+        ], [
+            stdClass::class => static function (ContainerInterface $container, stdClass $service) use (
+                $state
+            ): stdClass {
+                ++$state->calls;
+                if ($state->fail) {
+                    throw new RuntimeException('Temporary extension failure.');
+                }
+
+                return clone $service;
+            },
+        ]));
+
+        try {
+            $container->get('named');
+            self::fail('The class extension must fail on its first invocation.');
+        } catch (ContainerException $containerException) {
+            self::assertInstanceOf(RuntimeException::class, $containerException->getPrevious());
+        }
+
+        $state->fail = false;
+        $result = $container->get('named');
+        self::assertNotSame($original, $result);
+        self::assertSame($result, $container->get('named'));
+        self::assertSame(2, $state->calls);
     }
 
     /**
