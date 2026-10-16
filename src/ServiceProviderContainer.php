@@ -66,8 +66,6 @@ final class ServiceProviderContainer implements ContainerInterface
      * Provider identity permits ordered fallback to another source for the same ID.
      * Completed resolutions remove their entries instead of retaining service graphs.
      *
-     * Provider identity keeps nested wrappers and ordered fallback independent.
-     *
      * @var WeakMap<object, list<array{container: self, id: string}>>|null
      */
     private static ?WeakMap $resolutionPaths = null;
@@ -137,30 +135,61 @@ final class ServiceProviderContainer implements ContainerInterface
         }
 
         $context = Fiber::getCurrent() ?? $this->wrapperContainer;
-        $paths = self::$resolutionPaths ??= new WeakMap();
-        $path = $paths[$context] ?? [];
+        $activePaths = self::$resolutionPaths ??= new WeakMap();
+        $previousPath = $activePaths[$context] ?? [];
 
-        foreach ($path as $entry) {
-            if ($entry['container'] === $this && $entry['id'] === $id) {
-                throw ContainerException::forCircularDependency([...array_column($path, 'id'), $id]);
-            }
-        }
+        $this->assertEntryIsNotResolving($id, $previousPath);
 
         $currentEntry = [
             'container' => $this,
             'id' => $id,
         ];
-        $paths[$context] = [...$path, $currentEntry];
+        $activePaths[$context] = [...$previousPath, $currentEntry];
 
         try {
             return $this->resolveUncachedEntry($id);
         } finally {
-            if ([] === $path) {
-                unset($paths[$context]);
-            } else {
-                $paths[$context] = $path;
+            $this->restoreResolutionPath($activePaths, $context, $previousPath);
+        }
+    }
+
+    /**
+     * Rejects re-entry into this provider's active service while allowing ordered fallback to other providers.
+     *
+     * @param string $id the requested service identifier
+     * @param list<array{container: self, id: string}> $path the current execution context's active entries
+     *
+     * @return void
+     *
+     * @throws ContainerException if this provider is already resolving the same identifier
+     */
+    private function assertEntryIsNotResolving(string $id, array $path): void
+    {
+        foreach ($path as $entry) {
+            if ($entry['container'] === $this && $entry['id'] === $id) {
+                throw ContainerException::forCircularDependency([...array_column($path, 'id'), $id]);
             }
         }
+    }
+
+    /**
+     * Restores the caller's path after resolution or releases an empty execution context.
+     *
+     * @param WeakMap<object, list<array{container: self, id: string}>> $paths active paths by execution context
+     * @param object $context the current Fiber or main-context wrapper
+     * @param list<array{container: self, id: string}> $previousPath the path before this entry was resolved
+     *
+     * @return void
+     */
+    private function restoreResolutionPath(WeakMap $paths, object $context, array $previousPath): void
+    {
+        if ([] === $previousPath) {
+            unset($paths[$context]);
+
+            return;
+        }
+
+        $paths[$context] = $previousPath;
     }
 
     /**
