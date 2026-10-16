@@ -23,6 +23,18 @@ cause preserved when no other source can resolve it. A dependency cycle also pro
 a ``ContainerException`` with the cycle path. Choosing a default does not recover from
 these execution failures.
 
+Service-provider factories, aliases and extensions also detect circular resolution,
+independently of native constructor autowiring. The exception cause includes the
+active path, for example ``Circular dependency: a -> b -> a.``. Providers composed
+through the same wrapper share that path. Re-entering the same provider and ID
+fails promptly, while another provider may still resolve that ID through the
+aggregate's normal fallback behavior.
+
+Resolution paths are cleared after success or failure. Failed entries are not
+cached, so a later request can retry construction after the application's
+configuration or factory state has been corrected. Completed services retain the
+usual per-container shared-instance behavior.
+
 See :doc:`autowire` for the optional-dependency outcome table and guidance on explicit
 factory recovery when the application intentionally tolerates a particular failure.
 

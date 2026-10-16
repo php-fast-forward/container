@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace FastForward\Container;
 
 use Throwable;
+use WeakMap;
 use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\Extension\ServiceExtension;
@@ -57,6 +58,16 @@ final class ServiceProviderContainer implements ContainerInterface
      * @var array<string, mixed>
      */
     private array $cache = [];
+
+    /**
+     * Active provider entries grouped by their shared resolution wrapper.
+     *
+     * Provider identity permits ordered fallback to another source for the same ID.
+     * Completed resolutions remove their entries instead of retaining service graphs.
+     *
+     * @var WeakMap<PsrContainerInterface, list<array{container: self, id: string}>>|null
+     */
+    private static ?WeakMap $resolutionPaths = null;
 
     /**
      * Constructs a new ServiceProviderContainer instance.
@@ -114,7 +125,7 @@ final class ServiceProviderContainer implements ContainerInterface
      * @return mixed the service instance associated with the identifier
      *
      * @throws NotFoundException if neither a callable factory nor an ID-based extension exists
-     * @throws ContainerException if factory or extension resolution fails
+     * @throws ContainerException if factory or extension resolution fails or a dependency cycle exists
      */
     public function get(string $id): mixed
     {
@@ -122,6 +133,44 @@ final class ServiceProviderContainer implements ContainerInterface
             return $this->cache[$id];
         }
 
+        $paths = self::$resolutionPaths ??= new WeakMap();
+        $path = $paths[$this->wrapperContainer] ?? [];
+
+        foreach ($path as $entry) {
+            if ($entry['container'] === $this && $entry['id'] === $id) {
+                throw ContainerException::forCircularDependency([...array_column($path, 'id'), $id]);
+            }
+        }
+
+        $currentEntry = [
+            'container' => $this,
+            'id' => $id,
+        ];
+        $paths[$this->wrapperContainer] = [...$path, $currentEntry];
+
+        try {
+            return $this->resolveUncachedEntry($id);
+        } finally {
+            if ([] === $path) {
+                unset($paths[$this->wrapperContainer]);
+            } else {
+                $paths[$this->wrapperContainer] = $path;
+            }
+        }
+    }
+
+    /**
+     * Builds and caches an entry while its provider resolution path is active.
+     *
+     * @param string $id the identifier of the service to retrieve
+     *
+     * @return mixed the completed service value
+     *
+     * @throws NotFoundException if no callable factory or ID-based extension exists
+     * @throws ContainerException if reading metadata or executing a factory/extension fails
+     */
+    private function resolveUncachedEntry(string $id): mixed
+    {
         try {
             $factories = $this->serviceProvider->getFactories();
             $extensions = $this->serviceProvider->getExtensions();
