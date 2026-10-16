@@ -8,7 +8,7 @@ Release v1.9.1 was published on 2026-10-16 with the following fixes. Confirm the
 
 | Area | Released 1.9.1 behavior | Older 1.9.0 precaution |
 | --- | --- | --- |
-| Runtime dependencies | Config `^1.6`, PSR Container `^1.1 || ^2.0`; production minimum checks derive from Composer constraints with `--prefer-lowest` | Check resolved versions explicitly as described below |
+| Runtime dependencies | Config `^1.6`, PSR Container `^1.1` or `^2.0`; production minimum checks derive from Composer constraints with `--prefer-lowest` | Check resolved versions explicitly as described below |
 | Aggregated numeric IDs | Preserve opaque IDs, matching extensions and later-provider overrides | Prefer descriptive IDs or separate sources; numeric keys may be renumbered |
 | Method factories | Resolve instance service IDs/interfaces; reflect the actual object; preserve registered-target failures | Use reflectable class names or explicit closures |
 | Class extensions | Apply independently to distinct instances and reuse completed results for the same identity | Prefer ID-specific extensions when lookup order or aliases matter |
