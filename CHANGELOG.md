@@ -23,6 +23,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 - Optional named object dependencies resolve explicit container entries or autowire concrete classes before using their declared defaults, including non-null defaults.
 - Missing entries and structurally unavailable dependency graphs use an optional argument's default. Autoloader, constructor, factory, type, cycle and default-expression failures remain errors with their original causes preserved.
 - Aggregate lookups still try later sources after delegated failures, but preserve the first construction exception when no source succeeds instead of reporting a fresh not-found exception.
+- `AutowireContainer::has()` checks whether an entry is known without calling `get()`. Known classes or entries may return `true` even when construction fails; unknown entries return `false` and `get()` throws `NotFoundExceptionInterface`, following PSR-11. Applications that used `has()` as a construction health check must call `get()` and handle resolution errors instead.
 
 - The public `AutowireContainer`, `ContainerBuilder`, `ContainerFactory` and `container()` APIs remain available. PHP `^8.3` remains the minimum requirement.
 - Optional dependencies may now execute constructors that were previously skipped. A nullable argument without a default remains required.

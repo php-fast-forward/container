@@ -30,10 +30,18 @@ Example:
 
 .. code-block:: php
 
-   use FastForward\Container\Exception\NotFoundException;
+   use Psr\Container\ContainerExceptionInterface;
+   use Psr\Container\NotFoundExceptionInterface;
 
    try {
-       $service = $container->get('unknown');
-   } catch (NotFoundException $e) {
-       // Handle missing service
+       $service = $container->get('service.id');
+   } catch (NotFoundExceptionInterface $e) {
+       // The entry is unknown.
+   } catch (ContainerExceptionInterface $e) {
+       // The entry is known, but resolution failed. Inspect the cause.
    }
+
+``has()`` checks whether an entry is known; it does not guarantee that ``get()``
+will succeed. A known class with uninferable arguments or a construction failure
+can return ``true`` from ``has()`` and throw a construction exception from ``get()``.
+An unknown entry returns ``false`` and ``get()`` throws ``NotFoundExceptionInterface``.

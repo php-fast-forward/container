@@ -96,12 +96,15 @@ Use ``prepend()`` when you want a new container to override existing registratio
 ``append()`` when you want a fallback container that is only consulted after the current
 resolution chain is exhausted.
 
-Why does ``AutowireContainer::has()`` sometimes return ``false`` even when a delegate says ``true``?
------------------------------------------------------------------------------------------------------
+Does ``has()`` guarantee that a service can be constructed?
+--------------------------------------------------------
 
-``AutowireContainer`` performs a stricter check than a plain delegated ``has()`` call. It tries
-to resolve the service and returns ``false`` if construction throws. This avoids reporting a
-service as available when it is declared but not actually buildable.
+No. ``has()`` reports whether an entry is known. For native autowiring, it checks
+whether the class is instantiable without attempting constructor injection. A known
+service can return ``true`` and still fail during ``get()`` because of missing scalar
+configuration, a factory error or a cycle. Unknown entries return ``false`` and
+``get()`` throws ``NotFoundExceptionInterface``. Use ``get()`` with exception handling
+to attempt construction. See :doc:`advanced/error-reporting`.
 
 Why is my optional dependency injected instead of staying null?
 ----------------------------------------------------------------

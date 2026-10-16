@@ -163,10 +163,12 @@ Important behavior:
 - An explicit delegate entry wins even when its concrete class could be autowired.
 - Optional object dependencies are resolved before falling back to their declared defaults.
 - Successful resolutions are cached. Separate standalone containers have independent caches.
-- ``has($id)`` is strict: it attempts resolution and returns ``false`` when resolution throws.
+- ``has($id)`` checks known entries and native class metadata without calling ``get()``.
 
-This strict ``has()`` behavior is useful because it prevents false positives for services
-that are declared but not actually constructible.
+A ``true`` result does not guarantee successful construction: ``get($id)`` can still
+throw a construction exception. A ``false`` result denotes an unknown entry;
+``get($id)`` then throws ``NotFoundExceptionInterface``. Use ``get()`` with exception
+handling to attempt construction. Supplied delegates retain their own lookup behavior.
 
 See :doc:`../advanced/autowire` for complete standalone and delegated examples,
 interface bindings, scalar arguments and fallback behavior.

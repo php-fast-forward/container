@@ -166,13 +166,19 @@ The public construction APIs stay the same. Applications using PHP-DI directly
 must declare their own Composer dependency; an installed PHP-DI container can still
 be supplied as a normal PSR-11 source.
 
-The intentional behavior changes are optional object injection before defaults and
+The intentional behavior changes are optional object injection before defaults,
 preservation of the first delegated construction error when aggregate fallback is
-exhausted. Previously those failures could appear as a fresh not-found exception.
+exhausted, and entry discovery through ``has()`` without attempting construction.
+Previously construction failures could appear as a fresh not-found exception.
 
-``AutowireContainer::has()`` retains its existing eager behavior: it attempts
-construction and returns ``false`` on failure. Calling it can run constructors and
-factories. Internal constructor dependency resolution does not use this eager check.
+``AutowireContainer::has()`` now checks whether the composition knows an entry,
+without calling ``get()``. Native autowiring checks class metadata: a class with a
+required scalar argument or a broken constructor can therefore return ``true`` from
+``has()`` and still throw a construction error from ``get()``. A ``false`` result
+means the entry is unknown and ``get()`` throws ``NotFoundExceptionInterface``.
+This follows PSR-11. Use ``get()`` with exception handling when you need to attempt
+construction; ``has()`` is not a construction health check. Supplied delegates
+retain their own ``has()`` implementation.
 
 The native resolver supports constructor injection. It does not implement PHP-DI's
 definition DSL, attribute/property/setter injection, proxies or compilation.

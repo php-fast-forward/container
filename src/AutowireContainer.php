@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace FastForward\Container;
 
-use Throwable;
 use FastForward\Container\Autowire\ReflectionContainer;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
@@ -75,23 +74,16 @@ final readonly class AutowireContainer implements ContainerInterface
     }
 
     /**
-     * @param string $id
+     * Checks whether the composed container knows the entry without calling get().
      *
-     * @return bool
+     * @param string $id the entry identifier
+     *
+     * @return bool whether an entry or instantiable class is known
+     *
+     * @throws ContainerExceptionInterface if delegated lookup or class loading fails
      */
     public function has(string $id): bool
     {
-        if (! $this->container->has($id)) {
-            return false;
-        }
-
-        try {
-            // Attempt to resolve the service to check if it is valid
-            $this->get($id);
-        } catch (Throwable) {
-            return false;
-        }
-
-        return true;
+        return $this->container->has($id);
     }
 }

@@ -24,6 +24,8 @@ use ArrayObject;
 use FastForward\Container\Autowire\ReflectionContainer;
 use FastForward\Container\AggregateContainer;
 use FastForward\Container\AutowireContainer;
+use FastForward\Container\Exception\AutowiringException;
+use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\ServiceProvider\ArrayServiceProvider;
 use FastForward\Container\ServiceProviderContainer;
@@ -43,6 +45,8 @@ use Psr\Container\ContainerInterface;
 #[UsesClass(AggregateContainer::class)]
 #[UsesClass(ReflectionContainer::class)]
 #[UsesClass(NotFoundException::class)]
+#[UsesClass(AutowiringException::class)]
+#[UsesClass(ContainerException::class)]
 #[UsesClass(ArrayServiceProvider::class)]
 #[UsesClass(ServiceProviderContainer::class)]
 final class AutowireContainerTest extends TestCase
@@ -141,23 +145,101 @@ final class AutowireContainerTest extends TestCase
         $container = new AutowireContainer($delegate->reveal());
 
         self::assertFalse($container->has('missing'));
+
+        $this->expectException(NotFoundException::class);
+
+        $container->get('missing');
     }
 
     /**
      * @return void
      */
     #[Test]
-    public function hasReturnsFalseWhenResolutionFails(): void
+    public function hasDoesNotAttemptKnownDelegateResolution(): void
     {
         $delegate = $this->prophesize(ContainerInterface::class);
         $delegate->has('unstable')
             ->willReturn(true);
         $delegate->get('unstable')
-            ->willThrow(new RuntimeException());
+            ->shouldNotBeCalled();
 
         $container = new AutowireContainer($delegate->reveal());
 
-        self::assertFalse($container->has('unstable'));
+        self::assertTrue($container->has('unstable'));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function knownClassWithUninferableArgumentsKeepsItsConstructionError(): void
+    {
+        $container = new AutowireContainer();
+
+        self::assertTrue($container->has(AutowireRequiredScalar::class));
+
+        $this->expectException(AutowiringException::class);
+        $this->expectExceptionMessage('parameter $label');
+
+        $container->get(AutowireRequiredScalar::class);
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function knownThrowingConstructorIsOnlyExecutedByGet(): void
+    {
+        AutowireThrowingConstructor::$attempts = 0;
+        $container = new AutowireContainer();
+
+        self::assertTrue($container->has(AutowireThrowingConstructor::class));
+        self::assertSame(0, AutowireThrowingConstructor::$attempts);
+
+        try {
+            $container->get(AutowireThrowingConstructor::class);
+            self::fail('A known service must preserve its constructor failure.');
+        } catch (ContainerException $containerException) {
+            self::assertInstanceOf(RuntimeException::class, $containerException->getPrevious());
+            self::assertSame(1, AutowireThrowingConstructor::$attempts);
+        }
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function knownFactoryIsOnlyExecutedByGetAndPreservesItsFailure(): void
+    {
+        $previous = new RuntimeException('factory failed');
+        $container = new AutowireContainer(new ServiceProviderContainer(new ArrayServiceProvider([
+            'broken.factory' => static fn() => throw $previous,
+        ])));
+
+        self::assertTrue($container->has('broken.factory'));
+
+        try {
+            $container->get('broken.factory');
+            self::fail('A known service must preserve its factory failure.');
+        } catch (ContainerException $containerException) {
+            self::assertSame($previous, $containerException->getPrevious());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function knownOptionalCycleKeepsItsCycleError(): void
+    {
+        $container = new AutowireContainer();
+
+        self::assertTrue($container->has(AutowireOptionalCycle::class));
+
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage(AutowireOptionalCycle::class . ' -> ' . AutowireOptionalCycle::class);
+
+        $container->get(AutowireOptionalCycle::class);
     }
 
     /**
@@ -222,3 +304,38 @@ final readonly class AutowireOnlyDependency
 }
 
 final class AutowireOnlyLeaf {}
+
+final readonly class AutowireRequiredScalar
+{
+    /**
+     * @param string $label
+     */
+    public function __construct(
+        public string $label
+    ) {}
+}
+
+final class AutowireThrowingConstructor
+{
+    public static int $attempts = 0;
+
+    /**
+     * @throws RuntimeException
+     */
+    public function __construct()
+    {
+        ++self::$attempts;
+
+        throw new RuntimeException('constructor failed');
+    }
+}
+
+final readonly class AutowireOptionalCycle
+{
+    /**
+     * @param self|null $dependency
+     */
+    public function __construct(
+        public ?self $dependency = null
+    ) {}
+}

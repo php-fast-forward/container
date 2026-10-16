@@ -106,8 +106,9 @@ When combining providers, use ``AggregateServiceProvider`` to select factories
 across all providers before applying their extensions in registration order.
 An extension-only provider may precede the provider supplying its factory.
 Passing providers separately to ``container()`` keeps first-match-wins semantics.
-The ``ServiceProviderContainer::has()`` discovery behavior differs from the final
-``AutowireContainer::has()``, which still attempts resolution.
+The final ``AutowireContainer::has()`` also checks entry discovery without calling
+``get()``. A ``true`` result does not guarantee that construction will succeed;
+resolution errors are raised by ``get()``.
 
 Provider merge semantics
 ------------------------
