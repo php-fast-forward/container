@@ -60,7 +60,7 @@ final class ServiceProviderContainer implements ContainerInterface
     private array $cache = [];
 
     /**
-     * Final class-extension values indexed by the original and resulting object identities.
+     * Final class-extension values indexed by original and same-class resulting object identities.
      *
      * Weak keys permit discarded input objects to be collected after replacement.
      * Wrapping values in an array distinguishes a cached null result from an absent entry.
@@ -207,6 +207,19 @@ final class ServiceProviderContainer implements ContainerInterface
         $classObjects = [];
 
         if (\is_callable($extensions[$id] ?? null)) {
+            $reusedClassResult = false;
+
+            if (\is_object($service) && isset($this->classExtensionResults[$service])) {
+                $result = $this->classExtensionResults[$service]['value'];
+
+                if ($id === $service::class) {
+                    return $result;
+                }
+
+                $service = $result;
+                $reusedClassResult = true;
+            }
+
             if (\is_object($service) && $id === $service::class) {
                 if (isset($this->classExtensionResults[$service])) {
                     return $this->classExtensionResults[$service]['value'];
@@ -215,7 +228,12 @@ final class ServiceProviderContainer implements ContainerInterface
                 $classObjects[] = $service;
             }
 
+            $previous = $service;
             $service = (new ServiceExtension($extensions[$id]))($this->wrapperContainer, $service);
+
+            if ($reusedClassResult && $service === $previous && [] === $classObjects) {
+                return $service;
+            }
 
             if ([] === $classObjects && \is_object($service) && $id === $service::class) {
                 $classObjects[] = $service;
@@ -241,12 +259,12 @@ final class ServiceProviderContainer implements ContainerInterface
                 $results[$object] = [
                     'value' => $service,
                 ];
-            }
 
-            if (\is_object($service)) {
-                $results[$service] = [
-                    'value' => $service,
-                ];
+                if (\is_object($service) && $object::class === $service::class) {
+                    $results[$service] = [
+                        'value' => $service,
+                    ];
+                }
             }
         }
 

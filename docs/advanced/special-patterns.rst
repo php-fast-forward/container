@@ -71,7 +71,10 @@ identity within a provider container. Distinct objects of the same class are
 extended independently of lookup order.
 Aliases reuse the class extension's completed result, including a replacement
 object, scalar or ``null``. This also applies when aliases retrieve the same original
-object from a wrapper container. ID-based extensions for each alias still run.
+object from a wrapper container. ID-based extensions for each alias receive the
+completed result when available and still run independently. Same-class replacement
+objects count as extended; a replacement of a different class remains eligible for
+its own class extension when resolved through another entry.
 
 Extensions should return the resulting entry, including when they modify an object
 in place. Existing extensions explicitly declared ``void`` retain the previous value

@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace FastForward\Container\Tests;
 
 use stdClass;
+use ArrayObject;
 use WeakReference;
 use RuntimeException;
 use FastForward\Container\Exception\ContainerException;
@@ -227,6 +228,7 @@ final class ServiceProviderClassExtensionTest extends TestCase
         $state = (object) [
             'calls' => 0,
             'target' => $original,
+            'secondInput' => 'unobserved',
         ];
         $wrapper = self::createStub(ContainerInterface::class);
         $wrapper->method('get')
@@ -249,6 +251,11 @@ final class ServiceProviderClassExtensionTest extends TestCase
                     'scalar' => 'replacement',
                 };
             },
+            'second' => static function (ContainerInterface $container, mixed $service) use ($state): mixed {
+                $state->secondInput = $service;
+
+                return $service;
+            },
         ]), $wrapper);
 
         if ('before' === $classOrder) {
@@ -264,6 +271,7 @@ final class ServiceProviderClassExtensionTest extends TestCase
         }
 
         self::assertSame($first, $container->get('second'));
+        self::assertSame($first, $state->secondInput);
 
         if ('none' !== $classOrder) {
             self::assertSame($first, $container->get(stdClass::class));
@@ -386,6 +394,121 @@ final class ServiceProviderClassExtensionTest extends TestCase
         self::assertNotSame($original, $result);
         self::assertSame($result, $container->get('named'));
         self::assertSame(2, $state->calls);
+    }
+
+    /**
+     * @param string $firstId the first identifier used to resolve the replacement's own class extension
+     * @param bool $replace whether the replacement's extension creates another object of the same class
+     *
+     * @return void
+     */
+    #[Test]
+    #[DataProvider('differentClassOrders')]
+    public function differentClassResultsCanReceiveTheirOwnClassExtension(string $firstId, bool $replace): void
+    {
+        $replacement = (object) [
+            'extensions' => 0,
+        ];
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'original' => static fn(): ArrayObject => new ArrayObject(),
+            stdClass::class => static fn(): stdClass => $replacement,
+            'other' => static fn(): stdClass => $replacement,
+        ], [
+            ArrayObject::class => static fn(ContainerInterface $container, ArrayObject $service): stdClass => $replacement,
+            stdClass::class => static function (ContainerInterface $container, stdClass $service) use (
+                $replace
+            ): stdClass {
+                ++$service->extensions;
+
+                return $replace ? clone $service : $service;
+            },
+        ]));
+
+        self::assertSame($replacement, $container->get('original'));
+        self::assertSame(0, $replacement->extensions);
+
+        $extended = $container->get($firstId);
+        self::assertSame(1, $extended->extensions);
+        self::assertSame($extended, $container->get(stdClass::class));
+        self::assertSame($extended, $container->get('other'));
+    }
+
+    /**
+     * @return iterable<string, array{string, bool}> class and named lookups with mutation or replacement
+     */
+    public static function differentClassOrders(): iterable
+    {
+        yield 'class first, mutation' => [stdClass::class, false];
+        yield 'named first, mutation' => ['other', false];
+        yield 'class first, replacement' => [stdClass::class, true];
+        yield 'named first, replacement' => ['other', true];
+    }
+
+    /**
+     * @param list<string> $order the order in which wrapper-backed aliases are requested
+     * @param list<string> $expectedMarkers the ID-extension mutations retained on the completed result
+     *
+     * @return void
+     */
+    #[Test]
+    #[DataProvider('wrapperIdentifierOrders')]
+    public function wrapperAliasIdentifierExtensionsModifyTheReusedResult(array $order, array $expectedMarkers): void
+    {
+        $original = (object) [
+            'markers' => [],
+        ];
+        $calls = 0;
+        $wrapper = self::createStub(ContainerInterface::class);
+        $wrapper->method('get')
+            ->willReturn($original);
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'plain' => new AliasFactory('external'),
+            'mutating' => new AliasFactory('external'),
+            'void' => new AliasFactory('external'),
+            'fresh' => new AliasFactory('external'),
+        ], [
+            stdClass::class => static function (ContainerInterface $container, stdClass $service) use (
+                &$calls
+            ): stdClass {
+                ++$calls;
+
+                return clone $service;
+            },
+            'mutating' => static function (ContainerInterface $container, stdClass $service): stdClass {
+                $service->markers[] = 'mutating';
+
+                return $service;
+            },
+            'void' => static function (ContainerInterface $container, stdClass $service): void {
+                $service->markers[] = 'void';
+            },
+            'fresh' => static fn(): stdClass => (object) [
+                'markers' => ['fresh'],
+            ],
+        ]), $wrapper);
+
+        $services = [];
+        foreach ($order as $id) {
+            $services[$id] = $container->get($id);
+        }
+
+        self::assertSame($services['plain'], $services['mutating']);
+        self::assertSame($services['plain'], $services['void']);
+        self::assertSame($expectedMarkers, $services['plain']->markers);
+        self::assertSame(1, $calls);
+        self::assertNotSame($services['plain'], $container->get('fresh'));
+        self::assertSame(['fresh'], $container->get('fresh')->markers);
+        self::assertSame(2, $calls);
+    }
+
+    /**
+     * @return iterable<string, array{list<string>, list<string>}> aliases resolving before and after class extension completion
+     */
+    public static function wrapperIdentifierOrders(): iterable
+    {
+        yield 'plain first' => [['plain', 'mutating', 'void'], ['mutating', 'void']];
+        yield 'mutating first' => [['mutating', 'void', 'plain'], ['mutating', 'void']];
+        yield 'void first' => [['void', 'plain', 'mutating'], ['void', 'mutating']];
     }
 
     /**
