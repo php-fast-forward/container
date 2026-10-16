@@ -12,7 +12,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
 ### Fixed
 
-- Detect circular provider factory, alias and extension resolution with an actionable path, preserving ordered fallback, shared caches and retry cleanup after failures.
+- Detect circular provider factory, alias and extension resolution with an actionable path per execution context, preserving ordered fallback, shared caches and retry cleanup after failures. Keep concurrent Fiber paths independent from each other and from the main context.
 
 ## [1.9.0] - 2026-10-16
 

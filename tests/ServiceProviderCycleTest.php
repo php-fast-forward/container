@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace FastForward\Container\Tests;
 
 use Throwable;
+use Fiber;
 use LogicException;
 use RuntimeException;
 use stdClass;
@@ -305,6 +306,156 @@ final class ServiceProviderCycleTest extends TestCase
         gc_collect_cycles();
 
         self::assertNull($reference->get());
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function concurrentFibersMayResolveTheSameEntryWithoutAFalseCycle(): void
+    {
+        $service = new stdClass();
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'a' => static function () use ($service): stdClass {
+                Fiber::suspend('building');
+
+                return $service;
+            },
+        ]));
+        $first = new Fiber(static fn(): mixed => $container->get('a'));
+        $second = new Fiber(static fn(): mixed => $container->get('a'));
+
+        self::assertSame('building', $first->start());
+        self::assertSame('building', $second->start());
+        $first->resume();
+        $second->resume();
+
+        self::assertSame($service, $first->getReturn());
+        self::assertSame($service, $second->getReturn());
+        self::assertSame($service, $container->get('a'));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function completingOneFiberDoesNotEraseAnotherFibersCyclePath(): void
+    {
+        $calls = 0;
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'a' => static function (): string {
+                Fiber::suspend('a waiting');
+
+                return 'ready';
+            },
+            'b' => static function (ContainerInterface $container) use (&$calls): mixed {
+                if (1 === ++$calls) {
+                    Fiber::suspend('b waiting');
+                }
+
+                if ($calls > 3) {
+                    throw new LogicException('Fixture recursion limit reached.');
+                }
+
+                return $container->get('b');
+            },
+        ]));
+        $first = new Fiber(static fn(): mixed => $container->get('a'));
+        $second = new Fiber(static fn(): mixed => $container->get('b'));
+
+        self::assertSame('a waiting', $first->start());
+        self::assertSame('b waiting', $second->start());
+        $first->resume();
+        self::assertSame('ready', $first->getReturn());
+
+        try {
+            $second->resume();
+            self::fail('The second fiber must retain its original cycle path.');
+        } catch (ContainerException $containerException) {
+            $this->assertCyclePath($containerException, 'b -> b');
+        }
+
+        self::assertSame(1, $calls);
+        self::assertSame('ready', $container->get('a'));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function theMainContextIsIndependentOfASuspendedFiber(): void
+    {
+        $service = new stdClass();
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'a' => static function () use ($service): stdClass {
+                if (Fiber::getCurrent() instanceof Fiber) {
+                    Fiber::suspend('fiber waiting');
+                }
+
+                return $service;
+            },
+        ]));
+        $fiber = new Fiber(static fn(): mixed => $container->get('a'));
+
+        self::assertSame('fiber waiting', $fiber->start());
+        self::assertSame($service, $container->get('a'));
+        $fiber->resume();
+        self::assertSame($service, $fiber->getReturn());
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function aFiberCanRetryAfterAResolutionFailure(): void
+    {
+        $state = (object) [
+            'fail' => true,
+        ];
+        $failure = new RuntimeException('Temporary fiber failure.');
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'a' => static function () use ($state, $failure): string {
+                if ($state->fail) {
+                    throw $failure;
+                }
+
+                return 'ready';
+            },
+        ]));
+        $fiber = new Fiber(static function () use ($container, $state, $failure): mixed {
+            try {
+                $container->get('a');
+                self::fail('The first attempt must preserve its failure.');
+            } catch (ContainerException $containerException) {
+                self::assertSame($failure, $containerException->getPrevious());
+            }
+
+            $state->fail = false;
+
+            return $container->get('a');
+        });
+        $fiber->start();
+
+        self::assertSame('ready', $fiber->getReturn());
+        self::assertSame('ready', $container->get('a'));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function aFiberMayNestIndependentWrappersWithTheSameIdentifier(): void
+    {
+        $other = new ServiceProviderContainer(new ArrayServiceProvider([
+            'a' => static fn(): string => 'other composition',
+        ]));
+        $container = new ServiceProviderContainer(new ArrayServiceProvider([
+            'a' => static fn(): mixed => $other->get('a'),
+        ]));
+        $fiber = new Fiber(static fn(): mixed => $container->get('a'));
+        $fiber->start();
+
+        self::assertSame('other composition', $fiber->getReturn());
     }
 
     /**

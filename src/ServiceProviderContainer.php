@@ -20,6 +20,7 @@ namespace FastForward\Container;
 
 use Throwable;
 use WeakMap;
+use Fiber;
 use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\Extension\ServiceExtension;
@@ -60,12 +61,14 @@ final class ServiceProviderContainer implements ContainerInterface
     private array $cache = [];
 
     /**
-     * Active provider entries grouped by their shared resolution wrapper.
+     * Active provider entries grouped by Fiber, or by wrapper in the main context.
      *
      * Provider identity permits ordered fallback to another source for the same ID.
      * Completed resolutions remove their entries instead of retaining service graphs.
      *
-     * @var WeakMap<PsrContainerInterface, list<array{container: self, id: string}>>|null
+     * Provider identity keeps nested wrappers and ordered fallback independent.
+     *
+     * @var WeakMap<object, list<array{container: self, id: string}>>|null
      */
     private static ?WeakMap $resolutionPaths = null;
 
@@ -133,8 +136,9 @@ final class ServiceProviderContainer implements ContainerInterface
             return $this->cache[$id];
         }
 
+        $context = Fiber::getCurrent() ?? $this->wrapperContainer;
         $paths = self::$resolutionPaths ??= new WeakMap();
-        $path = $paths[$this->wrapperContainer] ?? [];
+        $path = $paths[$context] ?? [];
 
         foreach ($path as $entry) {
             if ($entry['container'] === $this && $entry['id'] === $id) {
@@ -146,15 +150,15 @@ final class ServiceProviderContainer implements ContainerInterface
             'container' => $this,
             'id' => $id,
         ];
-        $paths[$this->wrapperContainer] = [...$path, $currentEntry];
+        $paths[$context] = [...$path, $currentEntry];
 
         try {
             return $this->resolveUncachedEntry($id);
         } finally {
             if ([] === $path) {
-                unset($paths[$this->wrapperContainer]);
+                unset($paths[$context]);
             } else {
-                $paths[$this->wrapperContainer] = $path;
+                $paths[$context] = $path;
             }
         }
     }
