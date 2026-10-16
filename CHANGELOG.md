@@ -12,6 +12,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
 ### Fixed
 
+- Correct typed callable factory examples, Slim 4 application creation and JSON responses, and Laravel 12 factory binding adapters. Explain framework requirements, binding lifetimes and provider extension boundaries.
 - Apply concrete-class extensions to distinct services independently of lookup order, reusing each object's completed extension result for aliases and wrapper-backed lookups, including replacement objects, scalars and null.
 
 ## [1.9.0] - 2026-10-16
