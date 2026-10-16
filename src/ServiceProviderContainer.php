@@ -133,12 +133,22 @@ final class ServiceProviderContainer implements ContainerInterface
             return $this->cache[$id];
         }
 
-        try {
-            $factories = $this->serviceProvider->getFactories();
-            $extensions = $this->serviceProvider->getExtensions();
-        } catch (Throwable $throwable) {
-            throw ContainerException::forInvalidService($id, $throwable);
-        }
+        return $this->resolveUncachedEntry($id);
+    }
+
+    /**
+     * Resolves an entry once, preserving construction failures and the final cached value.
+     *
+     * @param string $id the requested service identifier
+     *
+     * @return mixed the fully extended service value
+     *
+     * @throws NotFoundException if neither a factory nor an ID extension can supply the entry
+     * @throws ContainerException if reading metadata or constructing the entry fails
+     */
+    private function resolveUncachedEntry(string $id): mixed
+    {
+        [$factories, $extensions] = $this->readProviderDefinitions($id);
 
         $factory = $factories[$id] ?? null;
 
@@ -147,22 +157,92 @@ final class ServiceProviderContainer implements ContainerInterface
         }
 
         try {
-            $service = \is_callable($factory) ? $factory($this->wrapperContainer) : null;
-            $service = $this->applyServiceExtensions($id, $service, $extensions);
-            $alias = \is_object($service) ? $service::class : null;
-
-            if (null !== $alias && ($id === $alias || $this->hasEntry($alias, $factories, $extensions))) {
-                $alias = null;
-            }
+            $service = $this->createExtendedService($id, $factory, $extensions);
+            $alias = $this->inferredClassAlias($id, $service, $factories, $extensions);
         } catch (Throwable $throwable) {
             throw ContainerException::forInvalidService($id, $throwable);
         }
 
+        return $this->cacheResolvedService($id, $service, $alias);
+    }
+
+    /**
+     * Reads factory and extension metadata in provider order without executing their callables.
+     *
+     * @param string $id the identifier used to report a metadata failure
+     *
+     * @return array{array<array-key, mixed>, array<array-key, mixed>} factories followed by extensions
+     *
+     * @throws ContainerException if provider metadata cannot be read
+     */
+    private function readProviderDefinitions(string $id): array
+    {
+        try {
+            return [$this->serviceProvider->getFactories(), $this->serviceProvider->getExtensions()];
+        } catch (Throwable $throwable) {
+            throw ContainerException::forInvalidService($id, $throwable);
+        }
+    }
+
+    /**
+     * Invokes an available factory and applies the entry's extensions to its value.
+     *
+     * @param string $id the requested service identifier
+     * @param mixed $factory the factory definition, which may be absent or non-callable
+     * @param array<array-key, mixed> $extensions the provider's extension definitions
+     *
+     * @return mixed the completed extension result, including null
+     */
+    private function createExtendedService(string $id, mixed $factory, array $extensions): mixed
+    {
+        $service = \is_callable($factory) ? $factory($this->wrapperContainer) : null;
+
+        return $this->applyServiceExtensions($id, $service, $extensions);
+    }
+
+    /**
+     * Infers a concrete-class alias only when it cannot replace another entry or definition.
+     *
+     * @param string $id the identifier being resolved
+     * @param mixed $service the completed service value
+     * @param array<array-key, mixed> $factories the provider's factory definitions
+     * @param array<array-key, mixed> $extensions the provider's extension definitions
+     *
+     * @return string|null the available class alias, or null when none should be registered
+     */
+    private function inferredClassAlias(string $id, mixed $service, array $factories, array $extensions): ?string
+    {
+        if (! \is_object($service)) {
+            return null;
+        }
+
+        $class = $service::class;
+
+        if ($id === $class || $this->hasEntry($class, $factories, $extensions)) {
+            return null;
+        }
+
+        return $class;
+    }
+
+    /**
+     * Stores the final value under its requested ID before adding any inferred alias.
+     *
+     * @param string $id the requested service identifier
+     * @param mixed $service the completed service value, including null
+     * @param string|null $alias the optional inferred class alias
+     *
+     * @return mixed the same value placed in the service cache
+     */
+    private function cacheResolvedService(string $id, mixed $service, ?string $alias): mixed
+    {
         $this->cache[$id] = $service;
 
-        if (null !== $alias) {
-            $this->cache[$alias] = $service;
+        if (null === $alias) {
+            return $service;
         }
+
+        $this->cache[$alias] = $service;
 
         return $service;
     }
