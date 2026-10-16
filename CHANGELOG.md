@@ -14,6 +14,10 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
 - A portable `fast-forward-container` agent skill with configuration, composition and autowiring examples, version-aware guidance, and documented project/global installation options.
 
+### Fixed
+
+- Correct typed callable factory examples, Slim 4 application creation and JSON responses, and Laravel 12 factory binding adapters. Explain framework requirements, binding lifetimes and provider extension boundaries.
+
 ## [1.9.0] - 2026-10-16
 
 ### Added
