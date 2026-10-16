@@ -170,6 +170,7 @@ Delivered through [PR #18](https://github.com/php-fast-forward/container/pull/18
 - Configuration-backed composition and PHP-DI autowiring through `container()` and the original invokable `Factory\ContainerFactory`.
 - Unit tests, Composer autoloading and the MIT license.
 
+[Unreleased]: https://github.com/php-fast-forward/container/compare/v1.9.0...HEAD
 [1.9.0]: https://github.com/php-fast-forward/container/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/php-fast-forward/container/compare/v1.7.1...v1.8.0
 [1.7.1]: https://github.com/php-fast-forward/container/compare/v1.7.0...v1.7.1
