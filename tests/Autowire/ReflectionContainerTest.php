@@ -22,6 +22,7 @@ use Countable;
 use Error;
 use IntlGregorianCalendar;
 use ReflectionClass;
+use ReflectionMethod;
 use RuntimeException;
 use stdClass;
 use FastForward\Container\AggregateContainer;
@@ -502,7 +503,11 @@ final class ReflectionContainerTest extends TestCase
     #[RequiresPhpExtension('intl')]
     public function internalOptionalArgumentsWithoutReflectedDefaultsAreOmitted(): void
     {
-        $parameter = (new ReflectionClass(IntlGregorianCalendar::class))->getConstructor()->getParameters()[0];
+        $constructor = (new ReflectionClass(IntlGregorianCalendar::class))->getConstructor();
+
+        self::assertInstanceOf(ReflectionMethod::class, $constructor);
+
+        $parameter = $constructor->getParameters()[0];
 
         self::assertTrue($parameter->isOptional());
         self::assertFalse($parameter->isDefaultValueAvailable());
