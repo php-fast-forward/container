@@ -29,6 +29,13 @@ Usage Example
 
 You can also use the ``container()`` helper to automatically build an autowire-enabled container from providers, configs, or other containers.
 
+For constructor autowiring without explicit registrations, use
+``new AutowireContainer(new AggregateContainer())``.
+
+The reflection resolver is an internal implementation detail. ``AutowireContainer``
+connects it to the same aggregate used for nested dependency lookups. This connection
+allows recursive autowiring through the complete container composition.
+
 Optional Dependencies
 ---------------------
 

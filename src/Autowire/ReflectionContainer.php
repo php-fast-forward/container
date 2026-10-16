@@ -33,6 +33,9 @@ use Psr\Container\NotFoundExceptionInterface;
 /**
  * Resolves constructor dependencies through the composed container.
  *
+ * AutowireContainer connects this resolver to the same aggregate used for nested
+ * lookups, allowing recursive autowiring alongside explicitly registered services.
+ *
  * @internal
  */
 final class ReflectionContainer implements ContainerInterface
@@ -92,10 +95,7 @@ final class ReflectionContainer implements ContainerInterface
         }
 
         if (isset($this->resolving[$id])) {
-            throw new ContainerException(\sprintf(
-                'Circular dependency: %s.',
-                implode(' -> ', [...array_keys($this->resolving), $id]),
-            ));
+            throw ContainerException::forCircularDependency([...array_keys($this->resolving), $id]);
         }
 
         $this->resolving[$id] = true;
@@ -271,12 +271,12 @@ final class ReflectionContainer implements ContainerInterface
         if (! $parameter->isDefaultValueAvailable()) {
             $type = $parameter->getType();
 
-            throw new AutowiringException(\sprintf(
-                'Cannot autowire %s::__construct(): parameter $%s (%s) requires an explicit service or factory.',
+            throw AutowiringException::forUnresolvableParameter(
                 $declaringClass->getName(),
                 $parameter->getName(),
-                null === $type ? 'untyped' : (string) $type,
-            ), 0, $previous);
+                null === $type ? null : (string) $type,
+                $previous,
+            );
         }
 
         try {

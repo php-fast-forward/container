@@ -14,6 +14,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
 - Native constructor autowiring with recursive dependency resolution, shared instances, cycle diagnostics and cleanup after failed construction.
 - Support for constructor parameters passed by reference and optional internal arguments whose default values are unavailable through reflection.
+- Named exception factories for circular dependency paths and unresolvable constructor parameters.
 - A versioned changelog, including the release history from `1.0.0` through `1.8.0`.
 
 ### Changed

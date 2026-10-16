@@ -50,6 +50,7 @@ use Psr\Container\ContainerInterface;
 #[UsesClass(ContainerBuilder::class)]
 #[UsesClass(ArrayServiceProvider::class)]
 #[UsesClass(ServiceProviderContainer::class)]
+#[UsesClass(AutowiringException::class)]
 #[UsesClass(ContainerException::class)]
 #[UsesClass(NotFoundException::class)]
 final class ReflectionContainerTest extends TestCase
