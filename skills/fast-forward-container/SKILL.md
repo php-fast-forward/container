@@ -2,10 +2,10 @@
 name: fast-forward-container
 description: Integrate or maintain PSR-11 dependency injection in PHP projects using fast-forward/container. Use for configuration-backed registration, providers, factories, aliases, test overrides, existing-container composition, or native constructor autowiring. Inspect the installed Composer version before selecting APIs.
 license: MIT
-compatibility: PHP 8.3+ and Composer. Core examples target fast-forward/container 1.9.0; provider-resolution.php requires the corrections planned for 1.9.1. Inspect installed versions. No agent-specific tools or setup scripts required.
+compatibility: PHP 8.3+ and Composer. Examples target published fast-forward/container 1.9.1; references retain precautions for older versions. Inspect installed versions. No agent-specific tools or setup scripts required.
 metadata:
   author: php-fast-forward
-  api-baseline: "1.9.0"
+  api-baseline: "1.9.1"
 ---
 
 # Fast Forward Container
@@ -16,7 +16,7 @@ Implement the application's composition root, preserving its existing configurat
 
 1. Read project instructions, `composer.json`, `composer.lock`, bootstrap and relevant providers/configuration. Inspect config files as code before executing them; PHP config may execute arbitrary code. Do not print credentials or unrelated values.
 2. Confirm installed versions with `composer show fast-forward/container` and `composer show fast-forward/config`. If dependencies are absent, the lockfile establishes the intended version; install only within task authority. Do not update dependencies just to match this skill.
-3. Confirm whether the consumer has released **1.9.0** or the later corrections planned for **1.9.1**. The release is pending; a newer skill copy does not install those corrections. Main now requires Config `^1.6` and PSR Container `^1.1 || ^2.0`; 1.9.0 admits older incompatible combinations. Optional delegates, native optional-before-default resolution and non-constructing `has()` are already 1.9.0 behavior. Load [versions and failures](references/versions-and-errors.md) for dependency checks and version-sensitive factory, extension, identifier or cycle behavior.
+3. Use published **1.9.1** as this skill's API baseline and confirm the consumer's installed revision. It requires Config `^1.6` and PSR Container `^1.1 || ^2.0`; 1.9.0 admits older incompatible combinations and lacks the later provider corrections. Optional delegates, native optional-before-default resolution and non-constructing `has()` already work on 1.9.0. Copying the skill does not upgrade dependencies. Load [versions and failures](references/versions-and-errors.md) when maintaining older installs or checking factory, extension, identifier or cycle behavior.
 4. Locate the composition root. Keep container lookups in bootstrap/factories; application services receive specific collaborators rather than a container.
 
 ## Choose an entry point
@@ -112,13 +112,13 @@ It must print `configuration: ok`; mismatches throw regardless of PHP's `assert(
 
 - Separate sources are tried in order: `container($testOverrides, $config, $defaults)`. The first successful source wins. Explicit entries precede native autowiring, including nested and optional dependencies. Later sources may recover from PSR-11 errors thrown by a source's `get()` after its `has()` succeeds. Errors from `has()`, including provider metadata failures, stop the lookup immediately.
 - `AggregateServiceProvider($base, $overrides)` merges factories: **later duplicate factory keys win**. Duplicate extensions compose in provider order. This differs from first-source precedence.
-- Numeric string IDs remain opaque through provider merges in the pending 1.9.1 corrections. On 1.9.0, numeric keys can be renumbered; use descriptive IDs or separate sources there.
+- Numeric string IDs remain opaque through provider merges on 1.9.1+. On 1.9.0, numeric keys can be renumbered; use descriptive IDs or separate sources there.
 - Interfaces and required scalars need explicit registration/factories. Bind the containing service for scalar arguments. `?Type $value` without a default remains required.
 - Optional named objects try explicit entries and concrete autowiring before their defaults. Missing/uninferable graphs may use the default. Constructor/factory/type/autoload/default-expression failures and cycles propagate when no later source succeeds. Do not blanket-catch failures and silently substitute null.
 - `has()` identifies known entries, not successful construction. Check `get()` and PSR-11 exceptions for construction health. External sources retain their own `has()` and internal resolution behavior.
 - Successful resolutions are cached, including provider values such as null. Builder changes affect future builds only. Existing external containers, captured singleton objects and `ServiceFactory` values may remain shared across new compositions. Do not assume request/tenant isolation from a fresh wrapper.
 
-Load [composition and factories](references/composition.md) for aliases, extensions, factory selection, external-container boundaries and test overrides. Run `examples/composition.php` for the 1.9.0-compatible route; `examples/provider-resolution.php` additionally checks the pending provider corrections and must use a checkout/release containing them. For standalone/delegated graphs and optional failure cases use `examples/autowiring.php` with [versions and failures](references/versions-and-errors.md).
+Load [composition and factories](references/composition.md) for aliases, extensions, factory selection, external-container boundaries and test overrides. Run `examples/composition.php` and `examples/provider-resolution.php` against 1.9.1+; the latter covers provider corrections absent from 1.9.0. For standalone/delegated graphs and optional failure cases use `examples/autowiring.php` with [versions and failures](references/versions-and-errors.md). The configuration, composition and autowiring programs also support 1.9.0 with compatible dependencies.
 
 ## Finish with observable checks
 

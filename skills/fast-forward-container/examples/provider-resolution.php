@@ -22,7 +22,7 @@ require __DIR__ . '/Fixtures/Composition/LabelContract.php';
 require __DIR__ . '/Fixtures/Composition/Label.php';
 require __DIR__ . '/Fixtures/Composition/LabelFactory.php';
 
-// Requires the corrections merged after 1.9.0 and planned for 1.9.1.
+// Requires fast-forward/container 1.9.1 or later.
 $numeric = new ServiceProviderContainer(new AggregateServiceProvider(
     new ArrayServiceProvider([
         '42' => static fn(): string => 'base',

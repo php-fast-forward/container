@@ -47,7 +47,7 @@ Nested class-string providers need no-argument constructors; pass objects when a
 
 ## Optional list expansion is different from service resolution
 
-The 1.9.0 builder catches errors reading/adapting the optional nested-initializer list. Expansion stops for that config; already appended sources remain and later explicit initializers still run. A malformed entry can hide subsequent nested entries. Validate the list and resolve representative services. Pass essential initializers explicitly when adaptation errors must fail visibly.
+The builder in 1.9.0 and 1.9.1 catches errors reading/adapting the optional nested-initializer list. Expansion stops for that config; already appended sources remain and later explicit initializers still run. A malformed entry can hide subsequent nested entries. Validate the list and resolve representative services. Pass essential initializers explicitly when adaptation errors must fail visibly.
 
 This composition-time policy does not suppress constructor/factory failures while resolving optional object dependencies.
 
