@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace FastForward\Container\Tests\Autowire;
 
 use Countable;
+use Error;
 use RuntimeException;
 use stdClass;
 use FastForward\Container\AggregateContainer;
@@ -265,7 +266,63 @@ final class ReflectionContainerTest extends TestCase
             $container->get(OptionalInterface::class);
             self::fail('A factory failure must escape optional fallback.');
         } catch (ContainerException $containerException) {
-            self::assertSame('factory failed', $containerException->getPrevious()->getMessage());
+            $previous = $containerException->getPrevious();
+
+            self::assertInstanceOf(RuntimeException::class, $previous);
+            self::assertSame('factory failed', $previous->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function unavailableDefaultConstantIsWrappedWithoutPoisoningRetries(): void
+    {
+        $container = $this->container();
+
+        for ($attempt = 0; $attempt < 2; ++$attempt) {
+            try {
+                $container->get(UndefinedDefaultConstant::class);
+                self::fail('Default evaluation errors must implement the container exception contract.');
+            } catch (ContainerException $containerException) {
+                $previous = $containerException->getPrevious();
+
+                self::assertInstanceOf(Error::class, $previous);
+                self::assertStringContainsString('UNAVAILABLE_AUTOWIRE_DEFAULT', $previous->getMessage());
+            }
+        }
+
+        self::assertInstanceOf(NativeDependency::class, $container->get(NativeDependency::class));
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function unavailableDefaultConstantDoesNotTriggerAnOptionalFallback(): void
+    {
+        $this->expectException(ContainerException::class);
+
+        $this->container()
+            ->get(OptionalUndefinedDefaultConstant::class);
+    }
+
+    /**
+     * @return void
+     */
+    #[Test]
+    public function failureWhileConstructingADefaultValuePreservesItsCause(): void
+    {
+        try {
+            $this->container()
+                ->get(ThrowingDefaultValue::class);
+            self::fail('A default object construction failure must be wrapped.');
+        } catch (ContainerException $containerException) {
+            $previous = $containerException->getPrevious();
+
+            self::assertInstanceOf(RuntimeException::class, $previous);
+            self::assertSame('constructor failed', $previous->getMessage());
         }
     }
 
@@ -565,6 +622,36 @@ final readonly class OptionalThrowing
      */
     public function __construct(
         public ?ThrowingConstruction $dependency = null
+    ) {}
+}
+
+final readonly class UndefinedDefaultConstant
+{
+    /**
+     * @param string $mode
+     */
+    public function __construct(
+        public string $mode = UNAVAILABLE_AUTOWIRE_DEFAULT
+    ) {}
+}
+
+final readonly class OptionalUndefinedDefaultConstant
+{
+    /**
+     * @param UndefinedDefaultConstant|null $dependency
+     */
+    public function __construct(
+        public ?UndefinedDefaultConstant $dependency = null
+    ) {}
+}
+
+final readonly class ThrowingDefaultValue
+{
+    /**
+     * @param mixed $dependency
+     */
+    public function __construct(
+        public mixed $dependency = new ThrowingConstruction()
     ) {}
 }
 

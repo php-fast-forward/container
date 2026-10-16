@@ -132,6 +132,7 @@ final class ReflectionContainer implements ContainerInterface
      * @return mixed the dependency or declared default
      *
      * @throws AutowiringException if no dependency or default can be supplied
+     * @throws ContainerException if evaluating a declared default fails
      */
     private function resolveParameter(ReflectionParameter $parameter, ReflectionClass $declaringClass): mixed
     {
@@ -155,7 +156,11 @@ final class ReflectionContainer implements ContainerInterface
         }
 
         if ($parameter->isDefaultValueAvailable()) {
-            return $parameter->getDefaultValue();
+            try {
+                return $parameter->getDefaultValue();
+            } catch (Throwable $throwable) {
+                throw ContainerException::forInvalidService($declaringClass->getName(), $throwable);
+            }
         }
 
         throw new AutowiringException(\sprintf(
