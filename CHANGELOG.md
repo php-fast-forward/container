@@ -8,6 +8,12 @@ and version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 Historical entries were backfilled from tagged diffs and GitHub release notes.
 Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
+## [Unreleased]
+
+### Fixed
+
+- Preserve numeric-looking service identifiers when aggregating provider factories, retaining later-provider precedence and matching factory/extension keys.
+
 ## [1.9.0] - 2026-10-16
 
 ### Added
