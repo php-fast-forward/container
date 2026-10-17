@@ -10,10 +10,14 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-10-16
+
 ### Added
 
 - A portable `fast-forward-container` agent skill with configuration, composition and autowiring examples, version-aware guidance, and documented project/global installation options.
 - Optional `llm/skills` discovery metadata and Composer suggestion for automatic project synchronization, with documented update and removal limits. The skill is bundled under `resources/skills`.
+
+Delivered through [PR #28](https://github.com/php-fast-forward/container/pull/28), addressing [issue #19](https://github.com/php-fast-forward/container/issues/19).
 
 ## [1.9.1] - 2026-10-16
 
@@ -189,7 +193,8 @@ Delivered through [PR #18](https://github.com/php-fast-forward/container/pull/18
 - Configuration-backed composition and PHP-DI autowiring through `container()` and the original invokable `Factory\ContainerFactory`.
 - Unit tests, Composer autoloading and the MIT license.
 
-[Unreleased]: https://github.com/php-fast-forward/container/compare/v1.9.1...HEAD
+[Unreleased]: https://github.com/php-fast-forward/container/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/php-fast-forward/container/compare/v1.9.1...v1.10.0
 [1.9.1]: https://github.com/php-fast-forward/container/compare/v1.9.0...v1.9.1
 [1.9.0]: https://github.com/php-fast-forward/container/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/php-fast-forward/container/compare/v1.7.1...v1.8.0
