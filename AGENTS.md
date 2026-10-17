@@ -27,7 +27,8 @@ and [error reporting](docs/advanced/error-reporting.rst) before changing these p
 ## Bundled consumer skill
 
 Read [fast-forward-container](resources/skills/fast-forward-container/SKILL.md)
-when writing usage examples, application integrations or consumer-facing guidance.
+when writing usage examples, application integrations, consumer-facing guidance
+or the bundled skill itself.
 It defines the supported library versions, configuration patterns, entry points,
 precedence, factories and autowiring contracts. Follow this contributor document
 for library implementation and maintenance work.

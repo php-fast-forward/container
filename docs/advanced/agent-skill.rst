@@ -64,30 +64,35 @@ the consumer project. It is suggested, not required: installing this library
 does not install or authorize the plugin. The configuration below uses
 ``llm/skills ^1.15``.
 
-Before installing the plugin, create ``skills.json`` at the application root so
-your choices apply to its first automatic sync:
+Before installing or enabling the plugin, prepare ``skills.json`` at the
+application root so your choices apply to its first automatic sync. For an
+existing file, merge the fields below while preserving unrelated settings and
+intentional aliases; do not replace the whole configuration with this example:
 
 .. code-block:: json
 
    {
      "target": ".agents/skills",
+     "aliases": [],
      "discovery": false,
      "auto-sync": true,
      "vendor-sources": false,
      "dependencies": {
        "composer": {
-         "trusted": ["fast-forward/*"],
+         "trusted": ["fast-forward/container"],
          "trusted-replace": true
        }
      }
    }
 
-This enables declared skills from Fast Forward packages, including transitive
-ones, without adding the tool's built-in or direct-dependency trust defaults.
-Use ``fast-forward/container`` instead of ``fast-forward/*`` for a single-package
-allowlist. ``vendor-sources: false`` disables remote skill sources advertised by
-dependencies. Choose ``.claude/skills`` as the target for a Claude Code-only
-project; the destination belongs to the application, not the library.
+This selects only this library's declared skill without adding the tool's
+built-in or direct-dependency trust defaults. A team deliberately trusting all
+Fast Forward donor packages may choose ``fast-forward/*`` instead.
+``vendor-sources: false`` disables remote skill sources advertised by dependencies.
+``aliases: []`` makes the default without extra host links explicit; preserve any
+intentional aliases already configured in the project. Choose ``.claude/skills``
+as the target for a Claude Code-only project; the destination belongs to the
+application, not the library.
 
 Then install the tool as a development dependency:
 
@@ -201,13 +206,19 @@ the same ``skill_target``:
 .. code-block:: sh
 
    skill_backup="$HOME/.agent-skill-backups/fast-forward-container-$(date +%Y%m%d%H%M%S)-$$"
+   test -d "$skill_target" &&
+   test ! -L "$skill_target" &&
    test ! -e "$skill_backup" &&
+   test ! -L "$skill_backup" &&
    mkdir -p "$(dirname "$skill_backup")" &&
    mv "$skill_target" "$skill_backup"
 
-Moving it out also removes a manually installed copy from discovery. Refresh the
-agent session. To roll back, archive any replacement first and move the saved
-directory back to its original destination. Keep ``LICENSE`` and all references
+The command requires a real skill directory and refuses an existing backup,
+including a dangling symlink. Record the backup path before installing a
+replacement. Moving it out also removes a manually installed copy from discovery.
+Refresh the agent session. To roll back, archive any replacement to a different
+backup path first and move the saved directory back to its original destination.
+Keep ``LICENSE`` and all references
 with the package; do not archive old copies inside ``.agents/skills`` or
 ``.claude/skills``, where they may remain discoverable.
 
