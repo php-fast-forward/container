@@ -45,12 +45,6 @@ Reuse the application's existing classes and Composer autoloader. Keep each clas
 }
 ```
 
-Regenerate the application's autoloader:
-
-```sh
-composer dump-autoload
-```
-
 `src/GreetingInterface.php`:
 
 ```php
@@ -106,6 +100,12 @@ $config = new ArrayConfig([
 ]);
 
 return container($config);
+```
+
+After creating these files, regenerate the application's autoloader:
+
+```sh
+composer dump-autoload
 ```
 
 Verify from the project root:
