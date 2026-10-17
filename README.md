@@ -121,6 +121,15 @@ builds only. Supplied source objects are reused, so independent composition
 caches do not imply cloning external containers or their services.
 `ContainerFactory::create()` delegates to this same builder implementation.
 
+## Agent skill
+
+The bundled [fast-forward-container skill](resources/skills/fast-forward-container/SKILL.md)
+guides agents through configuration, providers, factories, overrides and autowiring
+for `fast-forward/container ^1.10`. Earlier versions are outside its supported API contract.
+See the [installation guide](docs/advanced/agent-skill.rst) for optional automatic
+project installation with `llm/skills`, project/global copies, pinned Skills CLI
+commands, updates and removal.
+
 ## 📄 License
 
 This package is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.

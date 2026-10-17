@@ -24,6 +24,21 @@ before defaults; construction failures and cycles remain errors when resolution
 exhausts its alternatives. Consult [the autowiring guide](docs/advanced/autowire.rst)
 and [error reporting](docs/advanced/error-reporting.rst) before changing these paths.
 
+## Bundled consumer skill
+
+Read [fast-forward-container](resources/skills/fast-forward-container/SKILL.md)
+when writing usage examples, application integrations, consumer-facing guidance
+or the bundled skill itself.
+It defines the supported library versions, configuration patterns, entry points,
+precedence, factories and autowiring contracts. Follow this contributor document
+for library implementation and maintenance work.
+
+Keep the skill, its bundled references and executable examples aligned with the
+public API. Write instructions for the supported publication contract, without
+temporary PR status or development history. Keep the complete package under
+`resources/skills/fast-forward-container/`; document installation and copy lifecycle
+in [the installation guide](docs/advanced/agent-skill.rst).
+
 ## Setup and tooling
 
 Use Composer 2. Runtime PHP compatibility is declared in [composer.json](composer.json)

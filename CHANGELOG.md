@@ -10,6 +10,11 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
 ## [Unreleased]
 
+### Added
+
+- A portable `fast-forward-container` agent skill with configuration, composition and autowiring examples, version-aware guidance, and documented project/global installation options.
+- Optional `llm/skills` discovery metadata and Composer suggestion for automatic project synchronization, with documented update and removal limits. The skill is bundled under `resources/skills`.
+
 ## [1.9.1] - 2026-10-16
 
 ### Changed
