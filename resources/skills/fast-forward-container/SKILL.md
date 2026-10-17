@@ -33,7 +33,7 @@ Helper, factory and builder accept `ConfigInterface`, PSR-11 containers, interop
 
 ## Ordinary configuration-backed setup
 
-Reuse the application's existing classes and Composer autoloader. Keep each class or interface in its own file with the matching name. This example uses `App\\` mapped to `src/`. If that mapping is absent, merge it into the application's `composer.json`, preserving other autoload settings:
+Reuse the application's existing classes and Composer autoloader. Keep each class or interface in its own file with the matching name. This example uses `App\\` mapped to `src/`; adapt the namespace and file paths to existing application mappings. If the project does not already map `App\\`, merge the following into its `composer.json`, preserving other autoload settings:
 
 ```json
 {
