@@ -80,6 +80,9 @@ for it. Read the selected release's policy documentation before using exceptions
 The workflow does not merge version PRs and has `publish: false`. Publishing tags,
 creating Releases, changing existing Release bodies and enabling future automatic
 publication each require explicit authorization. Recheck the exact approved SHA,
-reviews and gates before acting. The initial historical body differences and
-the gated reconciliation procedure are recorded in
-[the adoption audit](maintenance/changelog-reconciliation.md).
+reviews and gates before acting. For historical Release reconciliation, extract
+each version's notes from the integrated SHA using the official `notes` command,
+verify the existing tag/Release identity, update only the authorized body and
+re-read it to confirm byte equality. Preserve targets, flags, assets and original
+publication timestamps. Adoption evidence remains in
+[PR #38](https://github.com/php-fast-forward/container/pull/38).
