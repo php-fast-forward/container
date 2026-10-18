@@ -10,6 +10,10 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
 ## [1.10.1] - 2026-10-18
 
+### Added
+
+- Includes the release-owned Fast Forward Changelog project skill with integrity receipts and contributor guidance for installation, verification and deliberate updates. ([#40](https://github.com/php-fast-forward/container/pull/40))
+
 ### Changed
 
 - Uses independent changelog fragments and automated version PRs, with verified PR references and normalized historical release notes. Tag and GitHub Release publication remains disabled pending explicit approval. ([#38](https://github.com/php-fast-forward/container/pull/38))
