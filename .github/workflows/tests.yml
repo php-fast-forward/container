@@ -10,7 +10,85 @@ permissions:
   statuses: write
 
 jobs:
+  php-changes:
+    name: Detect PHP Changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select the PHP test scope
+        id: diff
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          # An explicit manual run always exercises the full suite.
+          if [ "$EVENT_NAME" = workflow_dispatch ]; then
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Feature branches retain their complete PHP diff against main,
+          # so a later docs-only push cannot hide an earlier untested PHP change.
+          if [ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]; then
+            if ! base=$(git merge-base "origin/$DEFAULT_BRANCH" "$GITHUB_SHA"); then
+              echo 'changed=true' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          elif [ "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ] &&
+               git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            base=$BEFORE_SHA
+          else
+            # Missing comparison evidence must run tests, never authorize a skip.
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Include additions, deletions and both sides of a rename at any depth.
+          if git diff --quiet --no-renames "$base" "$GITHUB_SHA" -- '*.php'; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          else
+            result=$?
+            if [ "$result" -ne 1 ]; then
+              exit "$result"
+            fi
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          fi
+
+  no-php:
+    name: No PHP Changes
+    needs: php-changes
+    if: needs.php-changes.outputs.changed == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - name: Report why the test suites are unnecessary
+        run: echo 'No PHP files changed; PHPUnit and production consumers are not required.'
+      # Dependabot uses the existing trusted workflow_run publisher below.
+      - name: Complete required test statuses without running tests
+        if: github.actor != 'dependabot[bot]'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for version in 8.3 8.4 8.5; do
+            gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+              -f state=success \
+              -f "context=Run Tests ($version)" \
+              -f 'description=Not required: no PHP files changed.' \
+              -f "target_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          done
+
   tests:
+    needs: php-changes
+    if: needs.php-changes.outputs.changed == 'true'
     uses: php-fast-forward/dev-tools/.github/workflows/tests.yml@main
     with:
       publish-required-statuses: ${{ github.actor != 'dependabot[bot]' }}
@@ -18,6 +96,8 @@ jobs:
 
   production-consumer:
     name: Production consumer (${{ matrix.php-version }}, ${{ matrix.dependencies }})
+    needs: php-changes
+    if: needs.php-changes.outputs.changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
