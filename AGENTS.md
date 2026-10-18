@@ -119,6 +119,8 @@ Check [.gitattributes](.gitattributes) when changing files shipped in Composer a
 Record user-visible changes in one independent `.changelog/*.md` fragment using
 the schema and commands in [the changelog guide](docs/changelog.md). Preserve
 inherited fragments and published history in [CHANGELOG.md](CHANGELOG.md).
+Read the installed [Fast Forward Changelog skill](.agents/skills/fast-forward-changelog/SKILL.md)
+before changelog contribution, version-review or maintenance work.
 Do not add an `Unreleased` section or require a follow-up fragment edit for a PR
 number: version preparation resolves verified delivery PRs automatically.
 The Changelog workflow prepares a reviewable version PR; publication stays
