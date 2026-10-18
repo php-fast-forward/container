@@ -144,6 +144,32 @@ its new publication timestamp must never be represented as historical evidence.
 
 ## Validation and limits
 
+Executed successfully with the verified v0.2.0 runtime:
+
+- `composer validate --strict --no-check-lock`.
+- `actionlint .github/workflows/changelog.yml`.
+- `check`, `format --check`, `backfill --check`, `status --json` and
+  `version --dry-run`, using `source=tags` and automatic PR resolution for
+  planning/consolidation. Format and backfill are no-ops.
+- The complete next consolidation in a disposable clone with the canonical
+  GitHub origin: 1.10.0 → 1.10.1, consuming only the intended fragment. Assertions
+  confirmed one new comparison definition before the older links, no duplicates,
+  no Unreleased, exact retained introduction/history/dates/footer bytes, and no
+  invented PR for the still-unmerged contribution.
+- A disposable read-only fixture plan retains a proven explicit #28 as a
+  clickable inline PR link and leaves the unknown migration PR absent. Applying
+  that extra uncommitted fixture is correctly refused; no fake evidence was made.
+- All 16 official `notes` extractions match the proposed body hashes; standalone
+  links resolve without importing the central footer or any other version.
+
+The ordinary comparison check correctly rejects the central-history edit until
+the exact PR receives the legitimate, API-verified human maintenance grant.
+No check was disabled or bypassed. The installed `actionlint` rejects the existing
+`queue: max` in the untouched Wiki workflow when linting all workflows; the new
+caller passes separately. No runtime PHP or dependency change was made, so the
+full existing application suite remains a remote PR validation rather than a
+new local toolchain installation.
+
 The consumer checks cover the actual manual-history migration, empty legacy
 pending section, 16 matching tag identities/dates, correct existing links,
 unknown direct-commit PRs, known delivery PRs, isolated notes, and divergent
