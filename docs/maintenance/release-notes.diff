@@ -1,0 +1,363 @@
+--- github/v1.10.0/body
++++ canonical/v1.10.0/body
+@@ -1,6 +1,7 @@
++
+ ### Added
+ 
+-- A portable `fast-forward-container` agent skill with configuration, composition and autowiring examples, version-aware guidance, and documented project/global installation options.
+-- Optional `llm/skills` discovery metadata and Composer suggestion for automatic project synchronization, with documented update and removal limits. The skill is bundled under `resources/skills`.
++- Repository contributor instructions covering public behavior, development checks and publication boundaries. ([#36](https://github.com/php-fast-forward/container/pull/36))
++- A portable `fast-forward-container` agent skill with configuration, composition and autowiring examples, version-aware guidance, and documented project/global installation options. ([#28](https://github.com/php-fast-forward/container/pull/28))
++- Optional `llm/skills` discovery metadata and Composer suggestion for automatic project synchronization, with documented update and removal limits. The skill is bundled under `resources/skills`. ([#28](https://github.com/php-fast-forward/container/pull/28))
+ 
+-Delivered through [PR #28](https://github.com/php-fast-forward/container/pull/28), addressing [issue #19](https://github.com/php-fast-forward/container/issues/19).
+
+--- github/v1.9.1/body
++++ canonical/v1.9.1/body
+@@ -1,15 +1,15 @@
++
+ ### Changed
+ 
+-- Require FastForward Config 1.6 or newer within 1.x, using its native configuration storage and removing the transitive `dflydev/dot-access-data` dependency.
+-- `MethodFactory` directly constructs a class-name target only when `has()` reports it absent. Existing target construction and execution failures, including nested not-found errors, now propagate instead of silently using an unconfigured replacement.
++- Require FastForward Config 1.6 or newer within 1.x, using its native configuration storage and removing the transitive `dflydev/dot-access-data` dependency. ([#29](https://github.com/php-fast-forward/container/pull/29))
++- `MethodFactory` directly constructs a class-name target only when `has()` reports it absent. Existing target construction and execution failures, including nested not-found errors, now propagate instead of silently using an unconfigured replacement. ([#33](https://github.com/php-fast-forward/container/pull/33))
+ 
+ ### Fixed
+ 
+-- Detect circular provider factory, alias and extension resolution with an actionable path per execution context, preserving ordered fallback, shared caches and retry cleanup after failures. Keep concurrent Fiber paths independent from each other and from the main context.
+-- Resolve `MethodFactory` service-ID targets before reflecting their instance methods, preserving configured constructor dependencies and method visibility checks.
+-- Correct typed callable factory examples, Slim 4 application creation and JSON responses, and Laravel 12 factory binding adapters. Explain framework requirements, binding lifetimes and provider extension boundaries.
+-- Reject incompatible dependency combinations by requiring PSR Container 1.1 or 2.x and a compatible FastForward Config version, with production consumer checks for the minimum and current versions.
+-- Preserve numeric-looking service identifiers when aggregating provider factories, retaining later-provider precedence and matching factory/extension keys.
+-- Apply concrete-class extensions to distinct services independently of lookup order, reusing each object's completed extension result for aliases and wrapper-backed lookups, including replacement objects, scalars and null.
++- Detect circular provider factory, alias and extension resolution with an actionable path per execution context, preserving ordered fallback, shared caches and retry cleanup after failures. Keep concurrent Fiber paths independent from each other and from the main context. ([#34](https://github.com/php-fast-forward/container/pull/34))
++- Resolve `MethodFactory` service-ID targets before reflecting their instance methods, preserving configured constructor dependencies and method visibility checks. ([#33](https://github.com/php-fast-forward/container/pull/33))
++- Correct typed callable factory examples, Slim 4 application creation and JSON responses, and Laravel 12 factory binding adapters. Explain framework requirements, binding lifetimes and provider extension boundaries. ([#30](https://github.com/php-fast-forward/container/pull/30))
++- Reject incompatible dependency combinations by requiring PSR Container 1.1 or 2.x and a compatible FastForward Config version, with production consumer checks for the minimum and current versions. ([#29](https://github.com/php-fast-forward/container/pull/29))
++- Preserve numeric-looking service identifiers when aggregating provider factories, retaining later-provider precedence and matching factory/extension keys. ([#31](https://github.com/php-fast-forward/container/pull/31))
++- Apply concrete-class extensions to distinct services independently of lookup order, reusing each object's completed extension result for aliases and wrapper-backed lookups, including replacement objects, scalars and null. ([#32](https://github.com/php-fast-forward/container/pull/32))
+ 
+-Delivered through [PR #29](https://github.com/php-fast-forward/container/pull/29), [PR #30](https://github.com/php-fast-forward/container/pull/30), [PR #31](https://github.com/php-fast-forward/container/pull/31), [PR #32](https://github.com/php-fast-forward/container/pull/32), [PR #33](https://github.com/php-fast-forward/container/pull/33) and [PR #34](https://github.com/php-fast-forward/container/pull/34).
+
+--- github/v1.9.0/body
++++ canonical/v1.9.0/body
+@@ -1,32 +1,25 @@
+-Fast Forward Container v1.9.0 replaces its internal PHP-DI engine with native constructor autowiring.
+ 
+ ### Added
+ 
+-- Native constructor autowiring with recursive dependency resolution, shared instances, cycle diagnostics and cleanup after failed construction.
+-- Standalone autowiring through `new AutowireContainer()`, with an optional nullable PSR-11 delegate whose entries take precedence over autowiring.
+-- Support for constructor parameters passed by reference and optional internal arguments whose default values are unavailable through reflection.
+-- Named exception factories for circular dependency paths and unresolvable constructor parameters.
+-- A versioned changelog, including the release history from `1.0.0` through `1.8.0`.
++- Native constructor autowiring with recursive dependency resolution, shared instances, cycle diagnostics and cleanup after failed construction. ([#18](https://github.com/php-fast-forward/container/pull/18))
++- Standalone autowiring through `new AutowireContainer()`, with an optional nullable PSR-11 delegate whose entries take precedence over autowiring. ([#18](https://github.com/php-fast-forward/container/pull/18))
++- Support for constructor parameters passed by reference and optional internal arguments whose default values are unavailable through reflection. ([#18](https://github.com/php-fast-forward/container/pull/18))
++- Named exception factories for circular dependency paths and unresolvable constructor parameters. ([#18](https://github.com/php-fast-forward/container/pull/18))
++- A versioned changelog, including the release history from `1.0.0` through `1.8.0`. ([#18](https://github.com/php-fast-forward/container/pull/18))
+ 
+ ### Changed
+ 
+-- Optional named object dependencies resolve explicit container entries or autowire concrete classes before using their declared defaults, including non-null defaults.
+-- Missing entries and structurally unavailable dependency graphs use an optional argument's default. Autoloader, constructor, factory, type, cycle and default-expression failures remain errors with their original causes preserved.
+-- Aggregate lookups still try later sources after delegated failures, but preserve the first construction exception when no source succeeds instead of reporting a fresh not-found exception.
+-- `AutowireContainer::has()` checks whether an entry is known without calling `get()`. Known classes or entries may return `true` even when construction fails; unknown entries return `false` and `get()` throws `NotFoundExceptionInterface`, following PSR-11. Applications that used `has()` as a construction health check must call `get()` and handle resolution errors instead.
+-- The public `AutowireContainer`, `ContainerBuilder`, `ContainerFactory` and `container()` APIs remain available. PHP `^8.3` remains the minimum requirement.
+-- Optional dependencies may now execute constructors that were previously skipped. A nullable argument without a default remains required.
+-- Applications that use PHP-DI directly must declare their own dependency. External PHP-DI containers remain usable as PSR-11 sources.
+-- Scalars, ambiguous union/intersection/DNF types and variadic collections require defaults or explicit service factories. See the [autowiring guide](https://github.com/php-fast-forward/container/blob/v1.9.0/docs/advanced/autowire.rst) for the complete contract.
++- Optional named object dependencies resolve explicit container entries or autowire concrete classes before using their declared defaults, including non-null defaults. ([#18](https://github.com/php-fast-forward/container/pull/18))
++- Missing entries and structurally unavailable dependency graphs use an optional argument's default. Autoloader, constructor, factory, type, cycle and default-expression failures remain errors with their original causes preserved. ([#18](https://github.com/php-fast-forward/container/pull/18))
++- Aggregate lookups still try later sources after delegated failures, but preserve the first construction exception when no source succeeds instead of reporting a fresh not-found exception. ([#18](https://github.com/php-fast-forward/container/pull/18))
++- `AutowireContainer::has()` checks whether an entry is known without calling `get()`. Known classes or entries may return `true` even when construction fails; unknown entries return `false` and `get()` throws `NotFoundExceptionInterface`, following PSR-11. Applications that used `has()` as a construction health check must call `get()` and handle resolution errors instead. ([#18](https://github.com/php-fast-forward/container/pull/18))
++
++- The public `AutowireContainer`, `ContainerBuilder`, `ContainerFactory` and `container()` APIs remain available. PHP `^8.3` remains the minimum requirement. ([#18](https://github.com/php-fast-forward/container/pull/18))
++- Optional dependencies may now execute constructors that were previously skipped. A nullable argument without a default remains required. ([#18](https://github.com/php-fast-forward/container/pull/18))
++- Applications that use PHP-DI directly must declare their own dependency. External PHP-DI containers remain usable as PSR-11 sources. ([#18](https://github.com/php-fast-forward/container/pull/18))
++- Scalars, ambiguous union/intersection/DNF types and variadic collections require defaults or explicit service factories. See the [autowiring guide](https://github.com/php-fast-forward/container/blob/v1.9.0/docs/advanced/autowire.rst) for the complete contract. ([#18](https://github.com/php-fast-forward/container/pull/18))
+ 
+ ### Removed
+ 
+-- The runtime `php-di/php-di` dependency and the internal PHP-DI autowiring engine.
++- The runtime `php-di/php-di` dependency and the internal PHP-DI autowiring engine. ([#18](https://github.com/php-fast-forward/container/pull/18))
+ 
+-Delivered through [PR #18](https://github.com/php-fast-forward/container/pull/18), addressing [issue #17](https://github.com/php-fast-forward/container/issues/17).
+-
+-Validation: 166 tests, 405 assertions and 99.26% line coverage; PHP 8.3, 8.4 and 8.5 CI. The published Packagist distribution was installed and exercised without PHP-DI or development tooling, including standalone/delegated autowiring and error propagation for optional dependencies.
+-
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
+-
+-**Full changelog:** [v1.8.0...v1.9.0](https://github.com/php-fast-forward/container/compare/v1.8.0...v1.9.0)
+
+--- github/v1.8.0/body
++++ canonical/v1.8.0/body
+@@ -1,27 +1,12 @@
+-Fast Forward Container v1.8.0 adds an incremental construction API through `ContainerBuilder`.
+ 
+-```php
+-use FastForward\Container\ContainerBuilder;
++### Added
+ 
+-$builder = (new ContainerBuilder())->add($config, $baseProvider);
+-if ($featureEnabled) {
+-    $builder->add($featureProvider);
+-}
+-$container = $builder->build();
+-```
++- Incremental container composition through fluent `ContainerBuilder::add()` and independent `build()` calls. ([#16](https://github.com/php-fast-forward/container/pull/16))
++- Documentation and a runnable example for conditional registration across multiple setup stages. ([#16](https://github.com/php-fast-forward/container/pull/16))
++- Fluent `add(...$initializers)` accepts the same configuration objects, PSR-11 containers, service providers and class strings as `ContainerFactory::create()`. ([#16](https://github.com/php-fast-forward/container/pull/16))
+ 
+-- `add(...$initializers)` is fluent and accepts the same configuration objects, PSR-11 containers, service providers, and class strings as `ContainerFactory::create()`.
+-- Each `build()` creates fresh aggregate, provider/config adapters, and autowiring state. Later registrations affect future builds only.
+-- Supplied source objects are reused, including external containers and their own state. Class-string initializers are instantiated anew during each build.
+-- `ContainerFactory::create()` delegates to the Builder, preserving a single assembly implementation. `container()` continues delegating to the Factory.
+-- Source precedence, cross-source dependencies, lazy service resolution, optional nested configuration handling, and existing lifetime semantics are preserved.
+-- PHPDoc, API/onboarding guides, README, and a runnable conditional-registration example document the new API.
++### Changed
+ 
+-The PHP requirement remains `^8.3`. Validation includes 117 tests, 285 assertions, 100% line coverage, and CI on PHP 8.3, 8.4, and 8.5.
++- `ContainerFactory::create()` delegates to the builder, retaining one implementation of container assembly and preserving initializer order, source reuse and existing lifetimes. ([#16](https://github.com/php-fast-forward/container/pull/16))
++- Each `build()` creates fresh aggregate, provider/config adapters and autowiring state. Later registrations affect future builds only; supplied source objects are reused and class-string initializers are instantiated anew for each build. Cross-source dependencies, lazy resolution and optional nested configuration handling are preserved. ([#16](https://github.com/php-fast-forward/container/pull/16))
+ 
+-Resolves [#13](https://github.com/php-fast-forward/container/issues/13) through [#16](https://github.com/php-fast-forward/container/pull/16). Transient lifetime design remains separate in [#6](https://github.com/php-fast-forward/container/issues/6).
+-
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
+-
+-**Full changelog:** [v1.7.1...v1.8.0](https://github.com/php-fast-forward/container/compare/v1.7.1...v1.8.0)
+-
+
+--- github/v1.7.1/body
++++ canonical/v1.7.1/body
+@@ -1,13 +1,10 @@
+-Fast Forward Container v1.7.1 restores API documentation publication to the GitHub Wiki.
+ 
+-- Generate documentation with the shared dev-tools PHP/Composer actions and publish directly from `main`.
+-- Remove the obsolete Wiki submodule pointer while preserving the Wiki repository and its history.
+-- Keep the Wiki renderer's source and Composer metadata on the same pinned revision.
+-- Allow the GrumPHP shim required by current dev-tools.
++### Removed
+ 
+-The container API and PHP requirement remain unchanged. This maintenance release addresses [#14](https://github.com/php-fast-forward/container/issues/14) through [#15](https://github.com/php-fast-forward/container/pull/15).
++- The obsolete Wiki submodule pointer; the Wiki repository and its history remain separate. ([#15](https://github.com/php-fast-forward/container/pull/15))
+ 
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
++### Fixed
+ 
+-**Full changelog:** [v1.7.0...v1.7.1](https://github.com/php-fast-forward/container/compare/v1.7.0...v1.7.1)
++- GitHub Wiki generation and direct publication using the shared PHP/Composer tooling and a consistently pinned renderer. ([#15](https://github.com/php-fast-forward/container/pull/15))
++- Compatibility with the GrumPHP shim required by the development tooling. ([#15](https://github.com/php-fast-forward/container/pull/15))
+ 
+
+--- github/v1.7.0/body
++++ canonical/v1.7.0/body
+@@ -1,30 +1,24 @@
+-FastForward Container v1.7.0 adds static container composition and corrects service-provider extension resolution.
+ 
+-## Container composition
++### Added
+ 
+-Use `ContainerFactory::create(...$initializers)` as an alternative to `container(...)`. The helper delegates to the same implementation. Each call creates a fresh aggregate, provider adapters, and autowiring container, while supplied PSR-11 container objects are reused.
++- Static composition through `ContainerFactory::create()`, sharing its assembly path with `container()`. ([#12](https://github.com/php-fast-forward/container/pull/12))
++- Runnable provider/factory examples and expanded API, onboarding and integration documentation. ([#12](https://github.com/php-fast-forward/container/pull/12))
+ 
+-Unknown initializer class names and constructed objects that implement none of the supported initializer contracts raise `InvalidArgumentException`. Optional nested-configuration failures retain the existing handling policy.
++### Changed
+ 
+-## Service-provider fixes
++- Shared test-status publication and Dependabot status handling. ([#8](https://github.com/php-fast-forward/container/pull/8))
++- Native Pages reports and documentation publication. ([#9](https://github.com/php-fast-forward/container/pull/9))
++- Contextual repository illustration. ([#7](https://github.com/php-fast-forward/container/pull/7))
++- Documentation presentation and package/archive hygiene.
+ 
+-- Extensions can supply an entry without a factory and receive `null` as the previous value.
+-- Returned extension values replace the previous value, including scalars, arrays, and `null`; explicitly declared `void` extensions preserve the previous value for compatibility.
+-- Successful resolutions cache the final value, including `null`.
+-- Inferred concrete-class aliases preserve cached entries and callable factory/extension definitions registered for the same class ID in the provider container.
+-- `has()` discovers callable factories and extensions without executing them, retaining short-circuit metadata lookup.
+-- Provider discovery and execution failures are wrapped consistently, preserving the original exception. Textual exception codes remain available on that previous exception.
++### Fixed
+ 
+-## Documentation and maintenance
++- Extension-only entries, including discovery without executing factories or extensions. ([#12](https://github.com/php-fast-forward/container/pull/12))
++- Extension return values replacing the previous service, including `null`, while explicitly `void` extensions retain the previous value for compatibility. ([#12](https://github.com/php-fast-forward/container/pull/12))
++- Cached null entries, concrete-class alias precedence and extension composition across providers. ([#12](https://github.com/php-fast-forward/container/pull/12))
++- Preservation of provider discovery/execution failure causes, including textual exception codes on the previous exception. ([#12](https://github.com/php-fast-forward/container/pull/12))
+ 
+-- Expanded API, onboarding, integration, and provider documentation, with runnable examples for both construction styles.
+-- Improved test-status publication, documentation reports, and package/archive hygiene since v1.6.0.
++### Security
+ 
+-The delivery includes 109 tests and 264 assertions with 100% source coverage, validated on PHP 8.3, 8.4, and 8.5. The PHP requirement remains `^8.3`.
++- Ignore Composer CI environment dump files to prevent accidental inclusion in commits and distributions. ([#10](https://github.com/php-fast-forward/container/pull/10))
+ 
+-The incremental `ContainerBuilder` proposal is tracked separately in [#13](https://github.com/php-fast-forward/container/issues/13). Transient lifetime design remains open in [#6](https://github.com/php-fast-forward/container/issues/6).
+-
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
+-
+-**Full changelog:** [v1.6.0...v1.7.0](https://github.com/php-fast-forward/container/compare/v1.6.0...v1.7.0)
+-
+
+--- github/v1.6.0/body
++++ canonical/v1.6.0/body
+@@ -1,4 +1,3 @@
+-FastForward Container v1.6.0
+ 
+ ### Added
+ 
+@@ -7,13 +6,7 @@
+ 
+ ### Changed
+ 
+-- Minimum supported PHP version from `^8.1` to `^8.3`.
+-- Development checks and reports use `fast-forward/dev-tools`.
+-- Wiki layout, publication workflows and test organization.
++- Minimum supported PHP version from `^8.1` to `^8.3`. ([#5](https://github.com/php-fast-forward/container/pull/5))
++- Development checks and reports use `fast-forward/dev-tools`. ([#5](https://github.com/php-fast-forward/container/pull/5))
++- Wiki layout, publication workflows and test organization. ([#5](https://github.com/php-fast-forward/container/pull/5))
+ 
+-PHP 8.3 migration delivered by @coisa through [PR #5](https://github.com/php-fast-forward/container/pull/5).
+-
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
+-
+-**Full changelog:** [v1.5.1...v1.6.0](https://github.com/php-fast-forward/container/compare/v1.5.1...v1.6.0)
+-
+
+--- github/v1.5.1/body
++++ canonical/v1.5.1/body
+@@ -1,4 +1,3 @@
+-FastForward Container v1.5.1
+ 
+ ### Added
+ 
+@@ -8,7 +7,3 @@
+ 
+ - `AggregateServiceProvider` registers its own factory using the concrete static class, supporting subclasses.
+ 
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
+-
+-**Full changelog:** [v1.5.0...v1.5.1](https://github.com/php-fast-forward/container/compare/v1.5.0...v1.5.1)
+-
+
+--- github/v1.5.0/body
++++ canonical/v1.5.0/body
+@@ -1,10 +1,5 @@
+-FastForward Container v1.5.0
+ 
+ ### Changed
+ 
+ - `MethodFactory` retrieves its target object from the container before falling back to direct instantiation for non-static methods.
+ 
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
+-
+-**Full changelog:** [v1.4.1...v1.5.0](https://github.com/php-fast-forward/container/compare/v1.4.1...v1.5.0)
+-
+
+--- github/v1.4.1/body
++++ canonical/v1.4.1/body
+@@ -1,10 +1,5 @@
+-FastForward Container v1.4.1
+ 
+ ### Fixed
+ 
+ - `ServiceProviderContainer` caches object services under both the requested identifier and their concrete class when the class alias is not already cached.
+ 
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
+-
+-**Full changelog:** [v1.4.0...v1.4.1](https://github.com/php-fast-forward/container/compare/v1.4.0...v1.4.1)
+-
+
+--- github/v1.4.0/body
++++ canonical/v1.4.0/body
+@@ -1,4 +1,3 @@
+-FastForward Container v1.4.0
+ 
+ ### Added
+ 
+@@ -8,7 +7,3 @@
+ 
+ - `CallableFactory` invokes the callable with its resolved arguments without rebinding the closure to the container.
+ 
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
+-
+-**Full changelog:** [v1.3.0...v1.4.0](https://github.com/php-fast-forward/container/compare/v1.3.0...v1.4.0)
+-
+
+--- github/v1.3.0/body
++++ canonical/v1.3.0/body
+@@ -1,4 +1,3 @@
+-FastForward Container v1.3.0
+ 
+ ### Changed
+ 
+@@ -8,7 +7,3 @@
+ 
+ - Unsupported untyped or builtin callable parameters raise an explicit invalid-parameter exception.
+ 
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
+-
+-**Full changelog:** [v1.2.1...v1.3.0](https://github.com/php-fast-forward/container/compare/v1.2.1...v1.3.0)
+-
+
+--- github/v1.2.1/body
++++ canonical/v1.2.1/body
+@@ -1,11 +1,6 @@
+-FastForward Container v1.2.1
+ 
+ ### Fixed
+ 
+ - Avoid eager target-class lookup in `MethodFactory`, preventing a possible circular dependency during method-factory resolution.
+ - Correct the initializer documentation for `container()`.
+ 
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
+-
+-**Full changelog:** [v1.2.0...v1.2.1](https://github.com/php-fast-forward/container/compare/v1.2.0...v1.2.1)
+-
+
+--- github/v1.2.0/body
++++ canonical/v1.2.0/body
+@@ -1,4 +1,3 @@
+-FastForward Container v1.2.0
+ 
+ ### Added
+ 
+@@ -10,7 +9,3 @@
+ 
+ - `container()` accepts variadic configuration objects, PSR-11 containers, service providers and initializer class names, composing them with an autowiring fallback.
+ 
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
+-
+-**Full changelog:** [v1.1.0...v1.2.0](https://github.com/php-fast-forward/container/compare/v1.1.0...v1.2.0)
+-
+
+--- github/v1.1.0/body
++++ canonical/v1.1.0/body
+@@ -1,10 +1,5 @@
+-FastForward Container v1.1.0
+ 
+ ### Added
+ 
+ - `AggregateContainer::append()` and `prepend()` for extending or prioritizing container sources after construction.
+ 
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
+-
+-**Full changelog:** [v1.0.0...v1.1.0](https://github.com/php-fast-forward/container/compare/v1.0.0...v1.1.0)
+-
+
+--- github/v1.0.0/body
++++ canonical/v1.0.0/body
+@@ -1,4 +1,3 @@
+-FastForward Container v1.0.0
+ 
+ ### Added
+ 
+@@ -6,7 +5,3 @@
+ - Configuration-backed composition and PHP-DI autowiring through `container()` and the original invokable `Factory\ContainerFactory`.
+ - Unit tests, Composer autoloading and the MIT license.
+ 
+-**Changelog:** [CHANGELOG.md](https://github.com/php-fast-forward/container/blob/v1.9.0/CHANGELOG.md)
+-
+-**Source:** [v1.0.0](https://github.com/php-fast-forward/container/tree/v1.0.0)
+-
