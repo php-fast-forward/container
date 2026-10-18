@@ -156,19 +156,27 @@ Executed successfully with the verified v0.2.0 runtime:
   confirmed one new comparison definition before the older links, no duplicates,
   no Unreleased, exact retained introduction/history/dates/footer bytes, and no
   invented PR for the still-unmerged contribution.
-- A disposable read-only fixture plan retains a proven explicit #28 as a
-  clickable inline PR link and leaves the unknown migration PR absent. Applying
-  that extra uncommitted fixture is correctly refused; no fake evidence was made.
+- A disposable read-only explicit-metadata renderer fixture (automatic discovery
+  disabled only for that synthetic fixture) retains a proven explicit #28 as a
+  clickable inline PR link and leaves unknown metadata absent. The real consumer
+  planning/consolidation above enables automatic discovery. Applying an extra
+  uncommitted fixture is correctly refused; no fake evidence was made.
 - All 16 official `notes` extractions match the proposed body hashes; standalone
   links resolve without importing the central footer or any other version.
 
-The ordinary comparison check correctly rejects the central-history edit until
-the exact PR receives the legitimate, API-verified human maintenance grant.
-No check was disabled or bypassed. The installed `actionlint` rejects the existing
+The ordinary comparison check correctly rejects the central-history edit before
+authorization. PR #38 received `changelog-maintenance` at 2026-10-18T07:38:44Z
+from GitHub User `coisa`, numeric ID 426835. The collaborator API confirmed
+`role_name: admin` and `permission: admin`; the timeline confirmed that same
+actor and grant. The official `check --since=origin/main --pull-request=38`
+then passed at the committed head. No check was disabled or bypassed.
+The installed `actionlint` rejects the existing
 `queue: max` in the untouched Wiki workflow when linting all workflows; the new
 caller passes separately. No runtime PHP or dependency change was made, so the
-full existing application suite remains a remote PR validation rather than a
-new local toolchain installation.
+full application suite ran remotely: PHP 8.3/8.4/8.5 tests, minimum/current
+production consumers on PHP 8.3/8.5, reports, Wiki generation and CodeQL passed
+on the first reviewed implementation head. Re-read the current PR checks after
+the final documentation commit; earlier green results do not prove a newer head.
 
 The consumer checks cover the actual manual-history migration, empty legacy
 pending section, 16 matching tag identities/dates, correct existing links,
