@@ -26,6 +26,21 @@ release's documentation and skill. Do not silently use an older local install.
 The standalone CLI needs PHP `^8.5`; the container library still needs PHP `^8.3`.
 There is no new application Composer dependency.
 
+The complete project skill is installed at
+`.agents/skills/fast-forward-changelog`, including its native provenance/hash
+receipt. Installation used the verified release's own command:
+
+```sh
+cpx --skip-local fast-forward/changelog:0.2.0 skill:install --no-interaction
+cpx --skip-local fast-forward/changelog:0.2.0 skill:install --check --json --no-interaction
+```
+
+Use `--update` only for a deliberate update with a newly verified runtime.
+The installer refuses local edits, foreign ownership and known downgrades;
+inspect failures without replacing the copy manually. This project installation
+creates no host aliases or global copy. Refresh the host session and check skill
+discovery separately; successful installation does not prove session activation.
+
 For the verified adoption runtime, use CPX with its separate tool installation:
 
 ```sh

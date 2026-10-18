@@ -192,3 +192,33 @@ There was no open managed version PR to regenerate. Its first live signed-Bot
 creation, downstream token-event approval and exact-head status must still be
 observed after approved deployment. This PR does not alter branch protection.
 Historical body reconciliation remains a separately approved operation.
+
+## Post-integration evidence and project skill
+
+The owner merged PR #38 at 2026-10-18T07:39:22Z; GitHub identifies actor `coisa`
+and merge commit `4eb1a4f95fe6419f25652f61117f81184d49a425`. The official local
+`check --since=origin/main --pull-request=38` had passed with the legitimate
+maintenance grant: timeline actor `coisa`, User ID 426835, and current collaborator
+`role_name: admin` / `permission: admin`. No validator was disabled.
+
+The workflow created [version PR #39](https://github.com/php-fast-forward/container/pull/39)
+from that base with head `c37c56082aab33b50154454a0239ed46cc9a310e`.
+The GitHub commit API confirms author `github-actions[bot]` ID 41898282,
+committer `web-flow` ID 19864447 and signature `verified: true`, `reason: valid`.
+Its exact-head `Fast Forward Changelog` status passed. Its comparison changes
+only central history and deletion of the intended fragment. Regenerating from
+the integrated base with automatic PR resolution in a disposable clone produced
+byte-identical central history (SHA-256
+`6bcf44d66a82bb334bc16066d251859f889cd5c2e70a741f3ef62443fe3554ed`),
+including the now-proven inline delivery reference to #38. The managed branch
+was not manually edited, merged or published. This evidence is a snapshot;
+subsequent base changes require the automation to regenerate and revalidate it.
+
+On the owner's subsequent request, the native `skill:install` command installed
+the complete v0.2.0 project package in `.agents/skills/fast-forward-changelog`,
+both in the original checkout and in this PR. `skill:install --check --json`
+reports `current`; the portable receipt identifies source commit
+`2d3f84fa9e5350f03636153fdb3ae2a822e5ae60` and payload SHA-256
+`6aa35eb349f80bad8fc78a2cad7995b2fe39e41948f9538ad8a7b0b662ab9fa8`.
+No global installation or host alias was created. Host-session activation remains
+a separate discovery check after refreshing the session.
