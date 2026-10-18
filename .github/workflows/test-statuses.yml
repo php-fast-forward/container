@@ -188,42 +188,6 @@ jobs:
           }
           $sourceFailed = in_array($run['conclusion'] ?? null,
               ['failure', 'cancelled', 'timed_out', 'action_required', 'startup_failure', 'stale'], true);
-          $noPhpJobs = array_values(array_filter($jobs, static fn (array $job): bool =>
-              ($job['name'] ?? null) === 'No PHP Changes'
-              && ($job['run_attempt'] ?? null) === $run['run_attempt']
-              && (string) ($job['run_id'] ?? '') === $runId));
-          if (count($noPhpJobs) === 1 && ($noPhpJobs[0]['status'] ?? null) === 'completed'
-              && ($noPhpJobs[0]['conclusion'] ?? null) === 'success'
-              && ($run['conclusion'] ?? null) === 'success') {
-              $detectors = array_values(array_filter($jobs, static fn (array $job): bool =>
-                  ($job['name'] ?? null) === 'Detect PHP Changes'
-                  && ($job['run_attempt'] ?? null) === $run['run_attempt']
-                  && (string) ($job['run_id'] ?? '') === $runId
-                  && ($job['status'] ?? null) === 'completed'
-                  && ($job['conclusion'] ?? null) === 'success'));
-              if (count($detectors) !== 1) {
-                  throw new RuntimeException('Missing or ambiguous successful PHP change detection.');
-              }
-              foreach ($jobs as $job) {
-                  if (($job['run_attempt'] ?? null) === $run['run_attempt']
-                      && is_string($job['name'] ?? null)
-                      && preg_match('/\Atests \/ Run Tests \([^)]+\)\z/', $job['name']) === 1
-                      && ($job['conclusion'] ?? null) !== 'skipped') {
-                      throw new RuntimeException('PHP test execution conflicts with the no-change result.');
-                  }
-              }
-              foreach ($versions as $version) {
-                  if (!runIsCurrent($repository, $runId, $run)) {
-                      exit(0);
-                  }
-                  githubApi(['--method', 'POST', "repos/$repository/statuses/$headSha",
-                      '-f', 'state=success',
-                      '-f', "context=Run Tests ($version)",
-                      '-f', 'description=Not required: no PHP files changed.',
-                      '-f', "target_url=$targetUrl"]);
-              }
-              exit(0);
-          }
           $requireCurrentAttempt = false;
           $blockedReason = null;
           $currentJobsObserved = false;
