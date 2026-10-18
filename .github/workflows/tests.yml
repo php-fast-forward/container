@@ -2,6 +2,9 @@ name: "Fast Forward Test Suite"
 
 on:
   push:
+    paths:
+      - '**.php'
+      - 'composer.json'
   workflow_dispatch:
 
 permissions:

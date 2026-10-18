@@ -17,6 +17,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 ### Changed
 
 - Uses independent changelog fragments and automated version PRs, with verified PR references and normalized historical release notes. Tag and GitHub Release publication remains disabled pending explicit approval. ([#38](https://github.com/php-fast-forward/container/pull/38))
+- Triggers the test workflow on pushes only when PHP files or Composer configuration change. Manual workflow execution remains available. ([#41](https://github.com/php-fast-forward/container/pull/41))
 
 ## [1.10.0] - 2026-10-16
 
