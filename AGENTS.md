@@ -116,10 +116,15 @@ from `main`; edit their source in `src/` and `docs/`, not generated API pages.
 Keep generated reports, caches, `vendor/` and the local lockfile out of commits.
 Check [.gitattributes](.gitattributes) when changing files shipped in Composer archives.
 
-Record user-visible changes under `Unreleased` in [CHANGELOG.md](CHANGELOG.md),
-following Keep a Changelog categories and ISO dates. Preserve historical entries
-and comparison links. There is no repository release workflow: prepare release
-changes for review and publish a tag or GitHub release only when requested.
+Record user-visible changes in one independent `.changelog/*.md` fragment using
+the schema and commands in [the changelog guide](docs/changelog.md). Preserve
+inherited fragments and published history in [CHANGELOG.md](CHANGELOG.md).
+Do not add an `Unreleased` section or require a follow-up fragment edit for a PR
+number: version preparation resolves verified delivery PRs automatically.
+The Changelog workflow prepares a reviewable version PR; publication stays
+disabled. Publish a tag or GitHub Release only after explicit authorization.
+Central-history maintenance requires the library's verified human maintain/admin
+grant; a label alone or successful CI is not approval to publish.
 
 Keep each PR focused. Its title and description must describe the final change,
 explain relevant behavior and list actual validation and limitations. Recheck the
