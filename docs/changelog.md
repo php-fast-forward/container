@@ -21,7 +21,7 @@ is generated. Keep notes focused on behavior and preserve inherited fragments.
 The [caller](../.github/workflows/changelog.yml) uses the owner-selected `v0`
 published release channel. The current integration was verified at `v0.3.0`, commit
 `85474de5a16bb08f83c9f30e0ed72f331a210f07`. Version PR titles use
-`chore(release): container {current_version} → {next_version}`. Before a local maintenance operation,
+`chore(release): fast-forward/container v{current_version} → v{next_version}`. Before a local maintenance operation,
 resolve the channel and corresponding full published tag again, then read that
 release's documentation and skill. Do not silently use an older local install.
 The standalone CLI needs PHP `^8.5`; the container library still needs PHP `^8.3`.
