@@ -11,6 +11,14 @@
     "sources": [
         {
             "from": "github",
+            "package": "php-fast-forward/config",
+            "ref": "v1.7.3",
+            "skills": [
+                "fast-forward-config"
+            ]
+        },
+        {
+            "from": "github",
             "package": "php-fast-forward/changelog",
             "ref": "^0.3.0",
             "skills": [
