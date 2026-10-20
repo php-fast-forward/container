@@ -11,3 +11,4 @@ composer.lock
 /Dockerfile-php-build
 /docker_tag
 /output.log
+/.agents/
