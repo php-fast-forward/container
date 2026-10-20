@@ -6,7 +6,12 @@
     "auto-sync": true,
     "vendor-sources": false,
     "dependencies": {
-        "composer": false
+        "composer": {
+            "trusted": [
+                "fast-forward/config"
+            ],
+            "trusted-replace": true
+        }
     },
     "sources": [
         {
