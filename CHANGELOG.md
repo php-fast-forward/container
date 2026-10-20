@@ -13,6 +13,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 ### Changed
 
 - Restore the Changelog contributor skill through the development-only Composer skill manager and its reviewed GitHub source instead of versioning generated skill copies. ([#45](https://github.com/php-fast-forward/container/pull/45))
+- Synchronize the Config consumer skill from the installed Composer dependencies through an explicit trusted-package list, preserving other configured skill sources. ([#47](https://github.com/php-fast-forward/container/pull/47))
 
 ## [1.10.2] - 2026-10-20
 
