@@ -21,7 +21,7 @@ jobs:
       issues: read
       statuses: write
     # Published 0.x channel, requested by the repository owner.
-    # Adoption verified at v0.2.0: 2d3f84fa9e5350f03636153fdb3ae2a822e5ae60.
+    # Integration reviewed at v0.3.0: 85474de5a16bb08f83c9f30e0ed72f331a210f07.
     uses: php-fast-forward/changelog/.github/workflows/changelog.yml@v0
     with:
       runs-on: '["ubuntu-latest"]'
@@ -37,4 +37,4 @@ jobs:
       automation-actor: github-actions[bot]
       comment-mode: always
       prepare-release: true
-      publish: false
+      publish: true

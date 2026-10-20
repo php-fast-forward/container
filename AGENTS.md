@@ -123,8 +123,10 @@ Read the installed [Fast Forward Changelog skill](.agents/skills/fast-forward-ch
 before changelog contribution, version-review or maintenance work.
 Do not add an `Unreleased` section or require a follow-up fragment edit for a PR
 number: version preparation resolves verified delivery PRs automatically.
-The Changelog workflow prepares a reviewable version PR; publication stays
-disabled. Publish a tag or GitHub Release only after explicit authorization.
+The Changelog workflow prepares a reviewable version PR. Merging the approved
+managed version PR authorizes automatic publication of its exact version tag
+and GitHub Release; the workflow never merges that PR itself. Historical release
+recovery and changes to existing Releases require separate explicit authorization.
 Central-history maintenance requires the library's verified human maintain/admin
 grant; a label alone or successful CI is not approval to publish.
 
