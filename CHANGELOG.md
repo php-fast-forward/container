@@ -8,6 +8,12 @@ and version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 Historical entries were backfilled from tagged diffs and GitHub release notes.
 Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
+## [1.10.3] - 2026-10-20
+
+### Changed
+
+- Restore the Changelog contributor skill through the development-only Composer skill manager and its reviewed GitHub source instead of versioning generated skill copies. ([#45](https://github.com/php-fast-forward/container/pull/45))
+
 ## [1.10.2] - 2026-10-20
 
 ### Changed
@@ -212,6 +218,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 - Configuration-backed composition and PHP-DI autowiring through `container()` and the original invokable `Factory\ContainerFactory`.
 - Unit tests, Composer autoloading and the MIT license.
 
+[1.10.3]: https://github.com/php-fast-forward/container/compare/v1.10.1...v1.10.3
 [1.10.2]: https://github.com/php-fast-forward/container/compare/v1.10.1...v1.10.2
 [1.10.1]: https://github.com/php-fast-forward/container/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/php-fast-forward/container/compare/v1.9.1...v1.10.0
