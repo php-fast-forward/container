@@ -25,22 +25,15 @@ published release channel. The current integration was verified at `v0.3.0`, com
 resolve the channel and corresponding full published tag again, then read that
 release's documentation and skill. Do not silently use an older local install.
 The standalone CLI needs PHP `^8.5`; the container library still needs PHP `^8.3`.
-There is no new application Composer dependency.
+There is no new application runtime dependency.
 
-The complete project skill is installed at
-`.agents/skills/fast-forward-changelog`, including its native provenance/hash
-receipt. Installation used the verified release's own command:
-
-```sh
-cpx --skip-local fast-forward/changelog skill:install --no-interaction
-cpx --skip-local fast-forward/changelog skill:install --check --json --no-interaction
-```
-
-Use `--update` only for a deliberate update with a newly verified runtime.
-The installer refuses local edits, foreign ownership and known downgrades;
-inspect failures without replacing the copy manually. This project installation
-creates no host aliases or global copy. Refresh the host session and check skill
-discovery separately; successful installation does not prove session activation.
+Run `composer install` to restore the project skill into
+`.agents/skills/fast-forward-changelog` through the development-only `llm/skills`
+plugin. Its reviewed GitHub source and version range live in `skills.json`;
+generated skill files are ignored by Git. Use `composer skills:show` to inspect
+the source and `composer skills:update --from=github` for an explicit refresh
+within that range. Review `skills.json` before changing it. This project setup
+creates no host aliases or global copy; check host discovery separately.
 
 Use CPX with its separate tool installation; ordinary commands keep the stable
 CLI interface without embedding a release number in each example:
