@@ -29,6 +29,7 @@ final class SkillExamplesTest extends TestCase
         yield 'composition' => ['composition.php', 'composition: ok'];
         yield 'autowiring' => ['autowiring.php', 'autowiring: ok'];
         yield 'provider corrections' => ['provider-resolution.php', 'provider-resolution: ok'];
+        yield 'provider composition' => ['provider-composition.php', 'provider-composition: ok'];
     }
 
     /**

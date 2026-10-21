@@ -32,6 +32,8 @@ use FastForward\Container\Exception\InvalidArgumentException;
 use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\ServiceProviderContainer;
 use Interop\Container\ServiceProviderInterface;
+use FastForward\Container\ServiceProvider\FirstFactoryServiceProvider;
+use FastForward\Container\ProviderSourceContainer;
 use PHPUnit\Framework\Attributes\CoversFunction;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -52,6 +54,8 @@ use function FastForward\Container\container;
 #[UsesClass(ServiceProviderContainer::class)]
 #[UsesClass(InvalidArgumentException::class)]
 #[UsesClass(NotFoundException::class)]
+#[UsesClass(FirstFactoryServiceProvider::class)]
+#[UsesClass(ProviderSourceContainer::class)]
 final class ContainerFunctionTest extends TestCase
 {
     use ProphecyTrait;

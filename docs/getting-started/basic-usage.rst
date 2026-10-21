@@ -89,7 +89,9 @@ or when you need to reuse an existing PSR-11 container:
 
    $container = container($catalogProvider, $legacyContainer);
 
-When multiple initializers can resolve the same service ID, the first successful
+Provider factories use first-callable precedence and all extensions run afterward
+in registration order. External sources remain independent. When multiple external
+initializers can resolve the same service ID, the first successful
 source wins. Explicit sources are checked before autowiring, including for nested
 and optional object dependencies. This makes ``container($override, $defaults)``
 a useful pattern for tests and environment-specific overrides. Configure the sources

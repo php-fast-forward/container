@@ -22,6 +22,7 @@ use Throwable;
 use FastForward\Config\ConfigInterface;
 use FastForward\Config\Container\ConfigContainer;
 use FastForward\Container\Exception\InvalidArgumentException;
+use FastForward\Container\ServiceProvider\FirstFactoryServiceProvider;
 use Interop\Container\ServiceProviderInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
@@ -64,109 +65,98 @@ final class ContainerBuilder
     }
 
     /**
-     * Creates a fresh container stack from the registered initializers.
+     * Builds the default two-pass provider composition without executing service callbacks.
      *
-     * This method SHALL adapt sources in registration order, append optional configured
-     * sources, and return an AutowireContainer wrapping the completed aggregate.
-     * Class names MUST be instantiable without required constructor arguments.
-     * The builder SHALL retain registrations without retaining assembled container state.
+     * The first callable factory wins. Every provider extension runs in registration
+     * order after factory selection. Ordered provider views retain source positions;
+     * external PSR-11/config sources remain independent. Selected failures propagate.
+     * Class names and adapters are recreated for each build.
      *
-     * @return ContainerInterface the composed and autowire-enabled container
-     *
-     * @throws InvalidArgumentException if an initializer class cannot be found or adapted
+     * @return ContainerInterface a fresh stack with one required provider source
      */
     public function build(): ContainerInterface
     {
-        $aggregateContainer = new AggregateContainer();
+        $sources = $this->collectCompositionSources();
+        $providers = array_values(array_filter(
+            $sources,
+            static fn(object $source): bool => ! $source instanceof PsrContainerInterface,
+        ));
+        $aggregate = new AggregateContainer();
+        $provider = new FirstFactoryServiceProvider(...$providers);
+        $providerContainer = new ServiceProviderContainer($provider, $aggregate);
+        $providerIndex = 0;
+
+        foreach ($sources as $source) {
+            if ($source instanceof PsrContainerInterface) {
+                $aggregate->append($source);
+
+                continue;
+            }
+
+            $aggregate->appendRequired(new ProviderSourceContainer($providerContainer, $provider, $providerIndex));
+            ++$providerIndex;
+        }
+
+        return new AutowireContainer($aggregate);
+    }
+
+    /**
+     * Expands one level of optional configured initializers in registration order.
+     *
+     * Providers remain definitions until the complete ordered list has been gathered.
+     * Invalid optional entries stop expansion, retaining prior and later explicit sources.
+     *
+     * @return list<PsrContainerInterface|ServiceProviderInterface> ordered normalized sources
+     */
+    private function collectCompositionSources(): array
+    {
+        $sources = [];
+        $configKey = \sprintf('%s.%s', ConfigContainer::ALIAS, ContainerInterface::class);
 
         foreach ($this->initializers as $initializer) {
-            $container = $this->resolveInitializer($initializer, $aggregateContainer);
-            $aggregateContainer->append($container);
+            $source = $this->resolveCompositionSource($initializer);
+            $sources[] = $source;
 
-            if ($container instanceof ConfigContainer) {
-                $this->appendConfiguredContainers($container, $aggregateContainer);
+            if (! $source instanceof ConfigContainer) {
+                continue;
+            }
+
+            try {
+                foreach ($source->get($configKey) as $nested) {
+                    $sources[] = $this->resolveCompositionSource($nested);
+                }
+            } catch (Throwable) {
+                // Preserve the optional configuration boundary.
             }
         }
 
-        return new AutowireContainer($aggregateContainer);
+        return $sources;
     }
 
     /**
-     * Resolves an initializer object or constructs its class before adaptation.
+     * Instantiates class strings and preserves PSR-11 precedence for dual-role objects.
      *
-     * Existing objects SHALL be passed directly to adapter selection. Class names SHALL
-     * be instantiated with an argument-free constructor for each build.
+     * @param mixed $initializer an object or argument-free initializer class
      *
-     * @param mixed $initializer an initializer object or instantiable class name
-     * @param AggregateContainer $aggregateContainer the shared resolution wrapper
+     * @return PsrContainerInterface|ServiceProviderInterface a source or unadapted provider
      *
-     * @return PsrContainerInterface the adapted initializer
-     *
-     * @throws InvalidArgumentException if an initializer class cannot be found or adapted
+     * @throws InvalidArgumentException if the initializer cannot be adapted
      */
-    private function resolveInitializer(
-        mixed $initializer,
-        AggregateContainer $aggregateContainer
-    ): PsrContainerInterface {
-        return match (true) {
-            \is_object($initializer) => $this->adaptInitializer($initializer, $aggregateContainer),
-            class_exists($initializer) => $this->adaptInitializer(new ($initializer)(), $aggregateContainer),
-            default => throw InvalidArgumentException::forUnsupportedInitializer($initializer),
-        };
-    }
+    private function resolveCompositionSource(mixed $initializer): PsrContainerInterface|ServiceProviderInterface
+    {
+        if (! \is_object($initializer)) {
+            if (! \is_string($initializer) || ! class_exists($initializer)) {
+                throw InvalidArgumentException::forUnsupportedInitializer($initializer);
+            }
 
-    /**
-     * Selects a container implementation for a constructed initializer.
-     *
-     * PSR-11 containers SHALL take precedence over provider and configuration adapters.
-     * Unsupported objects MUST cause an InvalidArgumentException before reaching the aggregate.
-     *
-     * @param object $initializer the constructed initializer
-     * @param AggregateContainer $aggregateContainer the shared resolution wrapper
-     *
-     * @return PsrContainerInterface the container or provider/config adapter
-     *
-     * @throws InvalidArgumentException if the initializer object cannot be adapted
-     */
-    private function adaptInitializer(
-        object $initializer,
-        AggregateContainer $aggregateContainer
-    ): PsrContainerInterface {
+            $initializer = new ($initializer)();
+        }
+
         return match (true) {
             $initializer instanceof PsrContainerInterface => $initializer,
-            $initializer instanceof ServiceProviderInterface => new ServiceProviderContainer(
-                $initializer,
-                $aggregateContainer,
-            ),
+            $initializer instanceof ServiceProviderInterface => $initializer,
             $initializer instanceof ConfigInterface => new ConfigContainer($initializer),
             default => throw InvalidArgumentException::forUnsupportedInitializer($initializer),
         };
-    }
-
-    /**
-     * Appends additional initializers declared in a configuration container.
-     *
-     * Entries SHALL be adapted in order using the existing container configuration key.
-     * Failures while reading or adapting this optional configuration SHALL stop that
-     * expansion and be ignored, preserving previously appended and later explicit sources.
-     *
-     * @param ConfigContainer $configContainer the configuration entry source
-     * @param AggregateContainer $aggregateContainer the shared resolution wrapper
-     *
-     * @return void
-     */
-    private function appendConfiguredContainers(
-        ConfigContainer $configContainer,
-        AggregateContainer $aggregateContainer
-    ): void {
-        $configKey = \sprintf('%s.%s', ConfigContainer::ALIAS, ContainerInterface::class);
-
-        try {
-            foreach ($configContainer->get($configKey) as $nested) {
-                $aggregateContainer->append($this->resolveInitializer($nested, $aggregateContainer));
-            }
-        } catch (Throwable) {
-            // Preserve the existing helper's optional configuration behavior.
-        }
     }
 }

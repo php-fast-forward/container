@@ -35,6 +35,10 @@ use FastForward\Container\Extension\ServiceExtension;
 use FastForward\Container\Factory\AliasFactory;
 use FastForward\Container\ServiceProvider\ArrayServiceProvider;
 use FastForward\Container\ServiceProviderContainer;
+use FastForward\Container\Factory\ServiceFactory;
+use FastForward\Container\ServiceProvider\AggregateServiceProvider;
+use FastForward\Container\ServiceProvider\FirstFactoryServiceProvider;
+use FastForward\Container\ProviderSourceContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -56,6 +60,10 @@ use Psr\Container\ContainerInterface;
 #[UsesClass(ReflectionContainer::class)]
 #[UsesClass(ContainerFactory::class)]
 #[UsesClass(ContainerBuilder::class)]
+#[UsesClass(ServiceFactory::class)]
+#[UsesClass(AggregateServiceProvider::class)]
+#[UsesClass(FirstFactoryServiceProvider::class)]
+#[UsesClass(ProviderSourceContainer::class)]
 final class ServiceProviderCycleTest extends TestCase
 {
     /**
@@ -140,7 +148,7 @@ final class ServiceProviderCycleTest extends TestCase
      * @return void
      */
     #[Test]
-    public function sameIdentifierCanFallBackToAnotherProviderDuringConstruction(): void
+    public function selectedFactoryCycleCannotFallBackToAnotherProvider(): void
     {
         $calls = 0;
         $container = ContainerFactory::create(
@@ -158,8 +166,13 @@ final class ServiceProviderCycleTest extends TestCase
             ]),
         );
 
-        self::assertSame('fallback', $container->get('a'));
-        self::assertSame('fallback', $container->get('a'));
+        try {
+            $container->get('a');
+            self::fail('The selected factory cycle must propagate.');
+        } catch (ContainerException $containerException) {
+            $this->assertCyclePath($containerException, 'a -> a');
+        }
+
         self::assertSame(1, $calls);
     }
 

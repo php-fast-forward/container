@@ -49,6 +49,11 @@ class AggregateContainer implements ContainerInterface
     private array $resolved = [];
 
     /**
+     * @var list<PsrContainerInterface> sources whose advertised entries must resolve successfully
+     */
+    private array $requiredContainers = [];
+
+    /**
      * Constructs the AggregateContainer with one or more delegated containers.
      *
      * The constructor SHALL bind itself to common aliases, including the class name
@@ -84,6 +89,22 @@ class AggregateContainer implements ContainerInterface
         $this->containers[] = $container;
 
         $this->resolved[$container::class] ??= $container;
+    }
+
+    /**
+     * Appends a source whose advertised entry failures must stop resolution.
+     *
+     * Absence still permits later sources. A failure after has() succeeds propagates,
+     * including a not-found exception raised while resolving a required dependency.
+     *
+     * @param PsrContainerInterface $container the authoritative source to append
+     *
+     * @return void
+     */
+    public function appendRequired(PsrContainerInterface $container): void
+    {
+        $this->append($container);
+        $this->requiredContainers[] = $container;
     }
 
     /**
@@ -133,6 +154,8 @@ class AggregateContainer implements ContainerInterface
      * through the aggregated containers to resolve the entry. It MUST throw a
      * NotFoundException if the identifier is absent. If all candidates fail, the first
      * delegated construction exception SHALL be retained instead.
+     * Sources registered with appendRequired() SHALL propagate their advertised
+     * entry failures immediately, without attempting later sources.
      *
      * @param string $id the identifier of the entry to retrieve
      *
@@ -158,9 +181,17 @@ class AggregateContainer implements ContainerInterface
                 $this->resolved[$id] = $container->get($id);
 
                 return $this->resolved[$id];
-            } catch (NotFoundExceptionInterface) {
+            } catch (NotFoundExceptionInterface $failure) {
+                if (\in_array($container, $this->requiredContainers, true)) {
+                    throw $failure;
+                }
+
                 // Ignore NotFoundExceptionInterface
             } catch (ContainerExceptionInterface $failure) {
+                if (\in_array($container, $this->requiredContainers, true)) {
+                    throw $failure;
+                }
+
                 if ($exception instanceof NotFoundExceptionInterface) {
                     $exception = $failure;
                 }

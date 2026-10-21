@@ -35,6 +35,8 @@ use FastForward\Container\ServiceProvider\ArrayServiceProvider;
 use FastForward\Container\Extension\ServiceExtension;
 use FastForward\Container\ServiceProviderContainer;
 use Interop\Container\ServiceProviderInterface;
+use FastForward\Container\ServiceProvider\FirstFactoryServiceProvider;
+use FastForward\Container\ProviderSourceContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -61,6 +63,8 @@ use function FastForward\Container\container;
 #[UsesClass(ContainerException::class)]
 #[UsesClass(NotFoundException::class)]
 #[UsesFunction('FastForward\\Container\\container')]
+#[UsesClass(FirstFactoryServiceProvider::class)]
+#[UsesClass(ProviderSourceContainer::class)]
 final class ServiceProviderResolutionTest extends TestCase
 {
     /**
@@ -414,7 +418,7 @@ final class ServiceProviderResolutionTest extends TestCase
      * @return void
      */
     #[Test]
-    public function separateProvidersRetainFirstMatchPrecedence(): void
+    public function earlierExtensionUsesTheLaterFactoryBeforeExtending(): void
     {
         $first = new ArrayServiceProvider(extensions: [
             'value' => static fn(ContainerInterface $container, ?string $previous): string => $previous ?? 'first',
@@ -423,7 +427,7 @@ final class ServiceProviderResolutionTest extends TestCase
             'value' => static fn(): string => 'second',
         ]);
 
-        self::assertSame('first', container($first, $second)->get('value'));
+        self::assertSame('second', container($first, $second)->get('value'));
     }
 
     /**

@@ -2,7 +2,7 @@
 
 Load this for multiple sources, test overrides, aliases, extensions or factory selection. Run `../examples/composition.php` against the consumer autoloader.
 
-## First source versus merged factory
+## First factory versus explicit merged factory
 
 ```php
 use FastForward\Container\ServiceProvider\ArrayServiceProvider;
@@ -11,13 +11,35 @@ use function FastForward\Container\container;
 
 $base = new ArrayServiceProvider(['label' => static fn(): string => 'base']);
 $test = new ArrayServiceProvider(['label' => static fn(): string => 'test']);
-$first = container($test, $base); // label: test; first successful source wins
+$first = container($test, $base); // label: test; first callable factory wins
 $merged = container(new AggregateServiceProvider($base, $test)); // label: test; later factory wins
 ```
 
-Separate sources first call `has()`. When it succeeds, a PSR-11 exception raised by that source's `get()` permits trying the next source. If none succeeds, the first construction error is preserved. An exception from `has()` itself, including a failure reading provider factories/extensions, propagates immediately; later sources are not tried. A successful fallback is cached; later lookups do not automatically retry the earlier source.
+The helper, factory and builder collect provider factories before applying all
+extensions in registration order. The first callable factory wins, including an
+intentional null result. An extension-only provider before a factory no longer
+shadows that factory. Explicit `AggregateServiceProvider` retains its distinct
+last-factory precedence. Numeric string IDs remain opaque.
 
-Provider merges preserve numeric string IDs and apply the same later-duplicate precedence as for other IDs.
+All direct and one-level configuration-discovered providers share one aggregate
+and adapter. Ordered views preserve selected factory positions against interleaved
+PSR-11/Config sources. Extension-only defaults use the first extension position only
+when no provider has a factory. Inferred class aliases retain their factory position.
+External containers, including dual-role objects, remain independent sources; group
+extensions do not decorate their selected values. Invalid optional configured
+entries stop that list, preserving prior entries and later explicit sources.
+
+Selected provider construction/extension failures propagate with causes; later
+providers, external containers and native autowiring cannot hide them. Failed
+chains remain retryable. Independent external PSR-11 sources retain aggregate
+fallback: a `get()` failure may try later sources; a `has()` failure propagates.
+Successful fallback values are cached.
+
+Each build creates fresh provider caches, class-string initializers and an
+aggregate wrapper for dependencies. Existing external state and captured objects
+can remain shared. Older library versions may lack this default composition
+correction; run `../examples/provider-composition.php` against the installed
+autoloader to verify it. No opt-in method is required.
 
 ## Select the factory by its argument contract
 

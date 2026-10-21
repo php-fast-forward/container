@@ -28,6 +28,8 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
  *
  * This factory SHALL register the supplied initializers with a new builder and
  * delegate assembly to it. The factory MUST NOT retain assembled container state.
+ * Providers use the first callable factory and all extensions in registration order.
+ * Selected provider failures propagate. External sources remain independent.
  * Source order, provider wrapper injection, and optional configuration policy
  * SHALL remain consistent with direct builder composition.
  */
