@@ -21,9 +21,9 @@ intentional null result. An extension-only provider before a factory no longer
 shadows that factory. Explicit `AggregateServiceProvider` retains its distinct
 last-factory precedence. Numeric string IDs remain opaque.
 
-All direct and one-level configuration-discovered providers share one aggregate
-and adapter. Ordered views preserve selected factory positions against interleaved
-PSR-11/Config sources. Extension-only defaults use the first extension position only
+All direct and one-level configuration-discovered providers share one adapter.
+AggregateContainer tracks source positions and alias origins internally, preserving
+selected factory positions against interleaved PSR-11/Config sources. Extension-only defaults use the first extension position only
 when no provider has a factory. Inferred class aliases retain their factory position.
 External containers, including dual-role objects, remain independent sources; group
 extensions do not decorate their selected values. Invalid optional configured

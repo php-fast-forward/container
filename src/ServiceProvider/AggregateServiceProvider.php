@@ -69,29 +69,14 @@ class AggregateServiceProvider implements ServiceProviderInterface
             ],
         );
 
-        $factories = array_reduce(
+        return array_reduce(
             $this->serviceProviders,
-            fn(array $factories, ServiceProviderInterface $provider): array => $this->mergeFactories(
+            static fn($factories, $serviceProvider): array => array_replace(
                 $factories,
-                $provider->getFactories()
+                $serviceProvider->getFactories()
             ),
-            [],
+            $serviceProviders,
         );
-
-        return $factories + $serviceProviders;
-    }
-
-    /**
-     * Selects duplicate factory definitions independently from extension order.
-     *
-     * @param array<string, callable> $factories definitions selected so far
-     * @param array<string, callable> $next definitions from the next provider
-     *
-     * @return array<string, callable> selected factory definitions
-     */
-    protected function mergeFactories(array $factories, array $next): array
-    {
-        return array_replace($factories, $next);
     }
 
     /**

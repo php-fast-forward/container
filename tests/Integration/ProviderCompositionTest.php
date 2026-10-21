@@ -51,7 +51,7 @@ final class ProviderCompositionTest extends TestCase
      */
     public static function providerOrders(): iterable
     {
-        foreach (['helper', 'factory', 'builder'] as $entryPoint) {
+        foreach (['helper', 'factory', 'builder', 'aggregate', 'provider'] as $entryPoint) {
             yield $entryPoint . ' factory first' => [false, $entryPoint];
             yield $entryPoint . ' extension first' => [true, $entryPoint];
         }
@@ -92,6 +92,8 @@ final class ProviderCompositionTest extends TestCase
         $container = match ($entryPoint) {
             'helper' => container(...$sources),
             'factory' => ContainerFactory::create(...$sources),
+            'aggregate' => new AggregateContainer(...$sources),
+            'provider' => new ServiceProviderContainer($sources),
             default => (new ContainerBuilder())->add(...$sources)->build(),
         };
 
@@ -650,5 +652,22 @@ final class ProviderCompositionTest extends TestCase
         $providerFirst = container($earlier, $later, $external);
         self::assertSame($providerValue, $providerFirst->get('entry'));
         self::assertSame($providerValue, $providerFirst->get(stdClass::class));
+    }
+
+    /**
+     * @return void
+     */
+    public function testProviderAdapterClassAliasPreservesRegistrationOrder(): void
+    {
+        $provider = new ArrayServiceProvider([
+            'entry' => static fn(): string => 'provider',
+        ]);
+        $external = new ServiceProviderContainer(new ArrayServiceProvider());
+        $providerFirst = container($provider, $external);
+        $externalFirst = container($external, $provider);
+
+        self::assertNotSame($external, $providerFirst->get(ServiceProviderContainer::class));
+        self::assertSame('provider', $providerFirst->get(ServiceProviderContainer::class)->get('entry'));
+        self::assertSame($external, $externalFirst->get(ServiceProviderContainer::class));
     }
 }
