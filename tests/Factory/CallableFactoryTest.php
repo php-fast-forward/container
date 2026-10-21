@@ -127,4 +127,24 @@ final class CallableFactoryTest extends TestCase
         self::assertSame($dependency, $factory($container->reveal()));
     }
 
+    #[Test]
+    public function dnfParameterReceivesInvalidTypeDiagnostic(): void
+    {
+        $factory = new CallableFactory(
+            static fn((ContainerInterface&FactoryInterface)|ServiceProviderInterface $dependency) => $dependency
+        );
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Parameter "dependency" is not a valid type.');
+        $factory($this->prophesize(ContainerInterface::class)->reveal());
+    }
+
+    #[Test]
+    public function untypedParameterReceivesInvalidTypeDiagnostic(): void
+    {
+        $factory = new CallableFactory(static fn($dependency) => $dependency);
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Parameter "dependency" is not a valid type.');
+        $factory($this->prophesize(ContainerInterface::class)->reveal());
+    }
+
 }
