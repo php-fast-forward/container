@@ -16,6 +16,8 @@ The examples are ordered from the most common onboarding flow to the more specia
 
 - `php examples/07-incremental-builder.php --with-feature`: register sources in stages with `ContainerBuilder`, enable an optional provider, and keep previous builds unchanged. Omit the flag to run without the feature.
 
+- `php examples/08-provider-composition.php`: use default cross-provider extensions, verifying both factory/provider orders and shared final values.
+
 Auxiliary files:
 
 - `examples/bootstrap.php`: loads the Composer autoloader and provides small CLI helper functions shared by the examples.

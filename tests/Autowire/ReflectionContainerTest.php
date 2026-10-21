@@ -34,6 +34,10 @@ use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\ServiceProvider\ArrayServiceProvider;
 use FastForward\Container\ServiceProviderContainer;
+use FastForward\Container\Factory\ServiceFactory;
+use FastForward\Container\ServiceProvider\AggregateServiceProvider;
+use FastForward\Container\ServiceProvider\FirstFactoryServiceProvider;
+use FastForward\Container\ProviderSourceContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
@@ -54,6 +58,10 @@ use Psr\Container\ContainerInterface;
 #[UsesClass(AutowiringException::class)]
 #[UsesClass(ContainerException::class)]
 #[UsesClass(NotFoundException::class)]
+#[UsesClass(ServiceFactory::class)]
+#[UsesClass(AggregateServiceProvider::class)]
+#[UsesClass(FirstFactoryServiceProvider::class)]
+#[UsesClass(ProviderSourceContainer::class)]
 final class ReflectionContainerTest extends TestCase
 {
     /**

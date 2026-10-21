@@ -79,7 +79,9 @@ with autowiring.
 
 Register sources before the first lookup: successful resolutions are cached.
 If a delegate's ``get()`` throws a PSR-11 exception, aggregate fallback may try
-another source. If every source fails, construction errors are preserved; see
+another source. Selected provider factory/extension failures in helper, factory
+and builder composition propagate immediately instead. If every independent
+external source fails, construction errors are preserved; see
 :doc:`special-patterns` for the full fallback rules.
 
 Optional Dependencies

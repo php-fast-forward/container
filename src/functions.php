@@ -40,6 +40,9 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
  *
  * The final container returned is an AutowireContainer that wraps an
  * AggregateContainer composed of all resolved sources.
+ * Providers compose by default: the first callable factory wins and every provider
+ * extension runs in registration order after selection, including earlier extensions.
+ * Selected provider failures propagate; external sources remain independent.
  *
  * @param ConfigInterface|PsrContainerInterface|ServiceProviderInterface|string ...$initializers
  *                                                                                               A variadic list of container initializers, optionally including config or provider classes.

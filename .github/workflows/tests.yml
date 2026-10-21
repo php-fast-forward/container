@@ -89,4 +89,4 @@ jobs:
         run: |
           CONTAINER_CONSUMER_AUTOLOAD="$CONSUMER_DIR/vendor/autoload.php" php "$HARNESS_DIR/vendor/bin/phpunit" \
             --no-configuration --no-coverage --no-extensions \
-            --bootstrap tests/Integration/bootstrap.php tests/Integration/ProductionConsumerTest.php
+            --bootstrap tests/Integration/bootstrap.php tests/Integration/ProductionConsumerTest.php tests/Integration/ProviderCompositionTest.php
