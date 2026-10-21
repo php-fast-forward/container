@@ -22,7 +22,6 @@ use Throwable;
 use FastForward\Config\ConfigInterface;
 use FastForward\Config\Container\ConfigContainer;
 use FastForward\Container\Exception\InvalidArgumentException;
-use FastForward\Container\ServiceProvider\FirstFactoryServiceProvider;
 use Interop\Container\ServiceProviderInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
@@ -68,36 +67,17 @@ final class ContainerBuilder
      * Builds the default two-pass provider composition without executing service callbacks.
      *
      * The first callable factory wins. Every provider extension runs in registration
-     * order after factory selection. Ordered provider views retain source positions;
+     * order after factory selection. Aggregate source metadata retains source positions;
      * external PSR-11/config sources remain independent. Selected failures propagate.
      * Class names and adapters are recreated for each build.
      *
-     * @return ContainerInterface a fresh stack with one required provider source
+     * @return ContainerInterface a fresh stack with shared provider resolution state
+     *
+     * @throws InvalidArgumentException if an initializer class cannot be found or adapted
      */
     public function build(): ContainerInterface
     {
-        $sources = $this->collectCompositionSources();
-        $providers = array_values(array_filter(
-            $sources,
-            static fn(object $source): bool => ! $source instanceof PsrContainerInterface,
-        ));
-        $aggregate = new AggregateContainer();
-        $provider = new FirstFactoryServiceProvider(...$providers);
-        $providerContainer = new ServiceProviderContainer($provider, $aggregate);
-        $providerIndex = 0;
-
-        foreach ($sources as $source) {
-            if ($source instanceof PsrContainerInterface) {
-                $aggregate->append($source);
-
-                continue;
-            }
-
-            $aggregate->appendRequired(new ProviderSourceContainer($providerContainer, $provider, $providerIndex));
-            ++$providerIndex;
-        }
-
-        return new AutowireContainer($aggregate);
+        return new AutowireContainer(new AggregateContainer(...$this->collectCompositionSources()));
     }
 
     /**

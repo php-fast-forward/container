@@ -35,8 +35,6 @@ use FastForward\Container\ServiceProvider\ArrayServiceProvider;
 use FastForward\Container\Extension\ServiceExtension;
 use FastForward\Container\ServiceProviderContainer;
 use Interop\Container\ServiceProviderInterface;
-use FastForward\Container\ServiceProvider\FirstFactoryServiceProvider;
-use FastForward\Container\ProviderSourceContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -63,8 +61,6 @@ use function FastForward\Container\container;
 #[UsesClass(ContainerException::class)]
 #[UsesClass(NotFoundException::class)]
 #[UsesFunction('FastForward\\Container\\container')]
-#[UsesClass(FirstFactoryServiceProvider::class)]
-#[UsesClass(ProviderSourceContainer::class)]
 final class ServiceProviderResolutionTest extends TestCase
 {
     /**

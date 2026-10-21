@@ -78,9 +78,11 @@ Successful final values are cached, including null; void extensions retain their
 input and other returns replace it. Aliases and exact concrete-class extensions
 retain the provider adapter's identity and cycle rules.
 
-Direct and configuration-discovered providers share one build-local aggregate
-provider and adapter. Ordered views keep each selected factory at its original
-provider position, preserving precedence against interleaved PSR-11/Config sources.
+Direct and configuration-discovered providers share one build-local provider
+adapter. ``AggregateContainer`` retains each source's position and inferred alias
+origin as private state; ``ServiceProviderContainer`` owns definitions, extension
+composition and caches. This preserves factory precedence against interleaved
+PSR-11/Config sources without additional wrapper classes.
 Extension-only defaults use the first extension position only when no provider has
 a factory. External values remain independent and are not decorated by the group. Dual-role PSR-11/provider objects remain external PSR-11 sources.
 Configured lists expand one level; invalid optional entries stop that list while
