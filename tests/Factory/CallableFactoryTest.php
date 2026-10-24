@@ -99,6 +99,11 @@ final class CallableFactoryTest extends TestCase
 
         $factory($container);
     }
+    /**
+     * Rejects union parameter types that the callable factory cannot resolve.
+     *
+     * @return void
+     */
     #[Test]
     public function unionParameterReceivesInvalidTypeDiagnostic(): void
     {
@@ -108,6 +113,11 @@ final class CallableFactoryTest extends TestCase
         $factory($this->prophesize(ContainerInterface::class)->reveal());
     }
 
+    /**
+     * Rejects intersection parameter types with the expected diagnostic.
+     *
+     * @return void
+     */
     #[Test]
     public function intersectionParameterReceivesInvalidTypeDiagnostic(): void
     {
@@ -117,6 +127,11 @@ final class CallableFactoryTest extends TestCase
         $factory($this->prophesize(ContainerInterface::class)->reveal());
     }
 
+    /**
+     * Resolves a nullable named dependency from the container.
+     *
+     * @return void
+     */
     #[Test]
     public function nullableNamedParameterStillResolvesDependency(): void
     {
@@ -127,6 +142,11 @@ final class CallableFactoryTest extends TestCase
         self::assertSame($dependency, $factory($container->reveal()));
     }
 
+    /**
+     * Rejects a disjunctive normal form parameter type.
+     *
+     * @return void
+     */
     #[Test]
     public function dnfParameterReceivesInvalidTypeDiagnostic(): void
     {
@@ -138,6 +158,11 @@ final class CallableFactoryTest extends TestCase
         $factory($this->prophesize(ContainerInterface::class)->reveal());
     }
 
+    /**
+     * Rejects parameters without a named dependency type.
+     *
+     * @return void
+     */
     #[Test]
     public function untypedParameterReceivesInvalidTypeDiagnostic(): void
     {
