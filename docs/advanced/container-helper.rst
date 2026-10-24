@@ -58,6 +58,49 @@ share their own caches and services across compositions.
 The runnable ``examples/07-incremental-builder.php`` demonstrates conditional
 registration and the independence of previously built containers.
 
+Cross-provider composition
+--------------------------
+
+The helper, factory and builder compose all registered provider extensions by
+default. No opt-in or additional entry point is required:
+
+.. code-block:: php
+
+   $helper = container($extensionProvider, $factoryProvider);
+   $factory = ContainerFactory::create($extensionProvider, $factoryProvider);
+   $builder = (new ContainerBuilder())->add($extensionProvider, $factoryProvider)->build();
+
+Providers are collected before resolving an entry. The first callable factory for
+an ID wins, preserving factory precedence. All provider extensions run in
+registration order after factory selection, including extensions registered
+before that factory. If no provider has a factory, extensions start with null.
+Successful final values are cached, including null; void extensions retain their
+input and other returns replace it. Aliases and exact concrete-class extensions
+retain the provider adapter's identity and cycle rules.
+
+Direct and configuration-discovered providers share one build-local provider
+adapter. ``AggregateContainer`` retains each source's position and inferred alias
+origin as private state; ``ServiceProviderContainer`` owns definitions, extension
+composition and caches. This preserves factory precedence against interleaved
+PSR-11/Config sources without additional wrapper classes.
+Extension-only defaults use the first extension position only when no provider has
+a factory. External values remain independent and are not decorated by the group. Dual-role PSR-11/provider objects remain external PSR-11 sources.
+Configured lists expand one level; invalid optional entries stop that list while
+retaining prior entries and later explicit initializers. Class strings are
+instantiated for each build.
+
+Once a provider factory or extension is selected, construction/extension failures
+propagate with their causes. Later factories, external sources and native
+autowiring do not replace a broken selected entry. Failed/incomplete chains are
+not cached and may be retried. Absence permits later sources. External PSR-11
+sources retain aggregate fallback semantics.
+
+Each build gets fresh adapters, provider caches and a completed aggregate wrapper
+for cross-source dependencies. Supplied external containers and captured objects
+may still share state. Explicit ``AggregateServiceProvider`` retains its distinct
+last-factory-wins policy. Older releases may lack this correction; run
+``examples/08-provider-composition.php`` against the installed library to verify it.
+
 Supported initializers
 ----------------------
 
@@ -66,7 +109,7 @@ Initializer                           Behavior
 ====================================  ================================================================
 ``ConfigInterface``                   Wrapped in ``ConfigContainer``
 ``Psr\Container\ContainerInterface``  Added directly to the aggregate
-``ServiceProviderInterface``          Wrapped in ``ServiceProviderContainer``
+``ServiceProviderInterface``          Collected into the build's shared provider adapter
 ``string``                            Instantiated with ``new`` and then resolved using the same rules
 ====================================  ================================================================
 
@@ -77,13 +120,14 @@ How It Works
 
 1. Each initializer is resolved to a container instance:
    - If it's already a container, it's used as-is.
-   - If it's a service provider, it's wrapped in a ServiceProviderContainer.
+   - Service providers are collected into one build-local aggregate provider.
    - If it's a config, it's wrapped in a ConfigContainer.
    - If it's a string, the class is instantiated and then resolved as above.
    - Unknown class names and unsupported constructed objects throw an InvalidArgumentException.
-2. All resolved containers are appended to an AggregateContainer.
-3. If a ConfigContainer is present, it may provide nested initializers, which are also resolved and appended.
-4. The final result is always an AutowireContainer wrapping the aggregate.
+2. Provider definitions select the first callable factory and compose every extension in registration order.
+3. The provider adapter and independent resolved containers are appended to an AggregateContainer.
+4. If a ConfigContainer is present, it may provide nested initializers, which are also resolved and appended.
+5. The final result is always an AutowireContainer wrapping the aggregate.
 
 Resolution order
 ----------------

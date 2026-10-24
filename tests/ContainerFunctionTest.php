@@ -31,6 +31,7 @@ use FastForward\Container\ContainerInterface;
 use FastForward\Container\Exception\InvalidArgumentException;
 use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\ServiceProviderContainer;
+use FastForward\Container\ServiceProvider\AggregateServiceProvider;
 use Interop\Container\ServiceProviderInterface;
 use PHPUnit\Framework\Attributes\CoversFunction;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -50,6 +51,7 @@ use function FastForward\Container\container;
 #[UsesClass(AutowireContainer::class)]
 #[UsesClass(ReflectionContainer::class)]
 #[UsesClass(ServiceProviderContainer::class)]
+#[UsesClass(AggregateServiceProvider::class)]
 #[UsesClass(InvalidArgumentException::class)]
 #[UsesClass(NotFoundException::class)]
 final class ContainerFunctionTest extends TestCase

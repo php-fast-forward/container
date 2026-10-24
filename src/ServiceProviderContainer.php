@@ -24,6 +24,8 @@ use WeakMap;
 use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\Extension\ServiceExtension;
+use FastForward\Container\Factory\ServiceFactory;
+use FastForward\Container\ServiceProvider\AggregateServiceProvider;
 use Interop\Container\ServiceProviderInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
@@ -31,7 +33,7 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
  * Implements a PSR-11 compliant dependency injection container using a container-interop/service-provider.
  *
  * This container SHALL resolve services by delegating to the factories and extensions defined in the
- * provided ServiceProviderInterface instance.
+ * provided provider or ordered provider list.
  *
  * Services are lazily instantiated on first request and
  * cached for subsequent retrieval, enforcing singleton-like behavior within the container scope.
@@ -50,6 +52,16 @@ final class ServiceProviderContainer implements ContainerInterface
      * This property MAY reference another container for delegation, or default to this container instance.
      */
     private readonly PsrContainerInterface $wrapperContainer;
+
+    /**
+     * @var ServiceProviderInterface definitions used for extension composition
+     */
+    private readonly ServiceProviderInterface $serviceProvider;
+
+    /**
+     * @var list<ServiceProviderInterface>|null ordered providers when composing first-factory definitions
+     */
+    private readonly ?array $providers;
 
     /**
      * Final class-extension values indexed by original and same-class resulting object identities.
@@ -86,14 +98,21 @@ final class ServiceProviderContainer implements ContainerInterface
      * This constructor SHALL initialize the container with a service provider and an optional delegating container.
      * If no wrapper container is provided, the container SHALL delegate to itself.
      *
-     * @param ServiceProviderInterface $serviceProvider the service provider supplying factories and extensions
+     * @param ServiceProviderInterface|list<ServiceProviderInterface> $serviceProvider a provider or ordered providers; lists keep the first callable factory and compose all extensions
      * @param PsrContainerInterface|null $wrapperContainer An optional container for delegation. Defaults to self.
      */
     public function __construct(
-        private readonly ServiceProviderInterface $serviceProvider,
+        ServiceProviderInterface|array $serviceProvider,
         ?PsrContainerInterface $wrapperContainer = null,
     ) {
         $this->wrapperContainer = $wrapperContainer ?? $this;
+        if (\is_array($serviceProvider)) {
+            $this->providers = array_values($serviceProvider);
+            $this->serviceProvider = new AggregateServiceProvider(...$this->providers);
+        } else {
+            $this->providers = null;
+            $this->serviceProvider = $serviceProvider;
+        }
     }
 
     /**
@@ -115,7 +134,7 @@ final class ServiceProviderContainer implements ContainerInterface
         }
 
         try {
-            return $this->hasEntry($id, $this->serviceProvider->getFactories())
+            return $this->hasEntry($id, $this->getFactories())
                 || $this->hasEntry($id, extensions: $this->serviceProvider->getExtensions());
         } catch (Throwable $throwable) {
             throw ContainerException::forInvalidService($id, $throwable);
@@ -244,10 +263,44 @@ final class ServiceProviderContainer implements ContainerInterface
     private function readProviderDefinitions(string $id): array
     {
         try {
-            return [$this->serviceProvider->getFactories(), $this->serviceProvider->getExtensions()];
+            return [$this->getFactories(), $this->serviceProvider->getExtensions()];
         } catch (Throwable $throwable) {
             throw ContainerException::forInvalidService($id, $throwable);
         }
+    }
+
+    /**
+     * Reads first-callable factories for a provider list, or the single provider's own policy.
+     *
+     * Explicit AggregateServiceProvider objects retain their last-factory policy.
+     * Definitions are read lazily; no service callback is executed here.
+     *
+     * @return array<string, mixed> selected factories and provider identity definitions
+     */
+    private function getFactories(): array
+    {
+        if (null === $this->providers) {
+            return $this->serviceProvider->getFactories();
+        }
+
+        $factories = [];
+        $identities = [
+            AggregateServiceProvider::class => new ServiceFactory($this->serviceProvider),
+        ];
+
+        foreach ($this->providers as $provider) {
+            foreach ($provider->getFactories() as $id => $factory) {
+                if (\is_callable($factory) && ! \array_key_exists($id, $factories)) {
+                    $factories[$id] = $factory;
+                }
+            }
+
+            $identities += [
+                $provider::class => new ServiceFactory($provider),
+            ];
+        }
+
+        return $factories + $identities;
     }
 
     /**
