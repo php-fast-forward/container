@@ -20,7 +20,7 @@ namespace FastForward\Container\Factory;
 
 use Closure;
 use ReflectionFunction;
-use ReflectionType;
+use ReflectionNamedType;
 use FastForward\Container\Exception\RuntimeException;
 use Psr\Container\ContainerInterface;
 
@@ -77,7 +77,7 @@ final readonly class CallableFactory implements FactoryInterface
         $arguments = [];
 
         foreach ($function->getParameters() as $parameter) {
-            if (! $parameter->getType() instanceof ReflectionType || $parameter->getType()->isBuiltin()) {
+            if (! $parameter->getType() instanceof ReflectionNamedType || $parameter->getType()->isBuiltin()) {
                 throw RuntimeException::forInvalidParameterType($parameter->getName());
             }
 
