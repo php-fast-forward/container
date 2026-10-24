@@ -8,6 +8,12 @@ and version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 Historical entries were backfilled from tagged diffs and GitHub release notes.
 Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
+## [1.10.4] - 2026-10-24
+
+### Fixed
+
+- Rejects union and intersection callable parameters with the documented invalid-type exception instead of an undefined reflection method error. ([#51](https://github.com/php-fast-forward/container/pull/51))
+
 ## [1.10.3] - 2026-10-20
 
 ### Changed
@@ -219,6 +225,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 - Configuration-backed composition and PHP-DI autowiring through `container()` and the original invokable `Factory\ContainerFactory`.
 - Unit tests, Composer autoloading and the MIT license.
 
+[1.10.4]: https://github.com/php-fast-forward/container/compare/v1.10.1...v1.10.4
 [1.10.3]: https://github.com/php-fast-forward/container/compare/v1.10.1...v1.10.3
 [1.10.2]: https://github.com/php-fast-forward/container/compare/v1.10.1...v1.10.2
 [1.10.1]: https://github.com/php-fast-forward/container/compare/v1.10.0...v1.10.1
