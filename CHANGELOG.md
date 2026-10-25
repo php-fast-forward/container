@@ -8,6 +8,19 @@ and version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 Historical entries were backfilled from tagged diffs and GitHub release notes.
 Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
+## [1.10.5] - 2026-10-25
+
+### Changed
+
+- Synchronize the bundled local skill automatically and trust Fast Forward Composer
+  skill donors through `fast-forward/*`.
+  Resolve Changelog contributor skills from stable `0.4.x` releases without a
+  redundant skill allowlist.
+  Load the project autoloader for PHPDoc checks when DevTools is installed as a
+  dependency.
+
+  ([#53](https://github.com/php-fast-forward/container/pull/53))
+
 ## [1.10.4] - 2026-10-24
 
 ### Fixed
@@ -225,6 +238,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 - Configuration-backed composition and PHP-DI autowiring through `container()` and the original invokable `Factory\ContainerFactory`.
 - Unit tests, Composer autoloading and the MIT license.
 
+[1.10.5]: https://github.com/php-fast-forward/container/compare/v1.10.1...v1.10.5
 [1.10.4]: https://github.com/php-fast-forward/container/compare/v1.10.1...v1.10.4
 [1.10.3]: https://github.com/php-fast-forward/container/compare/v1.10.1...v1.10.3
 [1.10.2]: https://github.com/php-fast-forward/container/compare/v1.10.1...v1.10.2
