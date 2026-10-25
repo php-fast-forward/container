@@ -121,8 +121,6 @@ final readonly class DeploymentMetadata
 
     /**
      * @param DeploymentStage $stage
-     *
-     * @return self
      */
     public static function fromStage(DeploymentStage $stage): self
     {

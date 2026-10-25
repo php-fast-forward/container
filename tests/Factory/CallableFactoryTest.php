@@ -99,6 +99,7 @@ final class CallableFactoryTest extends TestCase
 
         $factory($container);
     }
+
     /**
      * Rejects union parameter types that the callable factory cannot resolve.
      *
@@ -107,7 +108,7 @@ final class CallableFactoryTest extends TestCase
     #[Test]
     public function unionParameterReceivesInvalidTypeDiagnostic(): void
     {
-        $factory = new CallableFactory(static fn(ContainerInterface|FactoryInterface $dependency) => $dependency);
+        $factory = new CallableFactory(static fn(ContainerInterface|FactoryInterface $dependency): ContainerInterface|FactoryInterface => $dependency);
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Parameter "dependency" is not a valid type.');
         $factory($this->prophesize(ContainerInterface::class)->reveal());
@@ -121,7 +122,7 @@ final class CallableFactoryTest extends TestCase
     #[Test]
     public function intersectionParameterReceivesInvalidTypeDiagnostic(): void
     {
-        $factory = new CallableFactory(static fn(ContainerInterface&FactoryInterface $dependency) => $dependency);
+        $factory = new CallableFactory(static fn(ContainerInterface&FactoryInterface $dependency): ContainerInterface&FactoryInterface => $dependency);
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Parameter "dependency" is not a valid type.');
         $factory($this->prophesize(ContainerInterface::class)->reveal());
@@ -138,7 +139,7 @@ final class CallableFactoryTest extends TestCase
         $container = $this->prophesize(ContainerInterface::class);
         $dependency = $this->prophesize(FactoryInterface::class)->reveal();
         $container->get(FactoryInterface::class)->willReturn($dependency);
-        $factory = new CallableFactory(static fn(?FactoryInterface $dependency) => $dependency);
+        $factory = new CallableFactory(static fn(?FactoryInterface $dependency): ?FactoryInterface => $dependency);
         self::assertSame($dependency, $factory($container->reveal()));
     }
 
@@ -151,7 +152,7 @@ final class CallableFactoryTest extends TestCase
     public function dnfParameterReceivesInvalidTypeDiagnostic(): void
     {
         $factory = new CallableFactory(
-            static fn((ContainerInterface&FactoryInterface)|ServiceProviderInterface $dependency) => $dependency
+            static fn((ContainerInterface&FactoryInterface)|ServiceProviderInterface $dependency): (ContainerInterface&FactoryInterface)|ServiceProviderInterface => $dependency
         );
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Parameter "dependency" is not a valid type.');
@@ -171,5 +172,4 @@ final class CallableFactoryTest extends TestCase
         $this->expectExceptionMessage('Parameter "dependency" is not a valid type.');
         $factory($this->prophesize(ContainerInterface::class)->reveal());
     }
-
 }

@@ -83,9 +83,7 @@ class AggregateContainer implements ContainerInterface
     {
         $this->containers[] = $container;
 
-        if (! isset($this->resolved[$container::class])) {
-            $this->resolved[$container::class] = $container;
-        }
+        $this->resolved[$container::class] ??= $container;
     }
 
     /**
