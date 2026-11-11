@@ -112,7 +112,9 @@ inside the FastForward ecosystem while staying compatible with PSR-11 consumers.
 ``AggregateContainer``
 ----------------------
 
-``AggregateContainer`` combines multiple PSR-11 containers and resolves them in order.
+``AggregateContainer`` combines ordered PSR-11 containers and Interop providers.
+Provider registrations share one ``ServiceProviderContainer``; source positions,
+required-entry policy and inferred alias origins are private aggregate state.
 
 Built-in aliases:
 
@@ -125,7 +127,8 @@ Resolution rules:
 
 - If an entry was already resolved once, the cached value is returned.
 - Otherwise, child containers are checked from first to last.
-- If one child reports ``has($id)`` but throws a PSR not-found or container exception during ``get($id)``, the aggregate keeps checking later containers.
+- External PSR-11 sources permit fallback after ``get()`` throws a PSR not-found or container exception.
+- Provider sources select the first callable factory and apply all extensions in registration order. Selected provider failures propagate immediately; external values remain independent.
 - If no source succeeds, the first construction exception is rethrown. Lookups that only encounter missing entries throw ``NotFoundException``.
 
 Useful methods:
@@ -176,7 +179,11 @@ interface bindings, scalar arguments and fallback behavior.
 ``ServiceProviderContainer``
 ----------------------------
 
-``ServiceProviderContainer`` turns a ``ServiceProviderInterface`` into a PSR-11 container.
+``ServiceProviderContainer`` turns a ``ServiceProviderInterface`` or an ordered list
+of providers into a PSR-11 container. A list selects the first callable factory and
+applies every extension in registration order. Passing an explicit
+``AggregateServiceProvider`` retains that object's last-factory policy. Metadata is
+read lazily; all results and class-extension state belong to this adapter.
 
 Important behavior:
 

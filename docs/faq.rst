@@ -78,10 +78,12 @@ How do collisions work when multiple providers define the same ID?
 
 It depends on how you combine them:
 
-- ``container($providerA, $providerB)``: the first matching provider wins
+- ``container($providerA, $providerB)``: the first callable factory wins
 - ``new AggregateServiceProvider($providerA, $providerB)``: later factory keys overwrite earlier ones
 
-This difference is intentional, so choose the model that matches your override strategy.
+Both forms apply all provider extensions after factory selection, in registration
+order. This factory-precedence difference is intentional; choose the model that
+matches your override strategy.
 
 Can I resolve the container itself from inside a factory?
 ---------------------------------------------------------

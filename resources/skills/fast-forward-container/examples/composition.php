@@ -39,8 +39,9 @@ $merged = container(new AggregateServiceProvider($base, $test));
 if ('base' !== $first->get('label')
     || 'test' !== $merged->get('label')
     || 'start:base:test' !== $merged->get('trail')
+    || 'start:base:test' !== $first->get('trail')
 ) {
-    throw new RuntimeException('Separate source precedence or merged factory/extension order failed.');
+    throw new RuntimeException('Factory precedence or cross-provider extension order failed.');
 }
 
 $factories = new ArrayServiceProvider([
@@ -83,9 +84,9 @@ if (container($external)->get(Label::class) !== container($external)->get(Label:
     throw new RuntimeException('A reused external container unexpectedly lost its cached instance.');
 }
 
-$broken = new ArrayServiceProvider([
+$broken = new ServiceProviderContainer(new ArrayServiceProvider([
     'recover' => static fn(): never => throw new RuntimeException('broken source'),
-]);
+]));
 $fallback = new ArrayServiceProvider([
     'recover' => static fn(): string => 'recovered',
 ]);

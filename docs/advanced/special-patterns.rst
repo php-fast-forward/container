@@ -115,10 +115,10 @@ container exception preserving the original cause. Failed resolutions are not
 cached and can be retried. An ID with neither a callable factory nor a callable
 ID-based extension remains unknown.
 
-When combining providers, use ``AggregateServiceProvider`` to select factories
-across all providers before applying their extensions in registration order.
-An extension-only provider may precede the provider supplying its factory.
-Passing providers separately to ``container()`` keeps first-match-wins semantics.
+The helper, factory and builder select the first callable factory across providers,
+then apply every extension in registration order by default. An extension-only
+provider may precede the provider supplying its factory. Explicit
+``AggregateServiceProvider`` also composes extensions but uses the last factory.
 The final ``AutowireContainer::has()`` also checks entry discovery without calling
 ``get()``. A ``true`` result does not guarantee that construction will succeed;
 resolution errors are raised by ``get()``.
@@ -128,11 +128,13 @@ Provider merge semantics
 
 There are two distinct composition models:
 
-- ``container($providerA, $providerB)`` keeps providers separated and resolves from the first one that matches.
+- ``container($providerA, $providerB)`` selects the first callable factory and composes all extensions.
 - ``AggregateServiceProvider($providerA, $providerB)`` merges factories first, so later factory keys overwrite earlier ones.
 
-Use the first model for overrides and fallbacks. Use the second model when you want to
-ship one combined provider object.
+Use the first model when earlier factories should take precedence. Use the second
+to ship one combined provider object with later-factory precedence. Selected
+provider failures propagate in helper/factory/builder composition; explicit
+PSR-11 sources retain aggregate fallback semantics.
 
 Aggregate container aliases and self-resolution
 -----------------------------------------------
@@ -167,7 +169,11 @@ Fallback and recovery behavior
 
 When ``AggregateContainer`` checks its child containers, it keeps going when a child says
 it has the entry but then throws a PSR not-found or container exception. This allows later
-containers to recover from partial or inconsistent registrations.
+containers to recover from partial or inconsistent registrations. The helper,
+factory and builder register selected provider entries as required sources through
+``appendRequired()``: their factory/extension failures propagate immediately,
+including nested not-found errors. This prevents a broken selected definition
+from becoming a successful fallback or autowired default.
 
 Wrapper container for delegation
 --------------------------------

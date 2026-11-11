@@ -26,11 +26,12 @@ different:
    * - Approach
      - Resolution behavior
    * - ``container($providerA, $providerB)``
-     - The first provider that successfully resolves the ID wins
+     - The first callable factory wins; all extensions run in registration order
    * - ``new AggregateServiceProvider(...)``
      - Factories are merged first, so later providers overwrite earlier keys
 
-Use ``container($providerA, $providerB)`` when you want layered fallback or overrides.
+Use ``container($providerA, $providerB)`` when earlier factory definitions should take precedence.
+Both forms apply every participating extension after factory selection.
 Use ``AggregateServiceProvider`` when you want to publish one merged provider as a single unit.
 
 .. toctree::

@@ -78,8 +78,9 @@ Two details are easy to miss:
 - Factories are merged in provider order, so later providers overwrite earlier keys when the same service ID exists in both.
 - Extensions with the same key are composed in provider order instead of overwritten.
 
-If you want first-match-wins semantics instead of merge semantics, do not aggregate the
-providers first. Pass them separately to ``container($providerA, $providerB)``.
+Pass providers directly to ``container($providerA, $providerB)`` to preserve the
+first callable factory for each ID. Both forms compose every extension in order;
+explicit ``AggregateServiceProvider`` uses the last duplicate factory.
 
 ``ServiceProviderContainer``
 ----------------------------
@@ -101,3 +102,13 @@ Important behavior:
 - An ID-based extension can provide an entry without a factory; it receives ``null`` as the previous value.
 - Each extension's return value becomes the next value in the resolution chain. Extensions declared ``void`` retain the previous value for compatibility.
 - Factories and extensions receive the wrapper container, which defaults to the ``ServiceProviderContainer`` instance itself.
+
+Cross-provider extensions
+-------------------------
+
+The helper, factory and builder compose all provider extensions by default,
+after selecting the first callable factory for the ID. Earlier extension-only
+providers no longer shadow later factories. Extensions run in registration order.
+Selected factories retain their source positions, including against interleaved
+external PSR-11/config sources. External entries are independent. Selected provider failures propagate instead of falling back.
+See :doc:`../advanced/container-helper` for mixed-source and lifetime boundaries.

@@ -46,6 +46,11 @@ Use ``AggregateServiceProvider`` when:
 
 Pass providers separately to ``container()`` when:
 
-- you want first-match-wins resolution between providers
+- you want the first callable factory for each ID to win
 - you want easy override layering
-- you want to keep provider boundaries visible in the final aggregate container
+- you want all registered provider extensions applied after factory selection
+
+The helper, factory and builder compose providers by default. They share one
+provider adapter per build. Selected construction or extension failures propagate;
+PSR-11/config sources remain independent. See :doc:`../advanced/container-helper`.
+An explicitly supplied ``AggregateServiceProvider`` retains last-factory precedence.

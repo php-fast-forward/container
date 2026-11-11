@@ -30,6 +30,7 @@ use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\Factory\ServiceFactory;
 use FastForward\Container\ServiceProvider\ArrayServiceProvider;
 use FastForward\Container\ServiceProviderContainer;
+use FastForward\Container\ServiceProvider\AggregateServiceProvider;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -49,6 +50,7 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
 #[UsesClass(ServiceFactory::class)]
 #[UsesClass(NotFoundException::class)]
 #[UsesClass(InvalidArgumentException::class)]
+#[UsesClass(AggregateServiceProvider::class)]
 final class ContainerBuilderTest extends TestCase
 {
     /**

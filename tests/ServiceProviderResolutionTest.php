@@ -414,7 +414,7 @@ final class ServiceProviderResolutionTest extends TestCase
      * @return void
      */
     #[Test]
-    public function separateProvidersRetainFirstMatchPrecedence(): void
+    public function earlierExtensionUsesTheLaterFactoryBeforeExtending(): void
     {
         $first = new ArrayServiceProvider(extensions: [
             'value' => static fn(ContainerInterface $container, ?string $previous): string => $previous ?? 'first',
@@ -423,7 +423,7 @@ final class ServiceProviderResolutionTest extends TestCase
             'value' => static fn(): string => 'second',
         ]);
 
-        self::assertSame('first', container($first, $second)->get('value'));
+        self::assertSame('second', container($first, $second)->get('value'));
     }
 
     /**

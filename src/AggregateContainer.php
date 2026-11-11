@@ -19,12 +19,18 @@ declare(strict_types=1);
 namespace FastForward\Container;
 
 use FastForward\Container\Exception\NotFoundException;
+use FastForward\Container\Exception\ContainerException;
+use Interop\Container\ServiceProviderInterface;
+use Throwable;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
 /**
- * Aggregates multiple PSR-11 containers and delegates resolution requests among them.
+ * Aggregates ordered PSR-11 containers and Interop service providers.
+ *
+ * Providers share one adapter. Source positions and inferred alias origins are
+ * retained as internal state, preserving external-source precedence.
  *
  * This container implementation respects PSR-11 expectations and throws a
  * NotFoundException when a requested service cannot be found in any delegated container.
@@ -39,7 +45,7 @@ class AggregateContainer implements ContainerInterface
     public const ALIAS = 'container';
 
     /**
-     * @var ContainerInterface[] the array of containers aggregated by this instance
+     * @var list<array{container: PsrContainerInterface, providerIndex: int|null, required: bool}> ordered source descriptors
      */
     private array $containers = [];
 
@@ -49,14 +55,24 @@ class AggregateContainer implements ContainerInterface
     private array $resolved = [];
 
     /**
+     * @var list<ServiceProviderInterface> providers in their original registration order
+     */
+    private readonly array $providers;
+
+    /**
+     * @var array<class-string, array{index: int, instance: object}> earliest provider aliases
+     */
+    private array $classAliases = [];
+
+    /**
      * Constructs the AggregateContainer with one or more delegated containers.
      *
      * The constructor SHALL bind itself to common aliases, including the class name
      * and the PSR-11 interface, to simplify resolution of the container itself.
      *
-     * @param PsrContainerInterface ...$containers One or more container implementations to aggregate.
+     * @param PsrContainerInterface|ServiceProviderInterface ...$containers ordered containers and providers to compose
      */
-    public function __construct(PsrContainerInterface ...$containers)
+    public function __construct(PsrContainerInterface|ServiceProviderInterface ...$containers)
     {
         $this->resolved = [
             self::ALIAS                  => $this,
@@ -65,8 +81,27 @@ class AggregateContainer implements ContainerInterface
             PsrContainerInterface::class => $this,
         ];
 
+        $this->providers = array_values(array_filter(
+            $containers,
+            static fn(object $source): bool => ! $source instanceof PsrContainerInterface,
+        ));
+        $providerContainer = [] === $this->providers ? null : new ServiceProviderContainer($this->providers, $this);
+        $providerIndex = 0;
+
         foreach ($containers as $container) {
-            $this->append($container);
+            if ($container instanceof PsrContainerInterface) {
+                $this->append($container);
+
+                continue;
+            }
+
+            $this->containers[] = [
+                'container' => $providerContainer,
+                'providerIndex' => $providerIndex,
+                'required' => true,
+            ];
+            $this->resolved[ServiceProviderContainer::class] ??= $providerContainer;
+            ++$providerIndex;
         }
     }
 
@@ -81,9 +116,29 @@ class AggregateContainer implements ContainerInterface
      */
     public function append(PsrContainerInterface $container): void
     {
-        $this->containers[] = $container;
+        $this->containers[] = [
+            'container' => $container,
+            'providerIndex' => null,
+            'required' => false,
+        ];
 
         $this->resolved[$container::class] ??= $container;
+    }
+
+    /**
+     * Appends a source whose advertised entry failures must stop resolution.
+     *
+     * Absence still permits later sources. A failure after has() succeeds propagates,
+     * including a not-found exception raised while resolving a required dependency.
+     *
+     * @param PsrContainerInterface $container the authoritative source to append
+     *
+     * @return void
+     */
+    public function appendRequired(PsrContainerInterface $container): void
+    {
+        $this->append($container);
+        $this->containers[array_key_last($this->containers)]['required'] = true;
     }
 
     /**
@@ -98,7 +153,11 @@ class AggregateContainer implements ContainerInterface
     public function prepend(PsrContainerInterface $container): void
     {
         $this->resolved[$container::class] = $container;
-        array_unshift($this->containers, $container);
+        array_unshift($this->containers, [
+            'container' => $container,
+            'providerIndex' => null,
+            'required' => false,
+        ]);
     }
 
     /**
@@ -117,8 +176,9 @@ class AggregateContainer implements ContainerInterface
             return true;
         }
 
-        foreach ($this->containers as $container) {
-            if ($container->has($id)) {
+        $providerLookup = null;
+        foreach ($this->containers as $source) {
+            if ($this->sourceHas($source, $id, $providerLookup)) {
                 return true;
             }
         }
@@ -133,6 +193,8 @@ class AggregateContainer implements ContainerInterface
      * through the aggregated containers to resolve the entry. It MUST throw a
      * NotFoundException if the identifier is absent. If all candidates fail, the first
      * delegated construction exception SHALL be retained instead.
+     * Sources registered with appendRequired() SHALL propagate their advertised
+     * entry failures immediately, without attempting later sources.
      *
      * @param string $id the identifier of the entry to retrieve
      *
@@ -148,19 +210,43 @@ class AggregateContainer implements ContainerInterface
         }
 
         $exception = NotFoundException::forServiceID($id);
+        $providerLookup = null;
 
-        foreach ($this->containers as $container) {
-            if (! $container->has($id)) {
+        foreach ($this->containers as $source) {
+            $container = $source['container'];
+
+            if (! $this->sourceHas($source, $id, $providerLookup)) {
                 continue;
             }
 
             try {
-                $this->resolved[$id] = $container->get($id);
+                $position = $source['providerIndex'];
+                $inferredInstance = null === $position ? null : $providerLookup['instance'];
+                $entry = $inferredInstance ?? $container->get($id);
+                $this->resolved[$id] = $entry;
 
-                return $this->resolved[$id];
-            } catch (NotFoundExceptionInterface) {
+                if (null !== $position && \is_object($entry)) {
+                    $class = $entry::class;
+                    if ($position < ($this->classAliases[$class]['index'] ?? \PHP_INT_MAX)) {
+                        $this->classAliases[$class] = [
+                            'index' => $position,
+                            'instance' => $entry,
+                        ];
+                    }
+                }
+
+                return $entry;
+            } catch (NotFoundExceptionInterface $failure) {
+                if ($source['required']) {
+                    throw $failure;
+                }
+
                 // Ignore NotFoundExceptionInterface
             } catch (ContainerExceptionInterface $failure) {
+                if ($source['required']) {
+                    throw $failure;
+                }
+
                 if ($exception instanceof NotFoundExceptionInterface) {
                     $exception = $failure;
                 }
@@ -168,6 +254,79 @@ class AggregateContainer implements ContainerInterface
         }
 
         throw $exception;
+    }
+
+    /**
+     * Checks source precedence using one provider ownership decision per lookup.
+     *
+     * @param array{container: PsrContainerInterface, providerIndex: int|null, required: bool} $source the source descriptor
+     * @param string $id the requested identifier
+     * @param array{index: int|null, instance: object|null}|null $providerLookup lookup result for the shared adapter
+     *
+     * @return bool whether this source may resolve the entry
+     */
+    private function sourceHas(array $source, string $id, ?array &$providerLookup): bool
+    {
+        if (null === $source['providerIndex']) {
+            return $source['container']->has($id);
+        }
+
+        if (null === $providerLookup) {
+            $hasEntry = $source['container']->has($id);
+
+            try {
+                $providerLookup = $hasEntry ? $this->providerSourceFor($id) : [
+                    'index' => null,
+                    'instance' => null,
+                ];
+            } catch (Throwable $throwable) {
+                throw ContainerException::forInvalidService($id, $throwable);
+            }
+        }
+
+        return $providerLookup['index'] === $source['providerIndex'];
+    }
+
+    /**
+     * Selects explicit providers first and then the earliest inferred alias.
+     *
+     * @param string $id the entry identifier
+     *
+     * @return array{index: int, instance: object|null} the provider position and any inferred instance
+     */
+    private function providerSourceFor(string $id): array
+    {
+        foreach ($this->providers as $position => $provider) {
+            if (\is_callable($provider->getFactories()[$id] ?? null)) {
+                return [
+                    'index' => $position,
+                    'instance' => null,
+                ];
+            }
+        }
+
+        foreach ($this->providers as $position => $provider) {
+            if (\is_callable($provider->getExtensions()[$id] ?? null)) {
+                return [
+                    'index' => $position,
+                    'instance' => null,
+                ];
+            }
+        }
+
+        foreach ($this->providers as $position => $provider) {
+            if ($id === $provider::class) {
+                return [
+                    'index' => $position,
+                    'instance' => null,
+                ];
+            }
+        }
+
+        return $this->classAliases[$id] ?? [
+            'index' => 0,
+            'instance' => null,
+        ];
     }
 
     /**
