@@ -8,6 +8,12 @@ and version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 Historical entries were backfilled from tagged diffs and GitHub release notes.
 Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 
+## [1.10.6] - 2026-11-11
+
+### Changed
+
+- Group Dependabot dependency updates by ecosystem and dependency type. ([#55](https://github.com/php-fast-forward/container/pull/55))
+
 ## [1.10.5] - 2026-10-25
 
 ### Changed
@@ -238,6 +244,7 @@ Dates follow GitHub release publication in the `America/Sao_Paulo` timezone.
 - Configuration-backed composition and PHP-DI autowiring through `container()` and the original invokable `Factory\ContainerFactory`.
 - Unit tests, Composer autoloading and the MIT license.
 
+[1.10.6]: https://github.com/php-fast-forward/container/compare/v1.10.1...v1.10.6
 [1.10.5]: https://github.com/php-fast-forward/container/compare/v1.10.1...v1.10.5
 [1.10.4]: https://github.com/php-fast-forward/container/compare/v1.10.1...v1.10.4
 [1.10.3]: https://github.com/php-fast-forward/container/compare/v1.10.1...v1.10.3
