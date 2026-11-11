@@ -110,6 +110,39 @@ final class ProviderCompositionTest extends TestCase
     }
 
     /**
+     * Infers class aliases in provider registration order even after later factories resolve first.
+     */
+    public function testEarlierProviderWinsCompetingInferredClassAliases(): void
+    {
+        $first = (object) [
+            'source' => 'first',
+        ];
+        $last = (object) [
+            'source' => 'last',
+        ];
+        $external = self::createStub(PsrContainerInterface::class);
+        $external->method('has')
+            ->willReturnCallback(static fn(string $id): bool => stdClass::class === $id);
+        $external->method('get')
+            ->willReturn((object) [
+                'source' => 'external',
+            ]);
+        $container = new AggregateContainer(
+            new ArrayServiceProvider([
+                'first' => static fn(): stdClass => $first,
+            ]),
+            $external,
+            new ArrayServiceProvider([
+                'last' => static fn(): stdClass => $last,
+            ]),
+        );
+
+        self::assertSame($last, $container->get('last'));
+        self::assertSame($first, $container->get('first'));
+        self::assertSame($first, $container->get(stdClass::class));
+    }
+
+    /**
      * @return iterable<string, array{bool, string}>
      */
     public static function providerOrders(): iterable

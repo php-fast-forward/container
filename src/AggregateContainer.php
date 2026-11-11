@@ -60,9 +60,9 @@ class AggregateContainer implements ContainerInterface
     private readonly array $providers;
 
     /**
-     * @var array<class-string, int> originating source positions of inferred class aliases
+     * @var array<class-string, array{index: int, instance: object}> earliest provider aliases
      */
-    private array $classAliasOwners = [];
+    private array $classAliases = [];
 
     /**
      * Constructs the AggregateContainer with one or more delegated containers.
@@ -176,9 +176,9 @@ class AggregateContainer implements ContainerInterface
             return true;
         }
 
-        $providerIndex = null;
+        $providerLookup = null;
         foreach ($this->containers as $source) {
-            if ($this->sourceHas($source, $id, $providerIndex)) {
+            if ($this->sourceHas($source, $id, $providerLookup)) {
                 return true;
             }
         }
@@ -210,23 +210,32 @@ class AggregateContainer implements ContainerInterface
         }
 
         $exception = NotFoundException::forServiceID($id);
-        $providerIndex = null;
+        $providerLookup = null;
 
         foreach ($this->containers as $source) {
             $container = $source['container'];
 
-            if (! $this->sourceHas($source, $id, $providerIndex)) {
+            if (! $this->sourceHas($source, $id, $providerLookup)) {
                 continue;
             }
 
             try {
-                $this->resolved[$id] = $container->get($id);
+                $position = $source['providerIndex'];
+                $inferredInstance = null === $position ? null : $providerLookup['instance'];
+                $entry = $inferredInstance ?? $container->get($id);
+                $this->resolved[$id] = $entry;
 
-                if (null !== $source['providerIndex'] && \is_object($this->resolved[$id])) {
-                    $this->classAliasOwners[$this->resolved[$id]::class] ??= $source['providerIndex'];
+                if (null !== $position && \is_object($entry)) {
+                    $class = $entry::class;
+                    if ($position < ($this->classAliases[$class]['index'] ?? \PHP_INT_MAX)) {
+                        $this->classAliases[$class] = [
+                            'index' => $position,
+                            'instance' => $entry,
+                        ];
+                    }
                 }
 
-                return $this->resolved[$id];
+                return $entry;
             } catch (NotFoundExceptionInterface $failure) {
                 if ($source['required']) {
                     throw $failure;
@@ -252,57 +261,72 @@ class AggregateContainer implements ContainerInterface
      *
      * @param array{container: PsrContainerInterface, providerIndex: int|null, required: bool} $source the source descriptor
      * @param string $id the requested identifier
-     * @param int|false|null $providerIndex the computed provider position, absence, or pending lookup
+     * @param array{index: int|null, instance: object|null}|null $providerLookup lookup result for the shared adapter
      *
      * @return bool whether this source may resolve the entry
      */
-    private function sourceHas(array $source, string $id, int|false|null &$providerIndex): bool
+    private function sourceHas(array $source, string $id, ?array &$providerLookup): bool
     {
         if (null === $source['providerIndex']) {
             return $source['container']->has($id);
         }
 
-        if (null === $providerIndex) {
+        if (null === $providerLookup) {
             $hasEntry = $source['container']->has($id);
 
             try {
-                $providerIndex = $hasEntry ? $this->providerIndexFor($id) : false;
+                $providerLookup = $hasEntry ? $this->providerSourceFor($id) : [
+                    'index' => null,
+                    'instance' => null,
+                ];
             } catch (Throwable $throwable) {
                 throw ContainerException::forInvalidService($id, $throwable);
             }
         }
 
-        return $providerIndex === $source['providerIndex'];
+        return $providerLookup['index'] === $source['providerIndex'];
     }
 
     /**
-     * Selects factory positions before extension-only defaults without executing either.
+     * Selects explicit providers first and then the earliest inferred alias.
      *
      * @param string $id the entry identifier
      *
-     * @return int the originating provider index
+     * @return array{index: int, instance: object|null} the provider position and any inferred instance
      */
-    private function providerIndexFor(string $id): int
+    private function providerSourceFor(string $id): array
     {
         foreach ($this->providers as $position => $provider) {
             if (\is_callable($provider->getFactories()[$id] ?? null)) {
-                return $position;
+                return [
+                    'index' => $position,
+                    'instance' => null,
+                ];
             }
         }
 
         foreach ($this->providers as $position => $provider) {
             if (\is_callable($provider->getExtensions()[$id] ?? null)) {
-                return $position;
+                return [
+                    'index' => $position,
+                    'instance' => null,
+                ];
             }
         }
 
         foreach ($this->providers as $position => $provider) {
             if ($id === $provider::class) {
-                return $position;
+                return [
+                    'index' => $position,
+                    'instance' => null,
+                ];
             }
         }
 
-        return $this->classAliasOwners[$id] ?? 0;
+        return $this->classAliases[$id] ?? [
+            'index' => 0,
+            'instance' => null,
+        ];
     }
 
     /**
