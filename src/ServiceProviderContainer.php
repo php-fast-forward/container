@@ -135,7 +135,7 @@ final class ServiceProviderContainer implements ContainerInterface
 
         try {
             return $this->hasEntry($id, $this->getFactories())
-                || $this->hasEntry($id, extensions: $this->serviceProvider->getExtensions());
+                || $this->hasEntry($id, extensions: $this->getExtensions());
         } catch (Throwable $throwable) {
             throw ContainerException::forInvalidService($id, $throwable);
         }
@@ -263,10 +263,24 @@ final class ServiceProviderContainer implements ContainerInterface
     private function readProviderDefinitions(string $id): array
     {
         try {
-            return [$this->getFactories(), $this->serviceProvider->getExtensions()];
+            return [$this->getFactories(), $this->getExtensions()];
         } catch (Throwable $throwable) {
             throw ContainerException::forInvalidService($id, $throwable);
         }
+    }
+
+    /**
+     * Reads extensions using the implicit list's callable-only composition policy.
+     *
+     * @return array<array-key, mixed> extension definitions for the adapter
+     */
+    private function getExtensions(): array
+    {
+        $provider = $this->serviceProvider;
+
+        return null !== $this->providers && $provider instanceof AggregateServiceProvider
+            ? $provider->getCallableExtensions()
+            : $provider->getExtensions();
     }
 
     /**

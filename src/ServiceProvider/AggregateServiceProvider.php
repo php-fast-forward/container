@@ -91,12 +91,40 @@ class AggregateServiceProvider implements ServiceProviderInterface
      */
     public function getExtensions(): array
     {
+        return $this->collectExtensions(rejectInvalid: true);
+    }
+
+    /**
+     * Composes callable extensions for the implicit container provider list.
+     *
+     * @internal
+     *
+     * @return array<string, callable> callable extensions composed in registration order
+     */
+    public function getCallableExtensions(): array
+    {
+        return $this->collectExtensions(rejectInvalid: false);
+    }
+
+    /**
+     * Composes extensions according to the caller's invalid-definition policy.
+     *
+     * @param bool $rejectInvalid whether a non-callable definition is an error
+     *
+     * @return array<string, callable> extensions composed in registration order
+     */
+    private function collectExtensions(bool $rejectInvalid): array
+    {
         return array_reduce(
             $this->serviceProviders,
-            static function (array $extensions, ServiceProviderInterface $serviceProvider): array {
+            static function (array $extensions, ServiceProviderInterface $serviceProvider) use ($rejectInvalid): array {
                 foreach ($serviceProvider->getExtensions() as $id => $extension) {
                     if (! \is_callable($extension)) {
-                        throw RuntimeException::forNonCallableExtension($id, get_debug_type($extension));
+                        if ($rejectInvalid) {
+                            throw RuntimeException::forNonCallableExtension($id, get_debug_type($extension));
+                        }
+
+                        continue;
                     }
 
                     $extension = new ServiceExtension($extension);

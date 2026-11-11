@@ -29,6 +29,7 @@ use FastForward\Container\Exception\ContainerException;
 use FastForward\Container\Exception\InvalidArgumentException;
 use FastForward\Container\Exception\NotFoundException;
 use FastForward\Container\Factory\AliasFactory;
+use FastForward\Container\ServiceProvider\AggregateServiceProvider;
 use FastForward\Container\ServiceProvider\ArrayServiceProvider;
 use FastForward\Container\ServiceProviderContainer;
 use FastForward\Container\Tests\Integration\Fixture\CompositionProvider;
@@ -46,6 +47,68 @@ use function FastForward\Container\container;
 #[CoversNothing]
 final class ProviderCompositionTest extends TestCase
 {
+    /**
+     * Unrelated invalid extensions cannot prevent discovery, resolution or fallback.
+     */
+    public function testImplicitCompositionIgnoresNonCallableExtensions(): void
+    {
+        $provider = self::createStub(ServiceProviderInterface::class);
+        $provider->method('getFactories')
+            ->willReturn([
+                'entry' => static fn(): string => 'provider',
+            ]);
+        $provider->method('getExtensions')
+            ->willReturn([
+                'unused' => 'not_a_function',
+                'entry' => static fn($container, $previous): string => $previous . '|extended',
+            ]);
+        $external = self::createStub(PsrContainerInterface::class);
+        $external->method('has')
+            ->willReturnCallback(static fn(string $id): bool => 'external' === $id);
+        $external->method('get')
+            ->willReturn('external');
+
+        $container = container($provider, $external);
+
+        self::assertFalse($container->has('unused'));
+        self::assertSame('provider|extended', $container->get('entry'));
+        self::assertSame('external', $container->get('external'));
+
+        $this->expectException(RuntimeException::class);
+        (new AggregateServiceProvider($provider))->getExtensions();
+    }
+
+    /**
+     * A missing or late entry visits each provider only a bounded number of times.
+     */
+    public function testProviderOwnershipDoesNotRebuildDefinitionsForEachSource(): void
+    {
+        $factoryReads = 0;
+        $providers = [];
+        for ($position = 0; $position < 12; ++$position) {
+            $provider = self::createStub(ServiceProviderInterface::class);
+            $provider->method('getFactories')
+                ->willReturnCallback(static function () use (&$factoryReads, $position): array {
+                    ++$factoryReads;
+
+                    return [
+                        'entry-' . $position => static fn(): int => $position,
+                    ];
+                });
+            $provider->method('getExtensions')
+                ->willReturn([]);
+            $providers[] = $provider;
+        }
+
+        $container = new AggregateContainer(...$providers);
+        self::assertFalse($container->has('missing'));
+        self::assertSame(\count($providers), $factoryReads);
+
+        $factoryReads = 0;
+        self::assertSame(11, $container->get('entry-11'));
+        self::assertLessThanOrEqual(3 * \count($providers), $factoryReads);
+    }
+
     /**
      * @return iterable<string, array{bool, string}>
      */

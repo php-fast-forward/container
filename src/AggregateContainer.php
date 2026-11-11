@@ -176,8 +176,9 @@ class AggregateContainer implements ContainerInterface
             return true;
         }
 
+        $providerIndex = null;
         foreach ($this->containers as $source) {
-            if ($this->sourceHas($source, $id)) {
+            if ($this->sourceHas($source, $id, $providerIndex)) {
                 return true;
             }
         }
@@ -209,11 +210,12 @@ class AggregateContainer implements ContainerInterface
         }
 
         $exception = NotFoundException::forServiceID($id);
+        $providerIndex = null;
 
         foreach ($this->containers as $source) {
             $container = $source['container'];
 
-            if (! $this->sourceHas($source, $id)) {
+            if (! $this->sourceHas($source, $id, $providerIndex)) {
                 continue;
             }
 
@@ -246,28 +248,31 @@ class AggregateContainer implements ContainerInterface
     }
 
     /**
-     * Checks a source's advertised entry and the original position of provider definitions.
+     * Checks source precedence using one provider ownership decision per lookup.
      *
      * @param array{container: PsrContainerInterface, providerIndex: int|null, required: bool} $source the source descriptor
      * @param string $id the requested identifier
+     * @param int|false|null $providerIndex the computed provider position, absence, or pending lookup
      *
      * @return bool whether this source may resolve the entry
      */
-    private function sourceHas(array $source, string $id): bool
+    private function sourceHas(array $source, string $id, int|false|null &$providerIndex): bool
     {
-        if (! $source['container']->has($id)) {
-            return false;
-        }
-
         if (null === $source['providerIndex']) {
-            return true;
+            return $source['container']->has($id);
         }
 
-        try {
-            return $this->providerIndexFor($id) === $source['providerIndex'];
-        } catch (Throwable $throwable) {
-            throw ContainerException::forInvalidService($id, $throwable);
+        if (null === $providerIndex) {
+            $hasEntry = $source['container']->has($id);
+
+            try {
+                $providerIndex = $hasEntry ? $this->providerIndexFor($id) : false;
+            } catch (Throwable $throwable) {
+                throw ContainerException::forInvalidService($id, $throwable);
+            }
         }
+
+        return $providerIndex === $source['providerIndex'];
     }
 
     /**
